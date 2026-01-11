@@ -1,0 +1,22 @@
+import Navbar from "@/components/layout/navbar"
+import Footer from "@/components/layout/footer"
+import CartSummary from "@/components/cart/cart-summary"
+
+export default function CartPage() {
+  return (
+    <main className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="flex-1">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-primary dark:text-secondary">Your Cart</h1>
+            <p className="text-muted-foreground mt-2">Review and manage your items</p>
+          </div>
+
+          <CartSummary />
+        </div>
+      </div>
+      <Footer />
+    </main>
+  )
+}
