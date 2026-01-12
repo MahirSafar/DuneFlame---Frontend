@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Mail, Lock, Chrome } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
+import { API_URL } from "@/lib/config";
 import { getErrorMessage } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -86,7 +87,11 @@ const onSubmit = async (vals: LoginValues) => {
             </div>
           </div>
 
-          <button className="w-full mt-6 py-3 border border-border hover:bg-muted dark:hover:bg-white/5 rounded-lg font-semibold transition-smooth flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => (window.location.href = `${API_URL}/auth/external-login?provider=Google`)}
+            className="w-full mt-6 py-3 border border-border hover:bg-muted dark:hover:bg-white/5 rounded-lg font-semibold transition-smooth flex items-center justify-center gap-2"
+          >
             <Chrome size={20} />
             Google
           </button>
