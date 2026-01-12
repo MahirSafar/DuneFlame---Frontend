@@ -2,7 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { apiFetch, setTokens } from "./api-client";
+import axios, { setAxiosAuthToken } from "./axios";
+import { setTokens } from "./api-client";
 
 export interface AuthResponse {
   id: string;
@@ -36,45 +37,44 @@ export const useAuthStore = create<AuthState>()(
       async login(email, password) {
         set({ loggingIn: true, error: undefined });
         try {
-          const data = await apiFetch<AuthResponse>("/auth/login", {
-            method: "POST",
-            body: JSON.stringify({ email, password }),
-          });
+          const res = await axios.post<AuthResponse>("/auth/login", { email, password });
+          const data = res.data;
           const { accessToken, refreshToken, ...user } = data;
           set({ user, accessToken, refreshToken, loggingIn: false });
           setTokens({ accessToken, refreshToken });
+          setAxiosAuthToken(accessToken);
           if (typeof window !== "undefined") {
             localStorage.setItem("df_tokens", JSON.stringify({ accessToken, refreshToken }));
           }
         } catch (e: any) {
-          set({ error: e?.message || "Login failed", loggingIn: false });
+          set({ error: e?.response?.data?.message || e?.message || "Login failed", loggingIn: false });
           throw e;
         }
       },
       async register(input) {
         set({ loggingIn: true, error: undefined });
         try {
-          const data = await apiFetch<AuthResponse>("/auth/register", {
-            method: "POST",
-            body: JSON.stringify(input),
-          });
+          const res = await axios.post<AuthResponse>("/auth/register", input);
+          const data = res.data;
           const { accessToken, refreshToken, ...user } = data;
           set({ user, accessToken, refreshToken, loggingIn: false });
           setTokens({ accessToken, refreshToken });
+          setAxiosAuthToken(accessToken);
           if (typeof window !== "undefined") {
             localStorage.setItem("df_tokens", JSON.stringify({ accessToken, refreshToken }));
           }
         } catch (e: any) {
-          set({ error: e?.message || "Registration failed", loggingIn: false });
+          set({ error: e?.response?.data?.message || e?.message || "Registration failed", loggingIn: false });
           throw e;
         }
       },
       async logout() {
         try {
-          await apiFetch<void>("/auth/logout", { method: "POST" });
+          await axios.post("/auth/logout");
         } catch {}
         set({ user: null, accessToken: null, refreshToken: null });
         setTokens(null);
+        setAxiosAuthToken(null);
         if (typeof window !== "undefined") {
           localStorage.removeItem("df_tokens");
         }
@@ -87,6 +87,7 @@ export const useAuthStore = create<AuthState>()(
           const { accessToken, refreshToken } = JSON.parse(raw);
           set({ accessToken, refreshToken });
           setTokens({ accessToken, refreshToken });
+          setAxiosAuthToken(accessToken);
         } catch {}
       },
     }),

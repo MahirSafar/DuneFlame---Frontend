@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import AuthInit from "@/components/auth/auth-init"
 import AuthProvider from "@/components/auth/auth-provider"
+import { Toaster } from "react-hot-toast"
 
 const urbanist = Urbanist({
   subsets: ["latin"],
@@ -54,6 +55,7 @@ export default function RootLayout({
           <AuthInit />
           {children}
           <Analytics />
+          <Toaster position="top-right" />
         </AuthProvider>
       </body>
     </html>

@@ -1,44 +1,36 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
 import { Mail, Lock, Chrome } from "lucide-react";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuthStore } from "@/lib/auth-store";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import toast from "react-hot-toast";
+
+const LoginSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Invalid email"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginValues = z.infer<typeof LoginSchema>;
 
 export default function LoginForm() {
-  const search = useSearchParams();
-  const router = useRouter();
-  const { login } = useAuth();
+  const { login } = useAuthStore();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginValues>({ resolver: zodResolver(LoginSchema) });
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const verified = search.get("verified");
-    const error = search.get("error");
-    if (verified === "true") {
-      setMessage("Email Verified! You can now log in.");
-    } else if (verified === "false" || error) {
-      setWarning("Verification failed.");
-    }
-  }, [search]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage(null);
-    setWarning(null);
+  const onSubmit = async (vals: LoginValues) => {
     try {
-      await login(email, password);
-      // AuthProvider.login redirects to / on success
+      await login(vals.email, vals.password);
+      toast.success("Logged in")
     } catch (err: any) {
-      setWarning(err?.message || "Invalid credentials");
-    } finally {
-      setLoading(false);
+      const msg = err?.response?.data?.message || err?.message || "Login failed";
+      toast.error(msg);
     }
   };
 
@@ -49,44 +41,27 @@ export default function LoginForm() {
           <h2 className="text-2xl font-bold text-primary mb-2">Sign in to DuneFlame</h2>
           <p className="text-sm text-muted-foreground mb-6">Welcome back — please enter your credentials.</p>
 
-          {message && <div className="mb-4 p-3 rounded bg-green-50 text-green-800">{message}</div>}
-          {warning && <div className="mb-4 p-3 rounded bg-yellow-50 text-amber-800">{warning}</div>}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 text-muted-foreground" size={18} />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-card"
-                />
+                <input {...register("email")} className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-card" />
               </div>
+              {errors.email && <p className="text-destructive text-sm mt-1">{errors.email.message}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-1">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 text-muted-foreground" size={18} />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-card"
-                />
+                <input type="password" {...register("password")} className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-card" />
               </div>
+              {errors.password && <p className="text-destructive text-sm mt-1">{errors.password.message}</p>}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold"
-            >
-              {loading ? "Signing in..." : "Sign In"}
+            <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold">
+              {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
