@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import axios, { setAxiosAuthToken } from "./axios";
+import { getErrorMessage } from "./utils";
 import { setTokens } from "./api-client";
 
 export interface AuthResponse {
@@ -47,7 +48,8 @@ export const useAuthStore = create<AuthState>()(
             localStorage.setItem("df_tokens", JSON.stringify({ accessToken, refreshToken }));
           }
         } catch (e: any) {
-          set({ error: e?.response?.data?.message || e?.message || "Login failed", loggingIn: false });
+          const msg = getErrorMessage(e) || "Login failed";
+          set({ error: msg, loggingIn: false });
           throw e;
         }
       },
@@ -64,7 +66,8 @@ export const useAuthStore = create<AuthState>()(
             localStorage.setItem("df_tokens", JSON.stringify({ accessToken, refreshToken }));
           }
         } catch (e: any) {
-          set({ error: e?.response?.data?.message || e?.message || "Registration failed", loggingIn: false });
+          const msg = getErrorMessage(e) || "Registration failed";
+          set({ error: msg, loggingIn: false });
           throw e;
         }
       },

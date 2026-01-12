@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/utils"
 
 const RegisterSchema = z
   .object({
@@ -41,7 +42,7 @@ export default function RegisterForm() {
       router.push("/auth/confirm")
       toast.success("Registered — check your email to confirm")
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Registration failed"
+      const msg = getErrorMessage(err)
       toast.error(msg)
     }
   }

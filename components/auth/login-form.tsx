@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Mail, Lock, Chrome } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
+import { getErrorMessage } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,13 +25,24 @@ export default function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({ resolver: zodResolver(LoginSchema) });
 
-  const onSubmit = async (vals: LoginValues) => {
+const onSubmit = async (vals: LoginValues) => {
     try {
       await login(vals.email, vals.password);
-      toast.success("Logged in")
+      toast.success("Logged in successfully");
+      // Buraya gələcəkdə redirect qoyacağıq
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Login failed";
+      // --- DÜZƏLİŞ BURADADIR ---
+      
+      // 1. Əgər xəta 401 (Login səhvdir) və ya 500 (Server) olarsa, 
+      // Axios Interceptor artıq toast göstərib. Biz ikincini göstərmirik.
+      if (err?.response?.status === 401 || err?.response?.status >= 500) {
+        return; 
+      }
+
+      // 2. Digər xətalar (məsələn 400 - Validation) üçün toast göstər
+      const msg = getErrorMessage(err);
       toast.error(msg);
+      // -------------------------
     }
   };
 
