@@ -2,9 +2,11 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
+import { useAuthStore } from "@/lib/auth-store"
 import {
   LayoutDashboard,
   Package,
@@ -22,7 +24,7 @@ import { Suspense } from "react"
 import ScrollProgress from "@/components/admin/scroll-progress"
 
 const adminNav = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/users", label: "Users", icon: Users },
@@ -33,13 +35,51 @@ const adminNav = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isChecking, setIsChecking] = useState(true)
   const pathname = usePathname()
+  const router = useRouter()
+  const { user, accessToken, logout } = useAuthStore()
+  const isLoginPage = pathname === "/admin/login"
+
+  useEffect(() => {
+    if (isLoginPage) {
+      setIsChecking(false)
+      return
+    }
+
+    const hasToken = Boolean(accessToken)
+    const isAdmin = Boolean(user?.roles?.includes("Admin"))
+
+    if (!hasToken || !isAdmin) {
+      router.replace("/admin/login")
+      return
+    }
+
+    setIsChecking(false)
+  }, [accessToken, isLoginPage, router, user])
+
+  const handleLogout = async () => {
+    await logout()
+    router.replace("/admin/login")
+  }
+
+  if (!isLoginPage && isChecking) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background text-foreground">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <p className="text-sm font-medium">Authenticating...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <ScrollProgress />
+      {!isLoginPage && <ScrollProgress />}
       <div className="flex h-screen bg-background">
         {/* Sidebar */}
+        {!isLoginPage && (
         <div
           className={`${
             sidebarOpen ? "w-64" : "w-20"
@@ -82,13 +122,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="w-8 h-8 rounded-full bg-accent/20 flex-shrink-0" />
                 {sidebarOpen && (
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">Admin</p>
-                    <p className="text-xs text-muted-foreground truncate">admin@duneflame.com</p>
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {user ? `${user.firstName} ${user.lastName}` : "Admin"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user?.email || "admin@duneflame.com"}
+                    </p>
                   </div>
                 )}
               </div>
               {sidebarOpen && (
-                <button className="w-full mt-3 flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-smooth rounded-lg hover:bg-accent/10">
+                <button
+                  onClick={handleLogout}
+                  className="w-full mt-3 flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-smooth rounded-lg hover:bg-accent/10"
+                >
                   <LogOut size={16} />
                   Logout
                 </button>
@@ -96,12 +143,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
         </div>
+        )}
 
         {/* Main Content */}
         <div
-          className={`${sidebarOpen ? "ml-64" : "ml-20"} flex-1 flex flex-col overflow-hidden transition-all duration-500 ease-in-out`}
+          className={`${!isLoginPage && (sidebarOpen ? "ml-64" : "ml-20")} flex-1 flex flex-col overflow-hidden transition-all duration-500 ease-in-out`}
         >
           {/* Top Bar */}
+          {!isLoginPage && (
           <div className="h-16 glass glow-accent border-b border-border flex items-center justify-between px-6 z-30">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -128,6 +177,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </button>
             </div>
           </div>
+          )}
 
           {/* Page Content */}
           <div className="flex-1 overflow-auto">{children}</div>

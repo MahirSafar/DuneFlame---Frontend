@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 const LoginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email"),
@@ -20,6 +21,7 @@ type LoginValues = z.infer<typeof LoginSchema>;
 
 export default function LoginForm() {
   const { login } = useAuthStore();
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -30,7 +32,10 @@ const onSubmit = async (vals: LoginValues) => {
     try {
       await login(vals.email, vals.password);
       toast.success("Logged in successfully");
-      // Buraya gələcəkdə redirect qoyacağıq
+
+      router.push("/"); // və ya "/dashboard"
+      router.refresh(); // Bəzən header-i yeniləmək üçün lazımdır
+      
     } catch (err: any) {
       // --- DÜZƏLİŞ BURADADIR ---
       
@@ -71,6 +76,9 @@ const onSubmit = async (vals: LoginValues) => {
                 <input type="password" {...register("password")} className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-card" />
               </div>
               {errors.password && <p className="text-destructive text-sm mt-1">{errors.password.message}</p>}
+              <div className="mt-2 text-right">
+                <Link href="/auth/forgot-password" className="text-sm text-muted-foreground underline">Forgot password?</Link>
+              </div>
             </div>
 
             <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold">

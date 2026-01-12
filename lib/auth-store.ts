@@ -24,6 +24,8 @@ interface AuthState {
   error?: string;
   login: (email: string, password: string) => Promise<void>;
   register: (input: { firstName: string; lastName: string; email: string; password: string }) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (payload: { email: string; token: string; newPassword: string; confirmPassword: string }) => Promise<void>;
   logout: () => Promise<void>;
   setFromStorage: () => void;
 }
@@ -67,6 +69,29 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (e: any) {
           const msg = getErrorMessage(e) || "Registration failed";
+          set({ error: msg, loggingIn: false });
+          throw e;
+        }
+      },
+      async forgotPassword(email: string) {
+        set({ loggingIn: true, error: undefined });
+        try {
+          await axios.post("/auth/forgot-password", { email });
+          set({ loggingIn: false });
+        } catch (e: any) {
+          const msg = getErrorMessage(e) || "Failed to send reset link";
+          set({ error: msg, loggingIn: false });
+          throw e;
+        }
+      },
+
+      async resetPassword(payload: { email: string; token: string; newPassword: string; confirmPassword: string }) {
+        set({ loggingIn: true, error: undefined });
+        try {
+          await axios.post("/auth/reset-password", payload);
+          set({ loggingIn: false });
+        } catch (e: any) {
+          const msg = getErrorMessage(e) || "Failed to reset password";
           set({ error: msg, loggingIn: false });
           throw e;
         }

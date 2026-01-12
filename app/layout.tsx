@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import AuthInit from "@/components/auth/auth-init"
 import AuthProvider from "@/components/auth/auth-provider"
+import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "react-hot-toast"
 
 const urbanist = Urbanist({
@@ -50,13 +51,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${urbanist.variable} ${satoshi.variable} font-sans antialiased`}>
-        <AuthProvider>
-          <AuthInit />
-          {children}
-          <Analytics />
-          <Toaster position="top-right" />
-        </AuthProvider>
+      <body className={`${urbanist.variable} ${satoshi.variable} font-sans antialiased bg-background text-foreground`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <AuthInit />
+            {children}
+            <Analytics />
+            <Toaster position="top-right" />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
