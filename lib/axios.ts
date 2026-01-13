@@ -3,6 +3,7 @@ import { API_URL } from "./config";
 import toast from "react-hot-toast";
 import { getErrorMessage } from "./utils";
 import { useAuthStore } from "@/lib/auth-store";
+import { refreshAccessToken } from "./services/auth";
 
 const instance = axios.create({
   baseURL: API_URL,
@@ -25,34 +26,117 @@ instance.interceptors.request.use(
   }
 );
 
-// --- DÜZƏLİŞ EDİLMİŞ HİSSƏ ---
+// Track refresh token state
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
+    }
+  });
+  failedQueue = [];
+};
+
+// Response interceptor with refresh token logic
 instance.interceptors.response.use(
   (res) => res,
   async (err) => {
     const status = err?.response?.status;
-    const originalRequest = err.config; // Sorğunun özü
+    const originalRequest = err.config;
     const message = getErrorMessage(err);
 
-    // 1. 401 Xətası Gələndə
+    // Handle 401 Unauthorized
     if (status === 401) {
-      // KRİTİK ŞƏRT: 
-      // Əgər xəta "Login" və ya "Logout" sorğusunun özündən gəlibsə, 
-      // avtomatik logout prosesini işə salma. Yoxsa sonsuz dövrə yaranır.
-      if (!originalRequest.url?.includes("/auth/login") && !originalRequest.url?.includes("/auth/logout")) {
-        
-        // Yalnız digər səhifələrdə (Dashboard və s.) 401 gəlsə çıxış et
+      // Skip refresh logic for login, logout, or refresh-token requests
+      if (
+        originalRequest.url?.includes("/auth/login") ||
+        originalRequest.url?.includes("/auth/logout") ||
+        originalRequest.url?.includes("/auth/refresh-token")
+      ) {
+        return Promise.reject(err);
+      }
+
+      // Skip if already retried
+      if (originalRequest._retry) {
         toast.error("Session expired. Please login again.");
         useAuthStore.getState().logout();
-        
         if (window.location.pathname !== "/admin/login") {
-           window.location.href = "/admin/login";
+          window.location.href = "/admin/login";
         }
+        return Promise.reject(err);
       }
-      // Login səhifəsindəsənsə, sadəcə xətanı qaytar ki, "Invalid Password" çıxsın
-      return Promise.reject(err);
-    } 
-    
-    else if (status >= 500) {
+
+      // If already refreshing, queue this request
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => {
+            const newToken = useAuthStore.getState().accessToken;
+            if (newToken && originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            }
+            return instance(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      // Mark as retrying
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const { accessToken, refreshToken } = useAuthStore.getState();
+
+      if (!accessToken || !refreshToken) {
+        isRefreshing = false;
+        processQueue(new Error("No tokens available"));
+        toast.error("Session expired. Please login again.");
+        useAuthStore.getState().logout();
+        if (window.location.pathname !== "/admin/login") {
+          window.location.href = "/admin/login";
+        }
+        return Promise.reject(err);
+      }
+
+      try {
+        // Attempt to refresh the token
+        const newTokens = await refreshAccessToken(accessToken, refreshToken);
+
+        // Update store with new tokens
+        useAuthStore.getState().setTokens(newTokens.accessToken, newTokens.refreshToken);
+
+        // Update the failed request with the new token
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+        }
+
+        // Process the queue
+        processQueue();
+        isRefreshing = false;
+
+        // Retry the original request
+        return instance(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed, logout user
+        processQueue(refreshError);
+        isRefreshing = false;
+        toast.error("Session expired. Please login again.");
+        useAuthStore.getState().logout();
+        if (window.location.pathname !== "/admin/login") {
+          window.location.href = "/admin/login";
+        }
+        return Promise.reject(refreshError);
+      }
+    } else if (status >= 500) {
       toast.error(message || "Server error. Please try again later.");
     }
 

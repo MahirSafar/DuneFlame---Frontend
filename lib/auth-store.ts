@@ -28,6 +28,7 @@ interface AuthState {
   resetPassword: (payload: { email: string; token: string; newPassword: string; confirmPassword: string }) => Promise<void>;
   logout: () => Promise<void>;
   setFromStorage: () => void;
+  setTokens: (accessToken: string, refreshToken: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -117,6 +118,14 @@ export const useAuthStore = create<AuthState>()(
           setTokens({ accessToken, refreshToken });
           setAxiosAuthToken(accessToken);
         } catch {}
+      },
+      setTokens(accessToken: string, refreshToken: string) {
+        set({ accessToken, refreshToken });
+        setTokens({ accessToken, refreshToken });
+        setAxiosAuthToken(accessToken);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("df_tokens", JSON.stringify({ accessToken, refreshToken }));
+        }
       },
     }),
     { name: "df_auth" }
