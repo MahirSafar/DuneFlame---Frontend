@@ -25,11 +25,12 @@ export default function AdminLoginPage() {
     resolver: zodResolver(AdminSchema) 
   });
 
-  const onSubmit = async (vals: AdminValues) => {
+const onSubmit = async (vals: AdminValues) => {
     try {
       await login(vals.email, vals.password);
       const user = useAuthStore.getState().user;
       const roles = (user?.roles as string[] | undefined) || [];
+      
       if (roles.includes("Admin")) {
         toast.success("Welcome, admin");
         router.push("/admin/dashboard");
@@ -40,9 +41,18 @@ export default function AdminLoginPage() {
         } catch {}
       }
     } catch (err: any) {
-      if (err?.response?.status === 401 || err?.response?.status >= 500) return;
-      const msg = getErrorMessage(err);
-      toast.error(msg);
+      // --- DÜZƏLİŞ EDİLƏN HİSSƏ ---
+      
+      // 500 xətaları onsuz da qlobal axios.ts-də tutulur, amma 
+      // 401 login zamanı "lokal" xətadır, onu burada göstərməliyik.
+      
+      // Backend-dən gələn dəqiq mesajı (Invalid credentials) almağa çalışırıq
+      const errorMessage = 
+        err.response?.data?.message || 
+        err.response?.data?.detail || 
+        "Invalid email or password"; // Əgər heç nə gəlməsə bu çıxacaq
+
+      toast.error(errorMessage);
     }
   };
 
