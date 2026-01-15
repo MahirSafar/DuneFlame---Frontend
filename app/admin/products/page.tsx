@@ -135,7 +135,9 @@ export default function AdminProductsPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]) 
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [mainImageIndex, setMainImageIndex] = useState<number>(0)
-  const [existingImages, setExistingImages] = useState<{url: string, isMain: boolean}[]>([])
+  const [existingImages, setExistingImages] = useState<{id?: string, url: string, isMain: boolean}[]>([])
+  const [deletedImageIds, setDeletedImageIds] = useState<string[]>([])
+  const [mainImageId, setMainImageId] = useState<string | null>(null)
   
   const [saving, setSaving] = useState(false)
   const [loadingProduct, setLoadingProduct] = useState(false)
@@ -164,7 +166,7 @@ export default function AdminProductsPage() {
   }, [])
 
   useEffect(() => {
-    loadProducts()
+    loadProducts(pageNumber)
   }, [pageNumber, debouncedSearch, categoryFilter])
 
   useEffect(() => {
@@ -179,13 +181,16 @@ export default function AdminProductsPage() {
     setPreviewUrls([])
     setExistingImages([])
     setMainImageIndex(0)
+    setDeletedImageIds([])
+    setMainImageId(null)
   }
 
-  const loadProducts = async () => {
+  const loadProducts = async (specificPage?: number) => {
     setLoading(true)
+    const pageToFetch = specificPage ?? pageNumber
     try {
       const res = await getProducts({
-        pageNumber,
+        pageNumber: pageToFetch,
         pageSize: PAGE_SIZE,
         search: debouncedSearch || undefined,
         categoryId: categoryFilter || undefined,
@@ -229,11 +234,16 @@ export default function AdminProductsPage() {
       })
       
       const fixedImages = product.images?.map((i) => ({
+          id: i.id,
           url: getImageUrl(i.imageUrl)!,
           isMain: i.isMain
       })).filter(img => img.url) ?? []
       
+      const mainImg = fixedImages.find(img => img.isMain)
+      
       setExistingImages(fixedImages)
+      setMainImageId(mainImg?.id || null)
+      setDeletedImageIds([])
       setPreviewUrls([])
       setSelectedFiles([])
       setMainImageIndex(0)
@@ -282,12 +292,47 @@ export default function AdminProductsPage() {
       else if (index < mainImageIndex) setMainImageIndex(prev => prev - 1);
   }
 
+  // Handle existing image deletion
+  const handleDeleteExistingImage = (imageId?: string, isMain?: boolean) => {
+    if (isMain) {
+      toast.error("Cannot delete the main image. Set another image as main first.")
+      return
+    }
+    
+    if (!imageId) return
+    
+    setDeletedImageIds(prev => [...prev, imageId])
+    setExistingImages(prev => prev.filter(img => img.id !== imageId))
+  }
+
+  // Handle setting existing image as main
+  const handleSetMainImage = (imageId?: string) => {
+    if (!imageId) return
+    
+    setMainImageId(imageId)
+    setExistingImages(prev => prev.map(img => ({
+      ...img,
+      isMain: img.id === imageId
+    })))
+  }
+
   // --- Submit Logic ---
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     if (!formState.name || !formState.description || !formState.basePrice || !formState.stockQuantity || !formState.categoryId) {
       toast.error("Please fill in all required fields")
+      return
+    }
+
+    // Client-side validation
+    if (formState.name.trim().length < 3) {
+      toast.error("Product name must be at least 3 characters long.")
+      return
+    }
+
+    if (formState.description.trim().length < 10) {
+      toast.error("Description must be at least 10 characters long.")
       return
     }
 
@@ -300,22 +345,40 @@ export default function AdminProductsPage() {
     formData.append("price", price.toFixed(2))
     formData.append("discountPercentage", String(discountPercentage))
     formData.append("stockQuantity", formState.stockQuantity)
-    formData.append("categoryId", formState.categoryId)
     
-    if (formState.originId) {
+    // Only append GUID fields if they have valid values
+    if (formState.categoryId && formState.categoryId.trim() !== "") {
+        formData.append("categoryId", formState.categoryId)
+    }
+    
+    if (formState.originId && formState.originId.trim() !== "") {
         formData.append("originId", formState.originId)
     }
     
-    if (formState.roastLevel) {
-        formData.append("roastLevel", formState.roastLevel)
+    // Parse roastLevel as integer
+    if (formState.roastLevel && formState.roastLevel.trim() !== "") {
+        formData.append("roastLevel", String(parseInt(formState.roastLevel)))
     }
     
-    if (formState.weight) {
+    if (formState.weight && formState.weight.trim() !== "") {
         formData.append("weight", formState.weight)
     }
     
-    if (formState.flavorNotes) {
+    if (formState.flavorNotes && formState.flavorNotes.trim() !== "") {
         formData.append("flavorNotes", formState.flavorNotes)
+    }
+    
+    // Handle image management for edit mode
+    if (selectedProduct) {
+        // Send deleted image IDs
+        deletedImageIds.forEach((id) => {
+            formData.append("deletedImageIds", id)
+        })
+        
+        // Send main image ID if set (Backend expects 'setMainImageId')
+        if (mainImageId) {
+            formData.append("setMainImageId", mainImageId)
+        }
     }
 
     // --- Image Reordering Logic ---
@@ -342,8 +405,31 @@ export default function AdminProductsPage() {
       setSheetOpen(false)
       resetForm()
       loadProducts()
-    } catch (err) {
-      toast.error(getErrorMessage(err))
+    } catch (err: any) {
+      // Parse ASP.NET Core validation errors
+      if (err.response?.data?.errors) {
+        const errors = err.response.data.errors
+        const errorMessages: string[] = []
+        
+        // Extract validation messages
+        Object.keys(errors).forEach((field) => {
+          const fieldErrors = errors[field]
+          if (Array.isArray(fieldErrors)) {
+            errorMessages.push(...fieldErrors)
+          } else if (typeof fieldErrors === 'string') {
+            errorMessages.push(fieldErrors)
+          }
+        })
+        
+        // Display specific errors
+        if (errorMessages.length > 0) {
+          errorMessages.forEach((msg) => toast.error(msg))
+        } else {
+          toast.error(getErrorMessage(err))
+        }
+      } else {
+        toast.error(getErrorMessage(err))
+      }
     } finally {
       setSaving(false)
     }
@@ -620,8 +706,10 @@ export default function AdminProductsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPageNumber((prev) => Math.max(1, prev - 1))}
-            disabled={!hasPrevPage || loading}
+            onClick={() => {
+              setPageNumber((prev) => Math.max(1, prev - 1))
+            }}
+            disabled={pageNumber <= 1 || loading}
             className="glass"
           >
             Previous
@@ -629,8 +717,10 @@ export default function AdminProductsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPageNumber((prev) => prev + 1)}
-            disabled={!hasNextPage || loading}
+            onClick={() => {
+              setPageNumber((prev) => prev + 1)
+            }}
+            disabled={pageNumber >= totalPages || !hasNextPage || loading}
             className="glass"
           >
             Next
@@ -862,14 +952,36 @@ export default function AdminProductsPage() {
                 {(previewUrls.length > 0 || existingImages.length > 0) && (
                   <div className="grid grid-cols-3 gap-3 mt-4">
                     
-                    {/* Existing Images (Edit Mode - Read Only for now) */}
+                    {/* Existing Images (Smart Edit) */}
                     {existingImages.map((img, idx) => (
-                      <div key={`exist-${idx}`} className="relative aspect-square rounded-lg overflow-hidden border border-border/50 opacity-70">
+                      <div 
+                        key={`exist-${idx}`} 
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all group ${
+                            img.isMain ? 'border-accent ring-2 ring-accent/30' : 'border-border/50 hover:border-accent/50'
+                        }`}
+                        onClick={() => handleSetMainImage(img.id)}
+                      >
                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.url} alt="existing" className="w-full h-full object-cover grayscale" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            {img.isMain && <Badge className="bg-accent text-white">Main (Saved)</Badge>}
-                        </div>
+                        <img src={img.url} alt="existing" className="w-full h-full object-cover" />
+                        
+                        {/* Delete Button */}
+                        <button 
+                            type="button"
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              handleDeleteExistingImage(img.id, img.isMain); 
+                            }}
+                            className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive"
+                         >
+                             <Trash2 size={12} />
+                         </button>
+
+                        {/* Main Badge */}
+                        {img.isMain && (
+                            <div className="absolute bottom-1 left-1 bg-accent text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Star size={8} fill="currentColor" /> Main
+                            </div>
+                        )}
                       </div>
                     ))}
 
@@ -893,13 +1005,6 @@ export default function AdminProductsPage() {
                          >
                              <X size={12} />
                          </button>
-
-                         {/* Main Badge */}
-                         {idx === mainImageIndex && (
-                             <div className="absolute bottom-1 left-1 bg-accent text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                                 <Star size={8} fill="currentColor" /> Main
-                             </div>
-                         )}
                       </div>
                     ))}
                   </div>
@@ -941,7 +1046,7 @@ export default function AdminProductsPage() {
             <AlertDialogCancel className="glass">Cancel</AlertDialogCancel>
             <AlertDialogAction 
                 onClick={executeDelete} 
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className="bg-destructive text-white hover:bg-destructive/90"
             >
                 Delete Product
             </AlertDialogAction>
