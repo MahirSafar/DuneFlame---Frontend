@@ -1,4 +1,5 @@
 import { API_URL } from "./config";
+import toast from "react-hot-toast";
 
 export interface ApiError extends Error {
   status?: number;
@@ -9,22 +10,55 @@ export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
+let isHandlingTokenExpiry = false;
 
 export function setTokens(tokens: { accessToken: string; refreshToken: string } | null) {
   accessToken = tokens?.accessToken ?? null;
   refreshToken = tokens?.refreshToken ?? null;
 }
 
+function clearAuthAndRedirect() {
+  if (isHandlingTokenExpiry) return; // Prevent multiple redirects
+  isHandlingTokenExpiry = true;
+
+  // Clear tokens from memory
+  setTokens(null);
+
+  // Clear tokens from localStorage
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("df_tokens");
+    
+    // Show single informative toast
+    toast.error("Session expired. Please login again.");
+    
+    // Determine redirect URL based on current path
+    const currentPath = window.location.pathname;
+    const redirectUrl = currentPath.startsWith("/admin") ? "/admin/login" : "/auth/login";
+    
+    // Redirect to login
+    setTimeout(() => {
+      window.location.href = redirectUrl;
+    }, 500);
+  }
+}
+
 async function refreshTokens(): Promise<boolean> {
   try {
-    if (!refreshToken) return false;
+    if (!refreshToken) {
+      clearAuthAndRedirect();
+      return false;
+    }
     const res = await fetch(`${API_URL}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ accessToken, refreshToken }),
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      // Refresh failed (e.g., user not found, invalid token)
+      clearAuthAndRedirect();
+      return false;
+    }
     const data = await res.json();
     if (data?.accessToken && data?.refreshToken) {
       setTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken });
@@ -33,10 +67,14 @@ async function refreshTokens(): Promise<boolean> {
       }
       return true;
     }
+    // Invalid response format
+    clearAuthAndRedirect();
+    return false;
   } catch (e) {
-    // ignore
+    // Network or parsing error during refresh
+    clearAuthAndRedirect();
+    return false;
   }
-  return false;
 }
 
 export async function apiFetch<T>(path: string, init: RequestInit & { method?: HttpMethod } = {}): Promise<T> {
@@ -63,6 +101,10 @@ export async function apiFetch<T>(path: string, init: RequestInit & { method?: H
       const retryHeaders = { ...headers };
       if (accessToken) retryHeaders["Authorization"] = `Bearer ${accessToken}`;
       res = await fetch(url, { ...init, headers: retryHeaders, credentials: "include" });
+    } else {
+      // Token refresh failed, redirect already triggered
+      // Don't throw or show additional errors - the redirect handles it
+      throw new Error("Session expired");
     }
   }
 

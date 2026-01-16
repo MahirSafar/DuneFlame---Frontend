@@ -2,10 +2,11 @@
 
 import { useAuthStore } from "@/lib/auth-store"
 import { getDashboardStats, DashboardStats } from "@/lib/services/admin"
-import { TrendingUp, ShoppingCart, Users, Package, Activity, Clock, Loader2, BarChart3, PieChart } from "lucide-react"
+import { TrendingUp, ShoppingCart, Package, AlertTriangle, Activity, Clock, Loader2, BarChart3, PieChart, DollarSign } from "lucide-react"
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { LineChart, Line, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"]
 
@@ -39,17 +40,19 @@ export default function AdminDashboard() {
     return (
       <div className="p-4 md:p-8 space-y-6 md:space-y-8">
         <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary dark:text-primary-foreground">Admin Console</h1>
-          <p className="text-muted-foreground">
-            Welcome back, <span className="font-semibold text-accent">{firstName}</span>
-          </p>
+          <h1 className="text-3xl md:text-4xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Overview of your store's performance</p>
         </div>
 
-        <div className="flex items-center justify-center py-12">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 size={48} className="text-accent animate-spin" />
-            <p className="text-muted-foreground">Loading dashboard stats...</p>
-          </div>
+        {/* Skeleton loaders for stats cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-lg border p-6 space-y-3">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+          ))}
         </div>
       </div>
     )
@@ -59,10 +62,8 @@ export default function AdminDashboard() {
     return (
       <div className="p-4 md:p-8 space-y-6 md:space-y-8">
         <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary dark:text-primary-foreground">Admin Console</h1>
-          <p className="text-muted-foreground">
-            Welcome back, <span className="font-semibold text-accent">{firstName}</span>
-          </p>
+          <h1 className="text-3xl md:text-4xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Overview of your store's performance</p>
         </div>
 
         <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -72,118 +73,105 @@ export default function AdminDashboard() {
     )
   }
 
-  const formattedRevenue = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(stats.totalRevenue)
-
-  const formattedAOV = stats.averageOrderValue
-    ? new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(stats.averageOrderValue)
-    : "$0.00"
-
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8">
       <div className="space-y-2">
-        <h1 className="text-3xl md:text-4xl font-bold text-primary dark:text-primary-foreground">Admin Console</h1>
-        <p className="text-muted-foreground">
-          Welcome back, <span className="font-semibold text-accent">{firstName}</span>
-        </p>
+        <h1 className="text-3xl md:text-4xl font-bold">Dashboard</h1>
+        <p className="text-muted-foreground">Overview of your store's performance</p>
       </div>
 
-      {/* Key Metrics Grid */}
-      <div className="bento-grid bento-cols-4">
-        <div className="bento-span-lg glass-mocha hover-lift">
-          <div className="bento-content">
-            <div className="flex items-start justify-between mb-4">
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground font-medium">Total Revenue</p>
-                <h3 className="text-4xl md:text-5xl font-bold text-primary dark:text-primary-foreground">{formattedRevenue}</h3>
-                <div className="flex items-center gap-2 text-accent">
-                  <TrendingUp size={18} className="animate-float-soft" />
-                  <span className="text-sm font-semibold">+{stats.revenueGrowthPercentage}% this month</span>
-                </div>
-              </div>
-              <div className="p-4 bg-accent/20 rounded-2xl glow-warm">
-                <TrendingUp size={32} className="text-accent" />
-              </div>
+      {/* Key Metrics Grid - 4 Columns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Revenue - Green */}
+        <div className="rounded-lg border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/20 p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 flex-1">
+              <p className="text-sm text-muted-foreground font-medium">Total Revenue</p>
+              <h3 className="text-2xl md:text-3xl font-bold text-green-700 dark:text-green-400">
+                {new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                }).format(stats.totalRevenue)}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                +{stats.revenueGrowthPercentage}% this month
+              </p>
             </div>
-            <div className="mt-auto pt-4 border-t border-border/50">
-              <p className="text-xs text-muted-foreground">Last updated: Just now</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bento-row-1 glass-warm hover-lift">
-          <div className="bento-content">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-3 bg-orange-500/20 rounded-xl">
-                <ShoppingCart size={24} className="text-orange-500" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Active Orders</p>
-            <h4 className="text-3xl font-bold text-primary dark:text-primary-foreground">{stats.activeOrders}</h4>
-            <p className="text-xs text-muted-foreground mt-2">{stats.pendingShipmentOrders} pending shipment</p>
-          </div>
-        </div>
-
-        <div className="bento-row-1 glass-cream hover-lift">
-          <div className="bento-content">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-3 bg-amber-500/20 rounded-xl">
-                <Users size={24} className="text-amber-600" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Total Customers</p>
-            <h4 className="text-3xl font-bold text-primary dark:text-primary-foreground">{stats.totalUsers}</h4>
-            <p className="text-xs text-muted-foreground mt-2">+{stats.newUsersThisWeek} this week</p>
-          </div>
-        </div>
-
-        <div className="bento-span-md glass-soft hover-lift">
-          <div className="bento-content">
-            <div className="flex items-center justify-between h-full">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-green-500/20 rounded-2xl">
-                  <Package size={32} className="text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Inventory</p>
-                  <h4 className="text-3xl font-bold text-primary dark:text-primary-foreground">{stats.totalProducts}</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Products in stock</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="inline-block px-3 py-1 bg-red-500/20 text-red-600 dark:text-red-400 rounded-full text-xs font-semibold">
-                  {stats.lowStockCount} Low Stock
-                </span>
-              </div>
+            <div className="p-3 bg-green-200 dark:bg-green-900/40 rounded-lg">
+              <DollarSign className="w-6 h-6 text-green-700 dark:text-green-400" />
             </div>
           </div>
         </div>
 
-        {/* Additional KPIs */}
-        {stats.averageOrderValue !== undefined && (
-          <div className="bento-row-1 glass-warm hover-lift">
-            <div className="bento-content">
-              <p className="text-sm text-muted-foreground mb-1">Avg Order Value</p>
-              <h4 className="text-3xl font-bold text-primary dark:text-primary-foreground">{formattedAOV}</h4>
-              <p className="text-xs text-muted-foreground mt-2">Per transaction</p>
+        {/* Active Orders - Blue */}
+        <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20 p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 flex-1">
+              <p className="text-sm text-muted-foreground font-medium">Active Orders</p>
+              <h3 className="text-2xl md:text-3xl font-bold text-blue-700 dark:text-blue-400">
+                {stats.activeOrders}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.pendingShipmentOrders} pending shipment
+              </p>
+            </div>
+            <div className="p-3 bg-blue-200 dark:bg-blue-900/40 rounded-lg">
+              <ShoppingCart className="w-6 h-6 text-blue-700 dark:text-blue-400" />
             </div>
           </div>
-        )}
+        </div>
 
-        {stats.conversionRate !== undefined && (
-          <div className="bento-row-1 glass-cream hover-lift">
-            <div className="bento-content">
-              <p className="text-sm text-muted-foreground mb-1">Conversion Rate</p>
-              <h4 className="text-3xl font-bold text-primary dark:text-primary-foreground">{stats.conversionRate}%</h4>
-              <p className="text-xs text-muted-foreground mt-2">Customer conversion</p>
+        {/* Products in Stock - Purple */}
+        <div className="rounded-lg border border-purple-200 dark:border-purple-900 bg-purple-50 dark:bg-purple-950/20 p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 flex-1">
+              <p className="text-sm text-muted-foreground font-medium">Products in Stock</p>
+              <h3 className="text-2xl md:text-3xl font-bold text-purple-700 dark:text-purple-400">
+                {stats.totalProducts}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Total inventory
+              </p>
+            </div>
+            <div className="p-3 bg-purple-200 dark:bg-purple-900/40 rounded-lg">
+              <Package className="w-6 h-6 text-purple-700 dark:text-purple-400" />
             </div>
           </div>
-        )}
+        </div>
+
+        {/* Low Stock Alerts - Red */}
+        <div className={`rounded-lg border p-6 hover:shadow-lg transition-shadow ${
+          stats.lowStockCount > 0
+            ? "border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20"
+            : "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/20"
+        }`}>
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 flex-1">
+              <p className="text-sm text-muted-foreground font-medium">Low Stock Alerts</p>
+              <h3 className={`text-2xl md:text-3xl font-bold ${
+                stats.lowStockCount > 0
+                  ? "text-red-700 dark:text-red-400"
+                  : "text-gray-700 dark:text-gray-400"
+              }`}>
+                {stats.lowStockCount}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.lowStockCount > 0 ? "⚠️ Action needed!" : "All items healthy"}
+              </p>
+            </div>
+            <div className={`p-3 rounded-lg ${
+              stats.lowStockCount > 0
+                ? "bg-red-200 dark:bg-red-900/40"
+                : "bg-gray-200 dark:bg-gray-900/40"
+            }`}>
+              <AlertTriangle className={`w-6 h-6 ${
+                stats.lowStockCount > 0
+                  ? "text-red-700 dark:text-red-400"
+                  : "text-gray-700 dark:text-gray-400"
+              }`} />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Charts Section */}
