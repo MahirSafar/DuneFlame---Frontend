@@ -6,6 +6,7 @@ import ProductCard from "@/components/products/product-card"
 const SAVED_ITEMS = [
   {
     id: "1",
+    slug: "ethiopian-yirgacheffe",
     name: "Ethiopian Yirgacheffe",
     price: 24,
     roastLevel: "Light",
@@ -14,6 +15,7 @@ const SAVED_ITEMS = [
   },
   {
     id: "4",
+    slug: "kenya-peaberry",
     name: "Kenya Peaberry",
     price: 28,
     roastLevel: "Medium",

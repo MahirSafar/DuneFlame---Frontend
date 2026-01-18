@@ -1,6 +1,7 @@
 "use client"
 
 import { type DragEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react"
+import Link from "next/link"
 import {
   Table,
   TableBody,
@@ -54,6 +55,7 @@ import { getErrorMessage } from "@/lib/utils"
 import { API_URL } from "@/lib/config"
 import {
   Filter,
+  Eye,
   ImageIcon,
   Loader2,
   Pencil,
@@ -675,6 +677,16 @@ export default function AdminProductsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="hover:bg-accent/10 hover:text-accent"
+                        asChild
+                      >
+                        <Link href={`/product/${product.slug || product.id}`} target="_blank" aria-label="View on site">
+                          <Eye className="size-4" />
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleOpenEdit(product.id)}
                         className="hover:bg-accent/10 hover:text-accent"
                       >
@@ -763,6 +775,15 @@ export default function AdminProductsPage() {
                     value={formState.name}
                     onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g. Arabica Dark Roast"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Slug (URL)</label>
+                  <Input
+                    value={selectedProduct?.slug || ""}
+                    disabled
+                    placeholder="Generated from name"
                   />
                 </div>
 

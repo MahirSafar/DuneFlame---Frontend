@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 import axios, { setAxiosAuthToken } from "./axios";
 import { getErrorMessage } from "./utils";
 import { setTokens } from "./api-client";
+import { useCartStore } from "./cart-store";
 
 export interface AuthResponse {
   id: string;
@@ -101,6 +102,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           await axios.post("/auth/logout");
         } catch {}
+        
+        // Clear cart state
+        useCartStore.getState().clearCart();
+        
+        // Clear auth state
         set({ user: null, accessToken: null, refreshToken: null });
         setTokens(null);
         setAxiosAuthToken(null);

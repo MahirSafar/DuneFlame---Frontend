@@ -3,9 +3,13 @@
 import Link from "next/link"
 import { Trash2 } from "lucide-react"
 import { useCartStore } from "@/lib/cart-store"
+import { getImageUrl } from "@/lib/utils"
+import { useAuthStore } from "@/lib/auth-store"
 
 export default function CartSummary() {
+  const { accessToken } = useAuthStore()
   const { items, removeItem, updateQuantity, total } = useCartStore()
+  const isAuthenticated = !!accessToken
 
   if (items.length === 0) {
     return (
@@ -25,23 +29,49 @@ export default function CartSummary() {
     <div className="space-y-6">
       <div className="space-y-4">
         {items.map((item) => (
-          <div key={item.id} className="glass rounded-xl p-4 flex items-center justify-between">
-            <div className="flex-1">
-              <h3 className="font-semibold text-primary dark:text-secondary">{item.name}</h3>
-              <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
+          <Link
+            key={item.id}
+            href={`/product/${item.slug || item.id}`}
+            className="glass rounded-xl p-4 flex items-center justify-between group hover:shadow-lg transition-smooth"
+          >
+            <div className="flex items-center gap-4 flex-1">
+              {item.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={getImageUrl(item.imageUrl) || ""}
+                  alt={item.name}
+                  className="w-20 h-20 object-cover rounded-lg"
+                />
+              ) : (
+                <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900 dark:to-orange-900 rounded-lg flex items-center justify-center text-2xl">
+                  ☕
+                </div>
+              )}
+              <div>
+                <h3 className="font-semibold text-primary dark:text-secondary group-hover:text-accent transition-smooth">
+                  {item.name}
+                </h3>
+                <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4" onClick={(e) => e.preventDefault()}>
               <div className="flex items-center border border-border rounded-lg">
                 <button
-                  onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    updateQuantity(item.id, Math.max(1, item.quantity - 1), isAuthenticated)
+                  }}
                   className="p-1 hover:bg-accent/10 transition-smooth"
                 >
                   −
                 </button>
                 <span className="px-3 font-semibold">{item.quantity}</span>
                 <button
-                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    updateQuantity(item.id, item.quantity + 1, isAuthenticated)
+                  }}
                   className="p-1 hover:bg-accent/10 transition-smooth"
                 >
                   +
@@ -53,13 +83,16 @@ export default function CartSummary() {
               </span>
 
               <button
-                onClick={() => removeItem(item.id)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  removeItem(item.id, isAuthenticated)
+                }}
                 className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-smooth"
               >
                 <Trash2 size={18} />
               </button>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 

@@ -101,6 +101,7 @@ export default function ProductsPage() {
                     <ProductCard
                       key={p.id}
                       id={p.id}
+                      slug={p.slug}
                       name={p.name}
                       price={p.price}
                       images={p.images}

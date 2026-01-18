@@ -1,15 +1,27 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Menu, X, ShoppingCart, Moon, Sun, User, LogOut } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/components/auth/auth-provider"
+import { useCartStore } from "@/lib/cart-store"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const { isLoggedIn, logout } = useAuth()
+  const { loadBasket, items } = useCartStore()
+
+  // Load basket from backend when user logs in
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadBasket()
+    }
+  }, [isLoggedIn, loadBasket])
+
+  // Calculate total items count
+  const cartItemCount = items.reduce((total, item) => total + item.quantity, 0)
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -53,9 +65,14 @@ export default function Navbar() {
             </button>
             <Link
               href="/cart"
-              className="p-2 hover:bg-accent/10 rounded-lg transition-smooth scale-100 hover:scale-110"
+              className="relative p-2 hover:bg-accent/10 rounded-lg transition-smooth scale-100 hover:scale-110"
             >
               <ShoppingCart size={20} />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
             </Link>
 
             {isLoggedIn ? (

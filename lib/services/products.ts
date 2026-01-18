@@ -31,6 +31,7 @@ export interface ProductImageDto {
 
 export interface ProductResponse {
   id: string;
+  slug: string;
   name: string;
   description: string;
   price: number;
@@ -49,7 +50,7 @@ export interface ProductResponse {
   images: ProductImageDto[];
 }
 
-export interface Product extends ProductResponse {}
+export type Product = Omit<ProductResponse, "slug"> & { slug?: string };
 
 type ProductQuery = {
   pageNumber?: number;
@@ -77,13 +78,15 @@ export async function getProducts(params: ProductQuery = {}) {
   return apiFetch<PagedResult<ProductResponse>>(`/products${qs ? `?${qs}` : ""}`);
 }
 
-export async function getProduct(id: string, options?: { admin?: boolean }) {
+export function getProduct(idOrSlug: string, options?: { admin?: false }): Promise<ProductResponse>;
+export function getProduct(idOrSlug: string, options: { admin: true }): Promise<Product>;
+export async function getProduct(idOrSlug: string, options?: { admin?: boolean }) {
   if (options?.admin) {
-    const { data } = await axios.get<Product>(`/admin/products/${id}`);
+    const { data } = await axios.get<Product>(`/admin/products/${idOrSlug}`);
     return data;
   }
 
-  return apiFetch<ProductResponse>(`/products/${id}`);
+  return apiFetch<ProductResponse>(`/products/${idOrSlug}`);
 }
 
 export async function getCategories() {

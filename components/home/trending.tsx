@@ -1,39 +1,27 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import ProductCard from "@/components/products/product-card"
+import { getProducts, type ProductResponse } from "@/lib/services/products"
 
-const TRENDING_PRODUCTS = [
-  {
-    id: "1",
-    name: "Ethiopian Yirgacheffe",
-    price: 24,
-    roastLevel: "Light",
-    origin: "Ethiopia",
-  },
-  {
-    id: "2",
-    name: "Colombian Supremo",
-    price: 22,
-    roastLevel: "Medium",
-    origin: "Colombia",
-  },
-  {
-    id: "3",
-    name: "Brazilian Santos",
-    price: 20,
-    roastLevel: "Dark",
-    origin: "Brazil",
-  },
-  {
-    id: "4",
-    name: "Kenya Peaberry",
-    price: 28,
-    roastLevel: "Medium",
-    origin: "Kenya",
-  },
-]
+// Helper function to convert roast level number to descriptive text
+const getRoastLevelText = (level: number): string => {
+  if (level <= 3) return "Light"
+  if (level <= 6) return "Medium"
+  return "Dark"
+}
 
 export default function Trending() {
+  const [products, setProducts] = useState<ProductResponse[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getProducts({ pageNumber: 1, pageSize: 4 })
+      .then((res) => setProducts(res.items))
+      .catch((err) => console.error("Failed to fetch trending products:", err))
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="flex justify-between items-center mb-12">
@@ -50,11 +38,28 @@ export default function Trending() {
         </a>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {TRENDING_PRODUCTS.map((product) => (
-          <ProductCard key={product.id} {...product} images={[]} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="glass rounded-xl h-80 animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              id={product.id}
+              slug={product.slug}
+              name={product.name}
+              price={product.price}
+              images={product.images}
+              roastLevel={getRoastLevelText(product.roastLevel)}
+              origin={product.originName || "Unknown"}
+            />
+          ))}
+        </div>
+      )}
     </section>
   )
 }

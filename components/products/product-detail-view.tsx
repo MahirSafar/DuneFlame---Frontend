@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { useMemo, useState } from "react"
 import { Leaf, ShoppingCart, Sparkles } from "lucide-react"
 import type { ProductResponse } from "@/lib/services/products"
-import { useCartStore } from "@/lib/cart-store"
+import { useAddToCart } from "@/hooks/use-add-to-cart"
 import { getImageUrl } from "@/lib/utils"
 
 const currency = new Intl.NumberFormat("en-US", {
@@ -18,7 +18,7 @@ interface ProductDetailViewProps {
 }
 
 export default function ProductDetailView({ product }: ProductDetailViewProps) {
-  const { addItem } = useCartStore()
+  const { addToCart } = useAddToCart()
   const [quantity, setQuantity] = useState(1)
   const [selectedImageId, setSelectedImageId] = useState<string | undefined>(
     product.images?.find((image) => image.isMain)?.id || product.images?.[0]?.id,
@@ -38,7 +38,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   const galleryImages = useMemo(() => product.images?.filter((img) => img.imageUrl) ?? [], [product.images])
 
   const handleAddToCart = () => {
-    addItem({ id: product.id, name: product.name, price: product.price, quantity })
+    addToCart(product, quantity)
   }
 
   return (

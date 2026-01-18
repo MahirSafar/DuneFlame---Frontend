@@ -88,7 +88,8 @@ export default function RelatedProducts({ categoryId, currentProductId }: Relate
             viewport={{ once: true }}
           >
             <ProductCard
-              id={product.id}
+                id={product.id}
+                slug={product.slug!}
               name={product.name}
               price={product.price}
               images={product.images}

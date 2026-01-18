@@ -6,14 +6,14 @@ import Newsletter from "@/components/home/newsletter"
 import ProductDetailView from "@/components/products/product-detail-view"
 import RelatedProducts from "@/components/products/related-products"
 import type { ApiError } from "@/lib/api-client"
-import { getProduct } from "@/lib/services/products"
+import { getProduct, type ProductResponse } from "@/lib/services/products"
 
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
 
-  let product: Awaited<ReturnType<typeof getProduct>> | null = null
+  let product: ProductResponse | null = null
   try {
-    product = await getProduct(id)
+    product = await getProduct(slug)
   } catch (error) {
     const status = (error as ApiError | undefined)?.status
     if (status === 404) {
@@ -37,7 +37,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           >
             <span aria-hidden>←</span> Back to Products
           </Link>
-          <ProductDetailView product={product} />
+          {product && <ProductDetailView product={product} />}
           {product.categoryId && <RelatedProducts categoryId={product.categoryId} currentProductId={product.id} />}
         </div>
         <Newsletter />
