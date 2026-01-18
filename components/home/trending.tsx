@@ -52,7 +52,7 @@ export default function Trending() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {TRENDING_PRODUCTS.map((product) => (
-          <ProductCard key={product.id} {...product} image="" />
+          <ProductCard key={product.id} {...product} images={[]} />
         ))}
       </div>
     </section>

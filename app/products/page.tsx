@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
+import Newsletter from "@/components/home/newsletter"
 import ProductCard from "@/components/products/product-card"
 import FilterSidebar, { type FilterState } from "@/components/products/filter-sidebar"
 import { getProducts, type ProductResponse } from "@/lib/services/products"
@@ -96,20 +97,17 @@ export default function ProductsPage() {
               )}
               {!loading && !error && filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProducts.map((p) => {
-                    const mainImage = p.images?.find((i) => i.isMain)?.imageUrl || p.images?.[0]?.imageUrl || "";
-                    return (
-                      <ProductCard
-                        key={p.id}
-                        id={p.id}
-                        name={p.name}
-                        price={p.price}
-                        image={mainImage}
-                        roastLevel={""}
-                        origin={p.categoryName || ""}
-                      />
-                    )
-                  })}
+                  {filteredProducts.map((p) => (
+                    <ProductCard
+                      key={p.id}
+                      id={p.id}
+                      name={p.name}
+                      price={p.price}
+                      images={p.images}
+                      roastLevel={""}
+                      origin={p.categoryName || ""}
+                    />
+                  ))}
                 </div>
               ) : (
                 <div className="glass rounded-xl p-12 text-center">
@@ -119,8 +117,8 @@ export default function ProductsPage() {
             </div>
           </div>
         </div>
+        <Newsletter />
       </div>
       <Footer />
-    </main>
-  )
+    </main>  )
 }

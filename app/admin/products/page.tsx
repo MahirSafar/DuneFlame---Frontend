@@ -98,11 +98,11 @@ const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "
 
 // Helper: Image URL Correction
 const getImageUrl = (path: string | undefined) => {
-  if (!path) return null;
-  if (path.startsWith("http")) return path;
-  const baseUrl = API_URL || "http://localhost:7190/api/v1"; 
-  const rootUrl = baseUrl.replace("/api/v1", ""); 
-  return `${rootUrl}/${path}`;
+  if (!path) return null
+  if (path.startsWith("http")) return path
+  const baseUrl = API_URL
+  const rootUrl = baseUrl.replace("/api/v1", "")
+  return `${rootUrl}/${path}`
 }
 
 export default function AdminProductsPage() {

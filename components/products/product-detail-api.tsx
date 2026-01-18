@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { ShoppingCart, Star } from "lucide-react";
 import type { ProductResponse } from "@/lib/services/products";
 import { useCartStore } from "@/lib/cart-store";
 
 export default function ProductDetailApi({ product }: { product: ProductResponse }) {
   const [quantity, setQuantity] = useState(1);
-  const [isFavorite, setIsFavorite] = useState(false);
   const { addItem } = useCartStore();
 
   const mainImage = product.images?.find((i) => i.isMain)?.imageUrl || product.images?.[0]?.imageUrl;
@@ -37,8 +36,8 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
               <p className="text-accent font-semibold text-sm uppercase tracking-wider mb-2">{product.categoryName}</p>
               <h1 className="text-4xl font-bold text-primary dark:text-secondary">{product.name}</h1>
             </div>
-            <button onClick={() => setIsFavorite(!isFavorite)} className="p-3 hover:bg-accent/10 rounded-lg transition-smooth">
-              <Heart size={24} fill={isFavorite ? "currentColor" : "none"} className={isFavorite ? "text-accent" : ""} />
+            <button className="p-3 hover:bg-accent/10 rounded-lg transition-smooth">
+              <ShoppingCart size={24} className="text-foreground" />
             </button>
           </div>
 

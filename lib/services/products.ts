@@ -23,33 +23,33 @@ export interface Origin {
   country?: string;
 }
 
-export interface ProductImage {
-  id?: string;
+export interface ProductImageDto {
+  id: string;
   imageUrl: string;
   isMain: boolean;
 }
 
-export interface Product {
+export interface ProductResponse {
   id: string;
   name: string;
   description: string;
   price: number;
-  discountPercentage?: number;
+  discountPercentage: number;
   stockQuantity: number;
-  isActive?: boolean;
+  categoryName: string;
   categoryId: string;
-  categoryName?: string;
-  originId?: string;
   originName?: string;
-  roastLevel?: number;
-  weight?: number;
-  flavorNotes?: string;
-  createdAt?: string;
+  originId?: string;
+  roastLevel: number;
+  flavorNotes: string;
+  weight: number;
+  isActive: boolean;
+  createdAt: string;
   updatedAt?: string;
-  images: ProductImage[];
+  images: ProductImageDto[];
 }
 
-export type ProductResponse = Product; // Backward compatibility with existing imports
+export interface Product extends ProductResponse {}
 
 type ProductQuery = {
   pageNumber?: number;
@@ -74,7 +74,7 @@ export async function getProducts(params: ProductQuery = {}) {
   if (params.categoryId) query.set("categoryId", params.categoryId);
 
   const qs = query.toString();
-  return apiFetch<PagedResult<Product>>(`/products${qs ? `?${qs}` : ""}`);
+  return apiFetch<PagedResult<ProductResponse>>(`/products${qs ? `?${qs}` : ""}`);
 }
 
 export async function getProduct(id: string, options?: { admin?: boolean }) {
@@ -83,7 +83,7 @@ export async function getProduct(id: string, options?: { admin?: boolean }) {
     return data;
   }
 
-  return apiFetch<Product>(`/products/${id}`);
+  return apiFetch<ProductResponse>(`/products/${id}`);
 }
 
 export async function getCategories() {

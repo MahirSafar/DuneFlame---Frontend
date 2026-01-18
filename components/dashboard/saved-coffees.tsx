@@ -10,7 +10,7 @@ const SAVED_ITEMS = [
     price: 24,
     roastLevel: "Light",
     origin: "Ethiopia",
-    image: "coffee-1",
+    images: [],
   },
   {
     id: "4",
@@ -18,7 +18,7 @@ const SAVED_ITEMS = [
     price: 28,
     roastLevel: "Medium",
     origin: "Kenya",
-    image: "coffee-4",
+    images: [],
   },
 ]
 

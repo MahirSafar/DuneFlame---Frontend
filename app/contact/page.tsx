@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
+import Newsletter from "@/components/home/newsletter"
 import { Mail, Phone, MapPin, Send } from "lucide-react"
 
 export default function ContactPage() {
@@ -106,6 +107,7 @@ export default function ContactPage() {
             </form>
           </div>
         </div>
+        <Newsletter />
       </div>
       <Footer />
     </main>

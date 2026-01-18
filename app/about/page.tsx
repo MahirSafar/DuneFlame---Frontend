@@ -1,5 +1,6 @@
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
+import Newsletter from "@/components/home/newsletter"
 
 export default function AboutPage() {
   return (
@@ -59,6 +60,7 @@ export default function AboutPage() {
             </div>
           </div>
         </div>
+        <Newsletter />
       </div>
       <Footer />
     </main>

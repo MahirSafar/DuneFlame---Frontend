@@ -38,9 +38,27 @@ export function getErrorMessage(error: any): string {
     return "Something went wrong";
   }
 }
+
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { API_URL } from './config'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/**
+ * Converts relative image paths to full URLs pointing to the backend.
+ * If the URL is already absolute, returns it as-is.
+ * @param imagePath - The image path from the backend
+ * @returns Full image URL or null if path is empty
+ */
+export function getImageUrl(imagePath: string | undefined | null): string | null {
+  if (!imagePath) return null
+  if (imagePath.startsWith('http')) return imagePath
+  
+  // Remove leading slashes to prevent double slashes
+  const cleanPath = imagePath.replace(/^\/+/, '')
+  const baseUrl = API_URL.replace(/\/api\/v1\s*$/, '') // Remove /api/v1 suffix
+  return `${baseUrl}/${cleanPath}`
 }
