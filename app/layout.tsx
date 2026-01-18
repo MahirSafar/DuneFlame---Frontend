@@ -6,6 +6,7 @@ import "./globals.css"
 import AuthInit from "@/components/auth/auth-init"
 import AuthProvider from "@/components/auth/auth-provider"
 import { ThemeProvider } from "@/components/theme-provider"
+import { DarkModeProvider } from "@/lib/dark-mode-context"
 import { Toaster } from "react-hot-toast"
 
 const urbanist = Urbanist({
@@ -58,12 +59,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <AuthInit />
-            {children}
-            <Analytics />
-            <Toaster position="top-right" />
-          </AuthProvider>
+          <DarkModeProvider>
+            <AuthProvider>
+              <AuthInit />
+              {children}
+              <Analytics />
+              <Toaster position="top-right" />
+            </AuthProvider>
+          </DarkModeProvider>
         </ThemeProvider>
       </body>
     </html>

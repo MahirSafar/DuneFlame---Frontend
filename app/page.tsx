@@ -1,6 +1,6 @@
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
-import BentoHero from "@/components/home/bento-hero"
+import BentoHero from "@/components/home/BentoHero"
 import FeaturedSection from "@/components/home/featured-section"
 import Categories from "@/components/home/categories"
 import StoryBanner from "@/components/home/story-banner"

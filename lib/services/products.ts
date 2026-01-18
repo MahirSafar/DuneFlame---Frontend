@@ -60,6 +60,11 @@ type ProductQuery = {
   sort?: string;
   search?: string;
   categoryId?: string;
+  originId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  roastLevel?: number;
+  sortBy?: string;
 };
 
 export async function getProducts(params: ProductQuery = {}) {
@@ -71,8 +76,13 @@ export async function getProducts(params: ProductQuery = {}) {
   if (pageNumber) query.set("pageNumber", String(pageNumber));
   if (pageSize) query.set("pageSize", String(pageSize));
   if (params.sort) query.set("sort", params.sort);
+  if (params.sortBy) query.set("sortBy", params.sortBy);
   if (params.search) query.set("search", params.search);
   if (params.categoryId) query.set("categoryId", params.categoryId);
+  if (params.originId) query.set("originId", params.originId);
+  if (params.minPrice !== undefined) query.set("minPrice", String(params.minPrice));
+  if (params.maxPrice !== undefined) query.set("maxPrice", String(params.maxPrice));
+  if (params.roastLevel !== undefined) query.set("roastLevel", String(params.roastLevel));
 
   const qs = query.toString();
   return apiFetch<PagedResult<ProductResponse>>(`/products${qs ? `?${qs}` : ""}`);

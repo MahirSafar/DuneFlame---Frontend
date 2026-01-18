@@ -4,12 +4,14 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Menu, X, ShoppingCart, Moon, Sun, User, LogOut } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useDarkMode } from "@/lib/dark-mode-context"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useCartStore } from "@/lib/cart-store"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const { theme, setTheme } = useTheme()
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
   const { isLoggedIn, logout } = useAuth()
   const { loadBasket, items } = useCartStore()
 
@@ -58,10 +60,13 @@ export default function Navbar() {
           {/* Right Actions */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => {
+                setTheme(theme === "dark" ? "light" : "dark")
+                toggleDarkMode()
+              }}
               className="p-2 hover:bg-accent/10 rounded-lg transition-smooth scale-100 hover:scale-110"
             >
-              {theme === "dark" ? <Sun size={20} className="animate-spin duration-500" /> : <Moon size={20} />}
+              {isDarkMode ? <Sun size={20} className="animate-spin duration-500" /> : <Moon size={20} />}
             </button>
             <Link
               href="/cart"
