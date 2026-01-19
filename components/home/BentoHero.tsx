@@ -136,7 +136,7 @@ export default function BootstrapHeroCarousel() {
             }}
           >
             {/* Main Card */}
-            <div className="flex-shrink-0" style={{ width: '69%' }}>
+            <div className="flex-shrink-0" style={{ width: '70%' }}>
               <div className="relative h-full rounded-3xl overflow-hidden shadow-2xl group">
                 {/* Image */}
                 <img
@@ -190,7 +190,7 @@ export default function BootstrapHeroCarousel() {
             </div>
 
             {/* Side Cards */}
-            <div className="flex-shrink-0 flex flex-col gap-3" style={{ width: '%' }}>
+            <div className="flex-shrink-0 flex flex-col gap-3" style={{ width: '29%' }}>
               {sideCards.map((card, idx) => (
                 <div 
                   key={`${card.id}-${card.position}`}

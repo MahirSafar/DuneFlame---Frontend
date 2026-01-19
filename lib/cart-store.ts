@@ -86,7 +86,12 @@ export const useCartStore = create<CartStore>((set, get) => ({
 
       return { items: newItems }
     }),
-  clearCart: () => set({ items: [] }),
+  clearCart: () => {
+    // Clear the local cart state
+    set({ items: [] })
+    // Sync with backend to delete the basket
+    syncWithBackend([])
+  },
   loadBasket: async () => {
     set({ isLoading: true })
     try {
