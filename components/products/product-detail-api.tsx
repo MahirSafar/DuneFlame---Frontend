@@ -46,7 +46,7 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
           <div className="flex items-center gap-4 mb-6">
             <div className="flex gap-1">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} size={16} fill="currentColor" className="text-amber-500" />
+                <Star key={i} size={16} fill="currentColor" className="text-flame-caramel" />
               ))}
             </div>
             <span className="text-sm text-muted-foreground">Popular choice</span>

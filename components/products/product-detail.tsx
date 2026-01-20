@@ -21,7 +21,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       {/* Image Section */}
       <div className="flex items-center justify-center">
         <div className="glass rounded-2xl p-8 w-full aspect-square flex items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900 dark:to-orange-900" />
+          <div className="absolute inset-0 bg-gradient-to-br from-flame-apricot/50 to-flame-caramel/50 dark:from-flame-caramel/30 dark:to-flame-red/30" />
           <div className="relative text-8xl">☕</div>
         </div>
       </div>
@@ -52,7 +52,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           <div className="flex items-center gap-4 mb-6">
             <div className="flex gap-1">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} size={16} fill="currentColor" className="text-amber-500" />
+                <Star key={i} size={16} fill="currentColor" className="text-flame-caramel" />
               ))}
             </div>
             <span className="text-sm text-muted-foreground">(127 reviews)</span>

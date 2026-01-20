@@ -17,42 +17,42 @@ const CARDS: Card[] = [
     title: "Desert Awakening",
     description: "Where sand meets fire",
     image: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1200&h=800&fit=crop&q=80",
-    gradient: "from-amber-500/70 via-orange-500/60 to-rose-500/70"
+    gradient: "from-flame-caramel/70 via-flame-red/60 to-flame-apricot/70"
   },
   {
     id: 2,
     title: "Crimson Dunes",
     description: "Eternal flame horizon",
     image: "https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=1200&h=800&fit=crop&q=80",
-    gradient: "from-rose-500/70 via-pink-500/60 to-orange-500/70"
+    gradient: "from-flame-red/70 via-flame-deep/60 to-flame-caramel/70"
   },
   {
     id: 3,
     title: "Golden Mirage",
     description: "Shifting ember waves",
     image: "https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?w=1200&h=800&fit=crop&q=80",
-    gradient: "from-yellow-500/70 via-amber-500/60 to-orange-500/70"
+    gradient: "from-flame-caramel/70 via-flame-apricot/60 to-flame-red/70"
   },
   {
     id: 4,
     title: "Volcanic Whisper",
     description: "Ancient fire speaks",
     image: "https://images.unsplash.com/photo-1451337516015-6b6e9a44a8a3?w=1200&h=800&fit=crop&q=80",
-    gradient: "from-orange-600/70 via-red-500/60 to-pink-600/70"
+    gradient: "from-flame-red/70 via-flame-deep/60 to-flame-caramel/70"
   },
   {
     id: 5,
     title: "Sunset Infinity",
     description: "Blazing eternity",
     image: "https://images.unsplash.com/photo-1465101162946-4377e57745c3?w=1200&h=800&fit=crop&q=80",
-    gradient: "from-pink-500/70 via-rose-500/60 to-orange-500/70"
+    gradient: "from-flame-apricot/70 via-flame-red/60 to-flame-caramel/70"
   },
   {
     id: 6,
     title: "Phoenix Rising",
     description: "Rebirth in flames",
     image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&h=800&fit=crop&q=80",
-    gradient: "from-amber-600/70 via-yellow-500/60 to-orange-600/70"
+    gradient: "from-flame-caramel/70 via-flame-apricot/60 to-flame-red/70"
   },
 ]
 
@@ -116,7 +116,7 @@ export default function BootstrapHeroCarousel() {
   const sideCards = visibleCards.slice(1)
 
   return (
-    <div className="min-h-screen overflow-hidden transition-colors duration-500" style={{ backgroundColor: isDarkMode ? 'rgb(0, 0, 0)' : 'rgb(250, 250, 250)' }}>
+    <div className="min-h-screen overflow-hidden transition-colors duration-500" style={{ backgroundColor: isDarkMode ? 'rgb(31, 26, 23)' : 'rgb(251, 237, 220)' }}>
       {/* Ambient Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-transparent rounded-full blur-3xl animate-pulse" />

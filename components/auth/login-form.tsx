@@ -81,7 +81,7 @@ const onSubmit = async (vals: LoginValues) => {
               </div>
             </div>
 
-            <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold">
+            <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-flame-red hover:bg-flame-deep text-white rounded-lg font-semibold">
               {isSubmitting ? "Signing in..." : "Sign In"}
             </button>
           </form>

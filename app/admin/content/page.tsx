@@ -124,7 +124,7 @@ export default function AdminContent() {
                   >
                     <Edit2 size={18} />
                   </button>
-                  <button className="p-2 hover:bg-red-500/20 rounded-lg transition-smooth text-red-500">
+                  <button className="p-2 hover:bg-flame-red/20 rounded-lg transition-smooth text-flame-red">
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -163,7 +163,7 @@ export default function AdminContent() {
                     >
                       <Edit2 size={18} />
                     </button>
-                    <button className="p-2 hover:bg-red-500/20 rounded-lg transition-smooth text-red-500">
+                    <button className="p-2 hover:bg-flame-red/20 rounded-lg transition-smooth text-flame-red">
                       <Trash2 size={18} />
                     </button>
                   </div>

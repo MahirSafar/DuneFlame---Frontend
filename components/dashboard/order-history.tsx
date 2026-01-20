@@ -39,9 +39,9 @@ const ORDERS: Order[] = [
 ]
 
 const statusColors = {
-  delivered: "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200",
-  processing: "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200",
-  shipped: "bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200",
+  delivered: "bg-oasis-teal/10 dark:bg-oasis-teal/20 text-oasis-teal dark:text-oasis-teal",
+  processing: "bg-flame-caramel/10 dark:bg-flame-caramel/20 text-flame-caramel dark:text-flame-caramel",
+  shipped: "bg-flame-apricot/10 dark:bg-flame-apricot/20 text-flame-apricot dark:text-flame-apricot",
 }
 
 export default function OrderHistory() {

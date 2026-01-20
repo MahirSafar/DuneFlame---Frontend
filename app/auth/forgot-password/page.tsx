@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div className="flex items-center justify-between gap-4">
-              <button type="submit" disabled={isSubmitting} className="py-2 px-4 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold">
+              <button type="submit" disabled={isSubmitting} className="py-2 px-4 bg-flame-red hover:bg-flame-deep text-white rounded-lg font-semibold">
                 {isSubmitting ? "Sending..." : "Send reset link"}
               </button>
               <Link href="/auth/login" className="text-sm text-muted-foreground underline">Back to login</Link>

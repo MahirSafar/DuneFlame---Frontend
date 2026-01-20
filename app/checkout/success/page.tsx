@@ -19,13 +19,13 @@ export default function CheckoutSuccessPage() {
 
   return (
     <div className="container max-w-2xl mx-auto py-16 px-4">
-      <Card className="border-2 border-green-500/20 shadow-lg">
+      <Card className="border-2 border-oasis-teal/20 shadow-lg">
         <CardHeader className="text-center space-y-4 pb-8">
-          <div className="mx-auto w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center animate-in zoom-in duration-500">
-            <CheckCircle2 className="w-16 h-16 text-green-500" strokeWidth={2.5} />
+          <div className="mx-auto w-24 h-24 rounded-full bg-oasis-teal/10 flex items-center justify-center animate-in zoom-in duration-500">
+            <CheckCircle2 className="w-16 h-16 text-oasis-teal" strokeWidth={2.5} />
           </div>
           <div className="space-y-3">
-            <CardTitle className="text-4xl font-bold text-green-600 dark:text-green-500">
+            <CardTitle className="text-4xl font-bold text-oasis-teal dark:text-oasis-teal">
               Payment Successful!
             </CardTitle>
             <p className="text-muted-foreground text-lg">
@@ -36,13 +36,13 @@ export default function CheckoutSuccessPage() {
 
         <CardContent className="space-y-6">
           {/* Email Confirmation Notice */}
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
-            <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+          <div className="bg-dune-sand dark:bg-dune-sand/20 border border-dune-taupe dark:border-dune-taupe rounded-lg p-4 flex items-start gap-3">
+            <Mail className="h-5 w-5 text-espresso-brown dark:text-flame-caramel mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              <p className="text-sm font-medium text-espresso-brown dark:text-dune-paper">
                 Confirmation Email Sent
               </p>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+              <p className="text-sm text-espresso-brown/80 dark:text-dune-paper/80 mt-1">
                 A confirmation email with your order details will be sent to your registered email address shortly.
               </p>
             </div>

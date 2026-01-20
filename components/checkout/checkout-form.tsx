@@ -368,9 +368,9 @@ export default function CheckoutForm() {
             </CardHeader>
             <CardContent className="space-y-4">
               {successMessage && (
-                <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
-                  <AlertCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-700 dark:text-green-400">
+                <Alert className="border-oasis-teal bg-oasis-teal/5 dark:bg-oasis-teal/10">
+                  <AlertCircle className="h-4 w-4 text-oasis-teal" />
+                  <AlertDescription className="text-oasis-teal dark:text-oasis-teal">
                     {successMessage}
                   </AlertDescription>
                 </Alert>

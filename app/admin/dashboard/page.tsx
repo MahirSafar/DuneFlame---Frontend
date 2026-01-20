@@ -8,7 +8,7 @@ import toast from "react-hot-toast"
 import { LineChart, Line, PieChart as RechartsPie, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
 
-const COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"]
+const COLORS = ["#1F6F78", "#CC3323", "#E2A56E", "#A3291C", "#C3AD98"]
 
 export default function AdminDashboard() {
   const { user } = useAuthStore()
@@ -82,12 +82,12 @@ export default function AdminDashboard() {
 
       {/* Key Metrics Grid - 4 Columns */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Revenue - Green */}
-        <div className="rounded-lg border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/20 p-6 hover:shadow-lg transition-shadow">
+        {/* Total Revenue - Oasis Teal */}
+        <div className="rounded-lg border border-oasis-teal/20 dark:border-oasis-teal/30 bg-oasis-teal/5 dark:bg-oasis-teal/10 p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="space-y-2 flex-1">
               <p className="text-sm text-muted-foreground font-medium">Total Revenue</p>
-              <h3 className="text-2xl md:text-3xl font-bold text-green-700 dark:text-green-400">
+              <h3 className="text-2xl md:text-3xl font-bold text-oasis-teal dark:text-oasis-teal">
                 {new Intl.NumberFormat("en-US", {
                   style: "currency",
                   currency: "USD",
@@ -97,61 +97,61 @@ export default function AdminDashboard() {
                 +{stats.revenueGrowthPercentage}% this month
               </p>
             </div>
-            <div className="p-3 bg-green-200 dark:bg-green-900/40 rounded-lg">
-              <DollarSign className="w-6 h-6 text-green-700 dark:text-green-400" />
+            <div className="p-3 bg-oasis-teal/20 dark:bg-oasis-teal/30 rounded-lg">
+              <DollarSign className="w-6 h-6 text-oasis-teal dark:text-oasis-teal" />
             </div>
           </div>
         </div>
 
-        {/* Active Orders - Blue */}
-        <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20 p-6 hover:shadow-lg transition-shadow">
+        {/* Active Orders - Flame Caramel */}
+        <div className="rounded-lg border border-flame-caramel/20 dark:border-flame-caramel/30 bg-flame-caramel/5 dark:bg-flame-caramel/10 p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="space-y-2 flex-1">
               <p className="text-sm text-muted-foreground font-medium">Active Orders</p>
-              <h3 className="text-2xl md:text-3xl font-bold text-blue-700 dark:text-blue-400">
+              <h3 className="text-2xl md:text-3xl font-bold text-flame-caramel dark:text-flame-caramel">
                 {stats.activeOrders}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">
                 {stats.pendingShipmentOrders} pending shipment
               </p>
             </div>
-            <div className="p-3 bg-blue-200 dark:bg-blue-900/40 rounded-lg">
-              <ShoppingCart className="w-6 h-6 text-blue-700 dark:text-blue-400" />
+            <div className="p-3 bg-flame-caramel/20 dark:bg-flame-caramel/30 rounded-lg">
+              <ShoppingCart className="w-6 h-6 text-flame-caramel dark:text-flame-caramel" />
             </div>
           </div>
         </div>
 
-        {/* Products in Stock - Purple */}
-        <div className="rounded-lg border border-purple-200 dark:border-purple-900 bg-purple-50 dark:bg-purple-950/20 p-6 hover:shadow-lg transition-shadow">
+        {/* Products in Stock - Flame Apricot */}
+        <div className="rounded-lg border border-flame-apricot/20 dark:border-flame-apricot/30 bg-flame-apricot/5 dark:bg-flame-apricot/10 p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="space-y-2 flex-1">
               <p className="text-sm text-muted-foreground font-medium">Products in Stock</p>
-              <h3 className="text-2xl md:text-3xl font-bold text-purple-700 dark:text-purple-400">
+              <h3 className="text-2xl md:text-3xl font-bold text-flame-apricot dark:text-flame-apricot">
                 {stats.totalProducts}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">
                 Total inventory
               </p>
             </div>
-            <div className="p-3 bg-purple-200 dark:bg-purple-900/40 rounded-lg">
-              <Package className="w-6 h-6 text-purple-700 dark:text-purple-400" />
+            <div className="p-3 bg-flame-apricot/20 dark:bg-flame-apricot/30 rounded-lg">
+              <Package className="w-6 h-6 text-flame-apricot dark:text-flame-apricot" />
             </div>
           </div>
         </div>
 
-        {/* Low Stock Alerts - Red */}
+        {/* Low Stock Alerts - Flame Red */}
         <div className={`rounded-lg border p-6 hover:shadow-lg transition-shadow ${
           stats.lowStockCount > 0
-            ? "border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20"
-            : "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/20"
+            ? "border-flame-red/20 dark:border-flame-red/30 bg-flame-red/5 dark:bg-flame-red/10"
+            : "border-dune-taupe/20 dark:border-dune-taupe/30 bg-dune-taupe/5 dark:bg-dune-taupe/10"
         }`}>
           <div className="flex items-start justify-between">
             <div className="space-y-2 flex-1">
               <p className="text-sm text-muted-foreground font-medium">Low Stock Alerts</p>
               <h3 className={`text-2xl md:text-3xl font-bold ${
                 stats.lowStockCount > 0
-                  ? "text-red-700 dark:text-red-400"
-                  : "text-gray-700 dark:text-gray-400"
+                  ? "text-flame-red dark:text-flame-red"
+                  : "text-dune-taupe dark:text-dune-taupe"
               }`}>
                 {stats.lowStockCount}
               </h3>
@@ -161,13 +161,13 @@ export default function AdminDashboard() {
             </div>
             <div className={`p-3 rounded-lg ${
               stats.lowStockCount > 0
-                ? "bg-red-200 dark:bg-red-900/40"
-                : "bg-gray-200 dark:bg-gray-900/40"
+                ? "bg-flame-red/20 dark:bg-flame-red/30"
+                : "bg-dune-taupe/20 dark:bg-dune-taupe/30"
             }`}>
               <AlertTriangle className={`w-6 h-6 ${
                 stats.lowStockCount > 0
-                  ? "text-red-700 dark:text-red-400"
-                  : "text-gray-700 dark:text-gray-400"
+                  ? "text-flame-red dark:text-flame-red"
+                  : "text-dune-taupe dark:text-dune-taupe"
               }`} />
             </div>
           </div>

@@ -11,7 +11,7 @@ export default function ConfirmPage() {
           If you don't see the email, check your spam folder or click the button below to resend.
         </p>
         <div className="flex justify-center gap-4">
-          <a href="/login" className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold">
+          <a href="/login" className="px-6 py-3 bg-flame-red hover:bg-flame-deep text-white rounded-lg font-semibold">
             Back to Login
           </a>
         </div>
