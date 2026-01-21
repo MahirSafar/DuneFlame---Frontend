@@ -11,8 +11,8 @@ const authAxios = axios.create({
 });
 
 interface TokenRequest {
-  accessToken: string;
-  refreshToken: string;
+  email: string;
+  token: string;
 }
 
 interface TokenResponse {
@@ -21,12 +21,12 @@ interface TokenResponse {
 }
 
 export async function refreshAccessToken(
-  accessToken: string,
+  email: string,
   refreshToken: string
 ): Promise<TokenResponse> {
-  const response = await authAxios.post<TokenResponse>("/auth/refresh-token", {
-    accessToken,
-    refreshToken,
+  const response = await authAxios.post<TokenResponse>("/auth/refresh", {
+    email,
+    token: refreshToken,
   });
   return response.data;
 }

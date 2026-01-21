@@ -1,3 +1,4 @@
+// 1. Satırı şu şekilde güncelleyin:
 import axios from "axios";
 import { API_URL } from "./config";
 import toast from "react-hot-toast";
@@ -54,11 +55,11 @@ instance.interceptors.response.use(
 
     // Handle 401 Unauthorized
     if (status === 401) {
-      // Skip refresh logic for login, logout, or refresh-token requests
+      // Skip refresh logic for login, logout, or refresh requests
       if (
         originalRequest.url?.includes("/auth/login") ||
         originalRequest.url?.includes("/auth/logout") ||
-        originalRequest.url?.includes("/auth/refresh-token")
+        originalRequest.url?.includes("/auth/refresh")
       ) {
         return Promise.reject(err);
       }
@@ -94,9 +95,9 @@ instance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const { accessToken, refreshToken } = useAuthStore.getState();
+      const { accessToken, refreshToken, user } = useAuthStore.getState();
 
-      if (!accessToken || !refreshToken) {
+      if (!refreshToken || !user?.email) {
         isRefreshing = false;
         processQueue(new Error("No tokens available"));
         toast.error("Session expired. Please login again.");
@@ -109,10 +110,28 @@ instance.interceptors.response.use(
 
       try {
         // Attempt to refresh the token
-        const newTokens = await refreshAccessToken(accessToken, refreshToken);
+        console.log("[Axios Refresh] About to call refreshAccessToken", {
+          email: user.email,
+          refreshToken,
+          prevAccessToken: accessToken,
+          originalUrl: originalRequest?.url,
+        });
+        const newTokens = await refreshAccessToken(user.email, refreshToken);
 
-        // Update store with new tokens
-        useAuthStore.getState().setTokens(newTokens.accessToken, newTokens.refreshToken);
+        // Record the refresh timestamp BEFORE updating store to prevent bad rehydration
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("token_refresh_time", Date.now().toString());
+        }
+
+        // AWAIT the store update to ensure localStorage write completes
+        // This guarantees tokens are on disk BEFORE the retry request fires
+        await useAuthStore.getState().setTokens(newTokens.accessToken, newTokens.refreshToken);
+        console.log("[Axios Refresh] Tokens updated in store and persisted", {
+          newAccessToken: newTokens.accessToken,
+          newRefreshToken: newTokens.refreshToken,
+          storeAccessToken: useAuthStore.getState().accessToken,
+          storeRefreshToken: useAuthStore.getState().refreshToken,
+        });
 
         // Update the failed request with the new token
         if (originalRequest.headers) {
@@ -123,10 +142,21 @@ instance.interceptors.response.use(
         processQueue();
         isRefreshing = false;
 
-        // Retry the original request
+        // Retry the original request with confidence that tokens are persisted
+        console.log("[Axios Refresh] Retrying original request with new access token", {
+          url: originalRequest?.url,
+          hasAuthHeader: !!originalRequest?.headers?.Authorization,
+        });
         return instance(originalRequest);
       } catch (refreshError) {
         // Refresh failed, logout user
+        const refreshErr = refreshError as any;
+        console.error("[Axios Refresh] Refresh failed", {
+          error: refreshError,
+          status: refreshErr?.response?.status,
+          data: refreshErr?.response?.data,
+          originalUrl: originalRequest?.url,
+        });
         processQueue(refreshError);
         isRefreshing = false;
         toast.error("Session expired. Please login again.");

@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import axios, { setAxiosAuthToken } from "./axios";
 import { getErrorMessage } from "./utils";
-import { setTokens } from "./api-client";
+import { setTokens, getAccessToken, getRefreshToken } from "./api-client";
 import { useCartStore } from "./cart-store";
 
 export interface AuthResponse {
@@ -29,7 +29,7 @@ interface AuthState {
   resetPassword: (payload: { email: string; token: string; newPassword: string; confirmPassword: string }) => Promise<void>;
   logout: () => Promise<void>;
   setFromStorage: () => void;
-  setTokens: (accessToken: string, refreshToken: string) => void;
+  setTokens: (accessToken: string, refreshToken: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -46,10 +46,9 @@ export const useAuthStore = create<AuthState>()(
           const data = res.data;
           const { accessToken, refreshToken, ...user } = data;
           set({ user, accessToken, refreshToken, loggingIn: false });
-          setTokens({ accessToken, refreshToken });
-          setAxiosAuthToken(accessToken);
+          await get().setTokens(accessToken, refreshToken);
           if (typeof window !== "undefined") {
-            localStorage.setItem("df_tokens", JSON.stringify({ accessToken, refreshToken }));
+            sessionStorage.setItem("token_refresh_time", Date.now().toString());
           }
         } catch (e: any) {
           const msg = getErrorMessage(e) || "Login failed";
@@ -64,10 +63,9 @@ export const useAuthStore = create<AuthState>()(
           const data = res.data;
           const { accessToken, refreshToken, ...user } = data;
           set({ user, accessToken, refreshToken, loggingIn: false });
-          setTokens({ accessToken, refreshToken });
-          setAxiosAuthToken(accessToken);
+          await get().setTokens(accessToken, refreshToken);
           if (typeof window !== "undefined") {
-            localStorage.setItem("df_tokens", JSON.stringify({ accessToken, refreshToken }));
+            sessionStorage.setItem("token_refresh_time", Date.now().toString());
           }
         } catch (e: any) {
           const msg = getErrorMessage(e) || "Registration failed";
@@ -108,14 +106,22 @@ export const useAuthStore = create<AuthState>()(
         
         // Clear auth state
         set({ user: null, accessToken: null, refreshToken: null });
-        setTokens(null);
+        setTokens(null); // Clear from api-client memory
         setAxiosAuthToken(null);
         if (typeof window !== "undefined") {
           localStorage.removeItem("df_tokens");
+          sessionStorage.removeItem("token_refresh_time");
         }
       },
       setFromStorage() {
         if (typeof window === "undefined") return;
+        
+        // Don't overwrite if we just refreshed tokens (within last 1 second)
+        const lastRefresh = sessionStorage.getItem("token_refresh_time");
+        if (lastRefresh && Date.now() - parseInt(lastRefresh) < 1000) {
+          return; // Skip rehydration immediately after token refresh
+        }
+        
         const raw = localStorage.getItem("df_tokens");
         if (!raw) return;
         try {
@@ -125,12 +131,21 @@ export const useAuthStore = create<AuthState>()(
           setAxiosAuthToken(accessToken);
         } catch {}
       },
-      setTokens(accessToken: string, refreshToken: string) {
+      async setTokens(accessToken: string, refreshToken: string) {
+        // 1. Update Zustand store state
         set({ accessToken, refreshToken });
+        
+        // 2. Update api-client local variables (used by apiFetch)
         setTokens({ accessToken, refreshToken });
+        
+        // 3. Update axios headers for axios instance
         setAxiosAuthToken(accessToken);
+        
+        // 4. Persist to localStorage
         if (typeof window !== "undefined") {
           localStorage.setItem("df_tokens", JSON.stringify({ accessToken, refreshToken }));
+          // Record the timestamp of this refresh to prevent bad rehydration
+          sessionStorage.setItem("token_refresh_time", Date.now().toString());
         }
       },
     }),

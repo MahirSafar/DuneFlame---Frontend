@@ -12,6 +12,14 @@ let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let isHandlingTokenExpiry = false;
 
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
+export function getRefreshToken(): string | null {
+  return refreshToken;
+}
+
 export function setTokens(tokens: { accessToken: string; refreshToken: string } | null) {
   accessToken = tokens?.accessToken ?? null;
   refreshToken = tokens?.refreshToken ?? null;
