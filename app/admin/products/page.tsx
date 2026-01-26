@@ -2,6 +2,7 @@
 
 import { type DragEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   Table,
   TableBody,
@@ -38,7 +39,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   type Category,
   type Product,
@@ -48,9 +56,11 @@ import {
   getCategories,
   getOrigins,
   getProduct,
-  getProducts,
+  getAdminProducts,
   updateProduct,
+  getMasterData,
 } from "@/lib/services/products"
+import type { MasterData, ProductPricePayload } from "@/lib/types"
 import { getErrorMessage } from "@/lib/utils"
 import { API_URL } from "@/lib/config"
 import {
@@ -64,36 +74,40 @@ import {
   Trash2,
   Star,
   Layers,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
 const PAGE_SIZE = 10
 
-type ProductFormState = {
-  name: string
-  description: string
-  basePrice: string
-  discountPercent: string
-  stockQuantity: string
-  categoryId: string
-  originId: string
-  roastLevel: string
-  weight: string
-  flavorNotes: string
+interface WeightPrice {
+  weightId: string
+  enabled: boolean
+  price: string
 }
 
-const emptyForm: ProductFormState = {
+type SiloEditFormState = {
+  name: string
+  description: string
+  stockInKg: string
+  categoryId: string
+  originId: string
+  selectedRoasts: string[]
+  selectedGrinds: string[]
+  weightPrices: WeightPrice[]
+}
+
+const emptySiloForm: SiloEditFormState = {
   name: "",
   description: "",
-  basePrice: "",
-  discountPercent: "0",
-  stockQuantity: "",
+  stockInKg: "",
   categoryId: "",
   originId: "",
-  roastLevel: "",
-  weight: "",
-  flavorNotes: "",
+  selectedRoasts: [],
+  selectedGrinds: [],
+  weightPrices: [],
 }
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
@@ -108,6 +122,12 @@ const getImageUrl = (path: string | undefined) => {
 }
 
 export default function AdminProductsPage() {
+  const router = useRouter();
+  
+  // --- Master Data ---
+  const [masterData, setMasterData] = useState<MasterData | null>(null)
+  const [masterDataLoading, setMasterDataLoading] = useState(false)
+  
   // --- States ---
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -126,12 +146,14 @@ export default function AdminProductsPage() {
   // UI Actions
   const [loading, setLoading] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<string | null>(null)
+  const [viewingProduct, setViewingProduct] = useState<Product | null>(null)
   
-  // Form Data
+  // Form Data (Silo v2)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [formState, setFormState] = useState<ProductFormState>(emptyForm)
+  const [siloFormState, setSiloFormState] = useState<SiloEditFormState>(emptySiloForm)
   
   // Image Handling
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]) 
@@ -177,8 +199,8 @@ export default function AdminProductsPage() {
 
   // --- Functions ---
 
-  const resetForm = () => {
-    setFormState(emptyForm)
+  const resetSiloForm = () => {
+    setSiloFormState(emptySiloForm)
     setSelectedFiles([])
     setPreviewUrls([])
     setExistingImages([])
@@ -187,11 +209,27 @@ export default function AdminProductsPage() {
     setMainImageId(null)
   }
 
+  // Fetch master data for edit form
+  const fetchMasterDataForEdit = async (): Promise<MasterData | null> => {
+    if (masterData) return masterData // Return existing if available
+    setMasterDataLoading(true)
+    try {
+      const data = await getMasterData()
+      setMasterData(data) // Update state
+      return data // Return for immediate use
+    } catch (error) {
+      toast.error("Failed to load form options")
+      return null
+    } finally {
+      setMasterDataLoading(false)
+    }
+  }
+
   const loadProducts = async (specificPage?: number) => {
     setLoading(true)
     const pageToFetch = specificPage ?? pageNumber
     try {
-      const res = await getProducts({
+      const res = await getAdminProducts({
         pageNumber: pageToFetch,
         pageSize: PAGE_SIZE,
         search: debouncedSearch || undefined,
@@ -210,39 +248,65 @@ export default function AdminProductsPage() {
   }
 
   const handleOpenCreate = () => {
-    resetForm()
-    setSelectedProduct(null)
-    setSheetOpen(true)
+    router.push('/admin/products/create');
+  }
+
+  // View product details in modal
+  const handleViewProduct = (product: Product) => {
+    setViewingProduct(product)
+    setViewDialogOpen(true)
   }
 
   const handleOpenEdit = async (productId: string) => {
-    setSheetOpen(true)
     setLoadingProduct(true)
+    
+    // 1. Get Master Data safely
+    const currentMasterData = await fetchMasterDataForEdit()
+    
+    setSheetOpen(true)
     try {
+      // 2. Get Product Details (Admin mode)
       const product = await getProduct(productId, { admin: true })
       setSelectedProduct(product)
 
-      setFormState({
+      // 3. Merge MasterData with Product Prices
+      const priceMap: Record<string, { enabled: boolean; price: string }> = {}
+      
+      // Use currentMasterData directly (not the state variable)
+      if (currentMasterData) {
+        currentMasterData.weights.forEach((weight) => {
+          const existingPrice = product.availablePrices?.find((p) => p.grams === weight.grams)
+          priceMap[weight.id] = {
+            enabled: !!existingPrice,
+            price: existingPrice ? existingPrice.price.toString() : "",
+          }
+        })
+      }
+
+      // 4. Set Form State
+      setSiloFormState({
         name: product.name || "",
         description: product.description || "",
-        basePrice: String(product.price),
-        discountPercent: String(product.discountPercentage || 0),
-        stockQuantity: String(product.stockQuantity ?? ""),
+        stockInKg: String(product.stockInKg || "0"),
         categoryId: product.categoryId || "",
         originId: product.originId || "",
-        roastLevel: String(product.roastLevel || ""),
-        weight: String(product.weight || ""),
-        flavorNotes: product.flavorNotes || "",
+        selectedRoasts: product.roastLevelIds ?? [],
+        selectedGrinds: product.grindTypeIds ?? [],
+        weightPrices: Object.entries(priceMap).map(([weightId, data]) => ({
+          weightId,
+          enabled: data.enabled,
+          price: data.price,
+        })),
       })
-      
+
+      // 5. Handle Images
       const fixedImages = product.images?.map((i) => ({
-          id: i.id,
-          url: getImageUrl(i.imageUrl)!,
-          isMain: i.isMain
+        id: i.id,
+        url: getImageUrl(i.imageUrl)!,
+        isMain: i.isMain,
       })).filter(img => img.url) ?? []
       
       const mainImg = fixedImages.find(img => img.isMain)
-      
       setExistingImages(fixedImages)
       setMainImageId(mainImg?.id || null)
       setDeletedImageIds([])
@@ -260,11 +324,7 @@ export default function AdminProductsPage() {
   // --- Image Logic ---
   const handleFileSelect = (files: File[]) => {
     const imageFiles = files.filter((file) => file.type.startsWith("image"))
-    
-    // Yeni faylları əlavə edirik
     setSelectedFiles((prev) => [...prev, ...imageFiles])
-    
-    // Preview URL-ləri yaradırıq
     const newPreviews = imageFiles.map((file) => URL.createObjectURL(file))
     setPreviewUrls((prev) => [...prev, ...newPreviews])
   }
@@ -279,38 +339,27 @@ export default function AdminProductsPage() {
   const removeSelectedFile = (index: number) => {
       const newFiles = [...selectedFiles];
       const newPreviews = [...previewUrls];
-      
-      // Cleanup URL object
       URL.revokeObjectURL(newPreviews[index]);
-      
       newFiles.splice(index, 1);
       newPreviews.splice(index, 1);
-      
       setSelectedFiles(newFiles);
       setPreviewUrls(newPreviews);
-      
-      // Əgər silinən şəkil Main idisə, 0-cı indeksi Main et
       if (index === mainImageIndex) setMainImageIndex(0);
       else if (index < mainImageIndex) setMainImageIndex(prev => prev - 1);
   }
 
-  // Handle existing image deletion
   const handleDeleteExistingImage = (imageId?: string, isMain?: boolean) => {
     if (isMain) {
       toast.error("Cannot delete the main image. Set another image as main first.")
       return
     }
-    
     if (!imageId) return
-    
     setDeletedImageIds(prev => [...prev, imageId])
     setExistingImages(prev => prev.filter(img => img.id !== imageId))
   }
 
-  // Handle setting existing image as main
   const handleSetMainImage = (imageId?: string) => {
     if (!imageId) return
-    
     setMainImageId(imageId)
     setExistingImages(prev => prev.map(img => ({
       ...img,
@@ -318,102 +367,155 @@ export default function AdminProductsPage() {
     })))
   }
 
-  // --- Submit Logic ---
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  // Toggle roast level selection
+  const toggleRoast = (id: string) => {
+    setSiloFormState((prev) => ({
+      ...prev,
+      selectedRoasts: prev.selectedRoasts.includes(id)
+        ? prev.selectedRoasts.filter((r) => r !== id)
+        : [...prev.selectedRoasts, id],
+    }))
+  }
+
+  // Toggle grind type selection
+  const toggleGrind = (id: string) => {
+    setSiloFormState((prev) => ({
+      ...prev,
+      selectedGrinds: prev.selectedGrinds.includes(id)
+        ? prev.selectedGrinds.filter((g) => g !== id)
+        : [...prev.selectedGrinds, id],
+    }))
+  }
+
+  // Update weight price
+  const updateWeightPrice = (
+    weightId: string,
+    field: "enabled" | "price",
+    value: boolean | string
+  ) => {
+    setSiloFormState((prev) => ({
+      ...prev,
+      weightPrices: prev.weightPrices.map((wp) =>
+        wp.weightId === weightId ? { ...wp, [field]: value } : wp
+      ),
+    }))
+  }
+
+  // --- Submit Logic (Silo v2) ---
+  const handleSiloSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (!formState.name || !formState.description || !formState.basePrice || !formState.stockQuantity || !formState.categoryId) {
-      toast.error("Please fill in all required fields")
+    // Validation
+    if (!siloFormState.name.trim()) {
+      toast.error("Product name is required")
+      return
+    }
+    if (!siloFormState.description.trim()) {
+      toast.error("Description is required")
+      return
+    }
+    if (!siloFormState.categoryId) {
+      toast.error("Please select a category")
+      return
+    }
+    if (!siloFormState.stockInKg || parseFloat(siloFormState.stockInKg) <= 0) {
+      toast.error("Stock in KG must be greater than 0")
+      return
+    }
+    if (siloFormState.selectedRoasts.length === 0) {
+      toast.error("Please select at least one roast level")
+      return
+    }
+    if (siloFormState.selectedGrinds.length === 0) {
+      toast.error("Please select at least one grind type")
       return
     }
 
-    // Client-side validation
-    if (formState.name.trim().length < 3) {
-      toast.error("Product name must be at least 3 characters long.")
+    // Build prices array
+    const prices: ProductPricePayload[] = siloFormState.weightPrices
+      .filter((wp) => wp.enabled && wp.price && parseFloat(wp.price) > 0)
+      .map((wp) => ({
+        productWeightId: wp.weightId,
+        price: parseFloat(wp.price),
+      }))
+
+    if (prices.length === 0) {
+      toast.error("Please enable at least one weight with a valid price")
       return
     }
 
-    if (formState.description.trim().length < 10) {
-      toast.error("Description must be at least 10 characters long.")
+    if (selectedFiles.length === 0 && existingImages.length === 0) {
+      toast.error("Please upload at least one image")
       return
     }
 
-    const price = parseFloat(formState.basePrice);
-    const discountPercentage = parseFloat(formState.discountPercent) || 0;
-
+    // Build FormData (PascalCase keys for backend)
     const formData = new FormData()
-    formData.append("name", formState.name)
-    formData.append("description", formState.description)
-    formData.append("price", price.toFixed(2))
-    formData.append("discountPercentage", String(discountPercentage))
-    formData.append("stockQuantity", formState.stockQuantity)
-    
-    // Only append GUID fields if they have valid values
-    if (formState.categoryId && formState.categoryId.trim() !== "") {
-        formData.append("categoryId", formState.categoryId)
+    formData.append("Name", siloFormState.name)
+    formData.append("Description", siloFormState.description)
+    formData.append("StockInKg", siloFormState.stockInKg)
+    formData.append("CategoryId", siloFormState.categoryId)
+    if (siloFormState.originId) {
+      formData.append("OriginId", siloFormState.originId)
     }
-    
-    if (formState.originId && formState.originId.trim() !== "") {
-        formData.append("originId", formState.originId)
-    }
-    
-    // Parse roastLevel as integer
-    if (formState.roastLevel && formState.roastLevel.trim() !== "") {
-        formData.append("roastLevel", String(parseInt(formState.roastLevel)))
-    }
-    
-    if (formState.weight && formState.weight.trim() !== "") {
-        formData.append("weight", formState.weight)
-    }
-    
-    if (formState.flavorNotes && formState.flavorNotes.trim() !== "") {
-        formData.append("flavorNotes", formState.flavorNotes)
-    }
-    
+
+    // Append roast level IDs
+    siloFormState.selectedRoasts.forEach((id) => {
+      formData.append("RoastLevelIds", id)
+    })
+
+    // Append grind type IDs
+    siloFormState.selectedGrinds.forEach((id) => {
+      formData.append("GrindTypeIds", id)
+    })
+
+    // Append prices
+    prices.forEach((p, index) => {
+      formData.append(`Prices[${index}].ProductWeightId`, p.productWeightId)
+      formData.append(`Prices[${index}].Price`, p.price.toString())
+    })
+
     // Handle image management for edit mode
     if (selectedProduct) {
-        // Send deleted image IDs
-        deletedImageIds.forEach((id) => {
-            formData.append("deletedImageIds", id)
-        })
-        
-        // Send main image ID if set (Backend expects 'setMainImageId')
-        if (mainImageId) {
-            formData.append("setMainImageId", mainImageId)
-        }
+      // Send deleted image IDs
+      deletedImageIds.forEach((id) => {
+        formData.append("deletedImageIds", id)
+      })
+      // Send main image ID if set
+      if (mainImageId) {
+        formData.append("setMainImageId", mainImageId)
+      }
     }
 
-    // --- Image Reordering Logic ---
+    // Append new images
     if (selectedFiles.length > 0) {
-        const filesToSend = [...selectedFiles];
-        const mainFile = filesToSend[mainImageIndex];
-        const otherFiles = filesToSend.filter((_, idx) => idx !== mainImageIndex);
-        const sortedFiles = [mainFile, ...otherFiles];
-
-        sortedFiles.forEach((file) => {
-            formData.append("images", file);
-        });
+      const filesToSend = [...selectedFiles]
+      const mainFile = filesToSend[mainImageIndex]
+      const otherFiles = filesToSend.filter((_, idx) => idx !== mainImageIndex)
+      const sortedFiles = [mainFile, ...otherFiles]
+      sortedFiles.forEach((file) => {
+        formData.append("images", file)
+      })
     }
 
     setSaving(true)
     try {
       if (selectedProduct) {
         await updateProduct(selectedProduct.id, formData)
-        toast.success("Product updated")
+        toast.success("Product updated successfully!")
       } else {
         await createProduct(formData)
-        toast.success("Product created")
+        toast.success("Product created successfully!")
       }
       setSheetOpen(false)
-      resetForm()
+      resetSiloForm()
+      setSelectedProduct(null)
       loadProducts()
     } catch (err: any) {
-      // Parse ASP.NET Core validation errors
+      console.error("Error submitting product:", err)
       if (err.response?.data?.errors) {
         const errors = err.response.data.errors
         const errorMessages: string[] = []
-        
-        // Extract validation messages
         Object.keys(errors).forEach((field) => {
           const fieldErrors = errors[field]
           if (Array.isArray(fieldErrors)) {
@@ -422,8 +524,6 @@ export default function AdminProductsPage() {
             errorMessages.push(fieldErrors)
           }
         })
-        
-        // Display specific errors
         if (errorMessages.length > 0) {
           errorMessages.forEach((msg) => toast.error(msg))
         } else {
@@ -515,13 +615,13 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="space-y-8 p-6 md:p-8">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-accent/80">Dashboard</p>
-          <h1 className="text-4xl font-bold text-primary dark:text-secondary">Products</h1>
-          <p className="text-muted-foreground">Manage catalog, discounts, and inventory.</p>
+      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.25em] text-accent/80 font-semibold">Dashboard</p>
+          <h1 className="text-4xl md:text-5xl font-bold text-primary dark:text-secondary">Products</h1>
+          <p className="text-muted-foreground mt-1">Manage catalog, discounts, and inventory.</p>
         </div>
         <div className="flex gap-3">
           <Button
@@ -534,7 +634,7 @@ export default function AdminProductsPage() {
             <span className="hidden sm:inline ml-2">Refresh</span>
           </Button>
           <Button
-            className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg hover:shadow-xl"
+            className="bg-linear-to-r from-amber-500 to-orange-600 text-white shadow-lg hover:shadow-xl"
             onClick={handleOpenCreate}
           >
             <Plus className="size-4 mr-2" />
@@ -544,8 +644,8 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Filters */}
-      <div className="glass-dark dark:glass rounded-2xl border border-border/60 p-4 shadow-lg">
-        <div className="grid gap-3 sm:grid-cols-[1fr,220px] lg:grid-cols-[1fr,240px,200px] items-center">
+      <div className="glass-dark dark:glass rounded-2xl border border-border/60 p-5 md:p-6 shadow-lg">
+        <div className="grid gap-4 sm:grid-cols-[1fr,220px] lg:grid-cols-[1fr,240px,200px] items-center">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <Input
@@ -588,7 +688,7 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Table */}
-      <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-xl min-h-[400px] relative">
+      <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-xl min-h-[500px] relative">
         {loading && (
              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
                  <Loader2 className="size-8 animate-spin text-accent" />
@@ -596,7 +696,7 @@ export default function AdminProductsPage() {
         )}
         
         {displayedProducts.length === 0 && !loading ? (
-          <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
+          <div className="flex flex-col items-center justify-center h-100 text-muted-foreground">
             <Layers className="size-12 mb-4 opacity-20" />
             <p>No products found.</p>
           </div>
@@ -604,91 +704,100 @@ export default function AdminProductsPage() {
           <Table>
             <TableHeader className="bg-white/5">
               <TableRow className="border-border/60">
-                <TableHead>Product</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Origin</TableHead>
-                <TableHead>Roast</TableHead>
-                <TableHead>Price Info</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="py-4 px-6">Product</TableHead>
+                <TableHead className="py-4 px-4">Category</TableHead>
+                <TableHead className="py-4 px-4">Origin</TableHead>
+                <TableHead className="py-4 px-4">Attributes</TableHead>
+                <TableHead className="py-4 px-4">Price</TableHead>
+                <TableHead className="py-4 px-4">Stock</TableHead>
+                <TableHead className="text-right py-4 px-6">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayedProducts.map((product) => (
                 <TableRow key={product.id} className="hover:bg-white/5 transition-colors group">
-                  <TableCell className="cursor-pointer" onClick={() => handleOpenEdit(product.id)}>
+                  <TableCell className="cursor-pointer py-4 px-6" onClick={() => handleViewProduct(product)}>
                     <div className="flex items-center gap-3">
                       {renderImage(product)}
                       <div className="space-y-1">
                         <div className="font-semibold text-foreground leading-tight group-hover:text-accent transition-colors">
                             {product.name}
                         </div>
-                        <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
+                        <div className="text-xs text-muted-foreground line-clamp-1 max-w-50">
                             {product.description}
                         </div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-4 px-4">
                     <Badge variant="outline" className="bg-white/10 border-border/60">
                       {product.categoryName || "—"}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-4 px-4">
                     <span className="text-sm">
                       {product.originName || "—"}
                     </span>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`border ${getRoastBadgeColor(product.roastLevel)}`}>
-                      {getRoastLabel(product.roastLevel)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                      <div className="flex flex-col">
-                        {product.discountPercentage && product.discountPercentage > 0 ? (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <span className="line-through text-muted-foreground decoration-destructive/50">
-                                    {currency.format(product.price)}
-                                </span>
-                                <span className="font-bold text-accent">
-                                    {currency.format(product.price * (1 - product.discountPercentage / 100))}
-                                </span>
-                              </div>
-                              <Badge variant="destructive" className="w-fit text-[10px] mt-1">
-                                  {product.discountPercentage}% OFF
-                              </Badge>
-                            </>
-                        ) : (
-                            <span className="font-bold">{currency.format(product.price)}</span>
-                        )}
-                      </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={product.stockQuantity < 10 ? "destructive" : "secondary"}>
-                        {product.stockQuantity} in stock
-                      </Badge>
+                  {/* Attributes Column: Show roast levels and grind types */}
+                  <TableCell className="py-4 px-4">
+                    <div className="flex flex-wrap gap-1">
+                      {product.roastLevelNames?.length
+                        ? product.roastLevelNames.map((name, idx) => (
+                            <Badge key={`roast-${idx}`} variant="secondary" className="text-xs">
+                              {name}
+                            </Badge>
+                          ))
+                        : null}
+                      {product.grindTypeNames?.length
+                        ? product.grindTypeNames.map((name, idx) => (
+                            <Badge key={`grind-${idx}`} variant="outline" className="text-xs bg-white/5">
+                              {name}
+                            </Badge>
+                          ))
+                        : null}
+                      {!product.roastLevelNames?.length && !product.grindTypeNames?.length && (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  {/* Prices Column: Show all available prices */}
+                  <TableCell className="py-4 px-4">
+                    <div className="flex flex-col text-xs gap-1">
+                      {product.availablePrices && product.availablePrices.length > 0 ? (
+                        product.availablePrices.map((p) => (
+                          <span key={p.productPriceId || p.grams}>
+                            {(p.weightLabel || "").trim() || `${p.grams}g`}: {currency.format(p.price)}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground">No prices set</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  {/* Stock Column: Display stock in kg */}
+                  <TableCell className="py-4 px-4">
+                    <Badge className={product.stockInKg === 0 ? "bg-destructive/20 text-destructive" : "bg-green-500/20 text-green-600"}>
+                      {product.stockInKg || 0} kg
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right py-4 px-6">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
                         className="hover:bg-accent/10 hover:text-accent"
-                        asChild
+                        onClick={() => handleViewProduct(product)}
+                        title="View Details"
                       >
-                        <Link href={`/product/${product.slug || product.id}`} target="_blank" aria-label="View on site">
-                          <Eye className="size-4" />
-                        </Link>
+                        <Eye className="size-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleOpenEdit(product.id)}
                         className="hover:bg-accent/10 hover:text-accent"
+                        title="Edit Product"
                       >
                         <Pencil className="size-4" />
                       </Button>
@@ -697,6 +806,7 @@ export default function AdminProductsPage() {
                         size="icon"
                         onClick={() => confirmDelete(product.id)}
                         className="hover:bg-destructive/10 text-destructive"
+                        title="Delete Product"
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -710,11 +820,11 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Pagination Fix */}
-      <div className="flex items-center justify-between pb-8">
-        <div className="text-sm text-muted-foreground">
+      <div className="flex items-center justify-between py-6 px-2">
+        <div className="text-sm text-muted-foreground font-medium">
           Page {pageNumber} of {totalPages}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
             variant="outline"
             size="sm"
@@ -747,51 +857,47 @@ export default function AdminProductsPage() {
           setSheetOpen(open)
           if (!open) {
             setSelectedProduct(null)
-            resetForm()
+            resetSiloForm()
           }
         }}
       >
         <SheetContent
           side="right"
-          className="glass-dark dark:glass border-border/60 backdrop-blur-xl shadow-2xl w-full sm:max-w-xl overflow-y-auto p-8"
+          className="glass-dark dark:glass border-border/60 backdrop-blur-xl shadow-2xl w-full sm:max-w-xl overflow-y-auto p-6 md:p-8"
         >
-          <SheetHeader className="mb-8">
-            <SheetTitle className="text-2xl">{selectedProduct ? "Edit Product" : "New Product"}</SheetTitle>
-            <p className="text-sm text-muted-foreground mt-2">
+          <SheetHeader className="mb-10 pb-6 border-b border-border/30">
+            <SheetTitle className="text-3xl">{selectedProduct ? "Edit Product" : "New Product"}</SheetTitle>
+            <p className="text-sm text-muted-foreground mt-3">
               {selectedProduct
                 ? "Update details, discounts, or visuals."
                 : "Add a new item to your catalog."}
             </p>
           </SheetHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSiloSubmit} className="space-y-10">
+            {masterDataLoading && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="size-8 animate-spin text-accent" />
+              </div>
+            )}
             {/* Basic Info Section */}
-            <div className="space-y-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Basic Info</div>
-              <div className="space-y-4">
+            <div className="space-y-5">
+              <div className="text-xs font-bold uppercase tracking-wider text-accent/70 pb-2 border-b border-border/20">Basic Info</div>
+              <div className="space-y-5">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Product Name *</label>
                   <Input
-                    value={formState.name}
-                    onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
+                    value={siloFormState.name}
+                    onChange={(e) => setSiloFormState((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g. Arabica Dark Roast"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Slug (URL)</label>
-                  <Input
-                    value={selectedProduct?.slug || ""}
-                    disabled
-                    placeholder="Generated from name"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Description *</label>
                   <Textarea
-                    value={formState.description}
-                    onChange={(e) => setFormState((prev) => ({ ...prev, description: e.target.value }))}
+                    value={siloFormState.description}
+                    onChange={(e) => setSiloFormState((prev) => ({ ...prev, description: e.target.value }))}
                     rows={3}
                     placeholder="Product details..."
                   />
@@ -800,8 +906,8 @@ export default function AdminProductsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Category *</label>
                   <Select
-                    value={formState.categoryId}
-                    onValueChange={(val) => setFormState((prev) => ({ ...prev, categoryId: val }))}
+                    value={siloFormState.categoryId}
+                    onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, categoryId: val }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category..." />
@@ -818,120 +924,116 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
-            {/* Coffee Identity Section */}
+            {/* Origin Section */}
             <div className="space-y-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Coffee Identity</div>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Origin</label>
-                  <Select
-                    value={formState.originId}
-                    onValueChange={(val) => setFormState((prev) => ({ ...prev, originId: val }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select origin..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {origins.map((o) => (
-                        <SelectItem key={o.id} value={o.id}>
-                          {o.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Origin</div>
+              <Select
+                value={siloFormState.originId}
+                onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, originId: val }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select origin..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {origins.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Roast Level</label>
-                    <Select
-                      value={formState.roastLevel}
-                      onValueChange={(val) => setFormState((prev) => ({ ...prev, roastLevel: val }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select roast..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Light</SelectItem>
-                        <SelectItem value="2">Medium</SelectItem>
-                        <SelectItem value="3">Medium-Dark</SelectItem>
-                        <SelectItem value="4">Dark</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Weight (g)</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={formState.weight}
-                      onChange={(e) => setFormState((prev) => ({ ...prev, weight: e.target.value }))}
-                      placeholder="250"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Flavor Notes</label>
-                  <Input
-                    value={formState.flavorNotes}
-                    onChange={(e) => setFormState((prev) => ({ ...prev, flavorNotes: e.target.value }))}
-                    placeholder="e.g. Blueberry, Chocolate, Nutty"
-                  />
-                </div>
+            {/* Stock Section */}
+            <div className="space-y-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Inventory</div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Stock in KG *</label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={siloFormState.stockInKg}
+                  onChange={(e) => setSiloFormState((prev) => ({ ...prev, stockInKg: e.target.value }))}
+                  placeholder="0"
+                />
               </div>
             </div>
 
-            {/* Pricing & Inventory Section */}
+            {/* Roast Levels Section */}
             <div className="space-y-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Pricing & Inventory</div>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 bg-accent/5 p-4 rounded-xl border border-accent/10">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Base Price ($) *</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formState.basePrice}
-                      onChange={(e) => setFormState((prev) => ({ ...prev, basePrice: e.target.value }))}
-                      placeholder="100.00"
-                      className="bg-white/80 dark:bg-black/20"
+              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Roast Levels *</div>
+              <div className="space-y-2 bg-white/5 p-4 rounded-lg border border-border/30">
+                {masterData?.roastLevels.map((roast) => (
+                  <div key={roast.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`roast-${roast.id}`}
+                      checked={siloFormState.selectedRoasts.includes(roast.id)}
+                      onCheckedChange={() => toggleRoast(roast.id)}
                     />
+                    <label htmlFor={`roast-${roast.id}`} className="text-sm cursor-pointer">
+                      {roast.name}
+                    </label>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-accent">Discount (%)</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formState.discountPercent}
-                      onChange={(e) => setFormState((prev) => ({ ...prev, discountPercent: e.target.value }))}
-                      placeholder="0"
-                      className="bg-white/80 dark:bg-black/20"
-                    />
-                  </div>
-                  <div className="col-span-2 text-center border-t border-dashed border-border/50 pt-3">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Final Selling Price</p>
-                    <p className="text-2xl font-bold text-accent">
-                        {currency.format(
-                            parseFloat(formState.basePrice || "0") * (1 - (parseFloat(formState.discountPercent || "0") / 100))
-                        )}
-                    </p>
-                  </div>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Stock Quantity *</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={formState.stockQuantity}
-                    onChange={(e) => setFormState((prev) => ({ ...prev, stockQuantity: e.target.value }))}
-                    placeholder="0"
-                  />
-                </div>
+            {/* Grind Types Section */}
+            <div className="space-y-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Grind Types *</div>
+              <div className="space-y-2 bg-white/5 p-4 rounded-lg border border-border/30">
+                {masterData?.grindTypes.map((grind) => (
+                  <div key={grind.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`grind-${grind.id}`}
+                      checked={siloFormState.selectedGrinds.includes(grind.id)}
+                      onCheckedChange={() => toggleGrind(grind.id)}
+                    />
+                    <label htmlFor={`grind-${grind.id}`} className="text-sm cursor-pointer">
+                      {grind.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pricing Matrix Section */}
+            <div className="space-y-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Pricing Matrix *</div>
+              <div className="space-y-3 bg-accent/5 p-4 rounded-lg border border-accent/20">
+                {siloFormState.weightPrices.map((wp) => {
+                  const weight = masterData?.weights.find((w) => w.id === wp.weightId)
+                  return (
+                    <div key={wp.weightId} className="flex items-end gap-3">
+                      <div className="flex-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          {weight?.label} ({weight?.grams}g)
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={wp.price}
+                          onChange={(e) => updateWeightPrice(wp.weightId, "price", e.target.value)}
+                          placeholder="0.00"
+                          disabled={!wp.enabled}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`price-${wp.weightId}`}
+                          checked={wp.enabled}
+                          onCheckedChange={(checked) => updateWeightPrice(wp.weightId, "enabled", checked)}
+                        />
+                        <label htmlFor={`price-${wp.weightId}`} className="text-sm cursor-pointer">
+                          Enable
+                        </label>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -1037,7 +1139,7 @@ export default function AdminProductsPage() {
               <SheetClose asChild>
                 <Button variant="ghost" type="button">Cancel</Button>
               </SheetClose>
-              <Button type="submit" disabled={saving || loadingProduct} className="bg-gradient-to-r from-amber-500 to-orange-600 text-white min-w-[120px]">
+              <Button type="submit" disabled={saving || loadingProduct} className="bg-linear-to-r from-amber-500 to-orange-600 text-white min-w-30">
                 {saving ? (
                   <>
                     <Loader2 className="size-4 animate-spin mr-2" />
@@ -1074,6 +1176,116 @@ export default function AdminProductsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Product Details Modal */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="glass-dark dark:glass border-border/60 backdrop-blur-sm max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">{viewingProduct?.name}</DialogTitle>
+          </DialogHeader>
+          
+          {viewingProduct && (
+            <div className="space-y-6 py-4">
+              {/* Image Gallery */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">Images</h3>
+                <div className="grid grid-cols-4 gap-2">
+                  {viewingProduct.images && viewingProduct.images.length > 0 ? (
+                    viewingProduct.images.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 ${
+                          img.isMain ? "border-accent ring-2 ring-accent/30" : "border-border/50"
+                        }`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={getImageUrl(img.imageUrl) || ""}
+                          alt={`${viewingProduct.name} ${idx}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {img.isMain && (
+                          <div className="absolute bottom-1 left-1 bg-accent text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Star size={8} fill="currentColor" /> Main
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-4 aspect-square rounded-lg bg-white/5 border border-border/30 flex items-center justify-center text-muted-foreground">
+                      No images
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">Description</h3>
+                <p className="text-sm leading-relaxed text-foreground">{viewingProduct.description}</p>
+              </div>
+
+              {/* Pricing Table */}
+              {viewingProduct.availablePrices && viewingProduct.availablePrices.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">Pricing</h3>
+                   <div className="glass rounded-lg p-3 border border-border/30 space-y-1">
+                     {viewingProduct.availablePrices.map((p) => (
+                       <div key={p.productPriceId || p.grams} className="flex justify-between text-sm">
+                         <span className="text-muted-foreground">{(p.weightLabel || "").trim() || `${p.grams}g`}:</span>
+                         <span className="font-semibold text-accent">{currency.format(p.price)}</span>
+                       </div>
+                     ))}
+                   </div>
+                </div>
+              )}
+
+              {/* Attributes */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">Attributes</h3>
+                <div className="flex flex-wrap gap-2">
+                   {viewingProduct.roastLevelNames?.length
+                     ? viewingProduct.roastLevelNames.map((name, idx) => (
+                         <Badge key={`roast-${idx}`} variant="secondary">{name}</Badge>
+                       ))
+                     : null}
+                   {viewingProduct.grindTypeNames?.length
+                     ? viewingProduct.grindTypeNames.map((name, idx) => (
+                         <Badge key={`grind-${idx}`} variant="outline" className="bg-white/5">{name}</Badge>
+                       ))
+                     : null}
+                  {!viewingProduct.roastLevelNames?.length && !viewingProduct.grindTypeNames?.length && (
+                    <Badge variant="outline" className="bg-white/5">No attributes</Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Metadata */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">Metadata</h3>
+                <div className="glass rounded-lg p-3 border border-border/30 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Category:</span>
+                    <span className="font-medium">{viewingProduct.categoryName || "—"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Origin:</span>
+                    <span className="font-medium">{viewingProduct.originName || "—"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Stock:</span>
+                     <span className="font-medium">{viewingProduct.stockInKg || 0} kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">ID:</span>
+                    <span className="font-mono text-xs">{viewingProduct.id.substring(0, 8)}...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

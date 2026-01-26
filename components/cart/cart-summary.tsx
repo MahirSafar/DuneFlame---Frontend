@@ -2,14 +2,23 @@
 
 import Link from "next/link"
 import { Trash2 } from "lucide-react"
+import { useEffect } from "react"
 import { useCartStore } from "@/lib/cart-store"
+import { useCurrency } from "@/lib/currency-context"
 import { getImageUrl } from "@/lib/utils"
 import { useAuthStore } from "@/lib/auth-store"
+import { FormattedPrice } from "@/components/currency/formatted-price"
 
 export default function CartSummary() {
   const { accessToken } = useAuthStore()
-  const { items, removeItem, updateQuantity, total } = useCartStore()
+  const { currency } = useCurrency()
+  const { items, removeItem, updateQuantity, total, getItemPrice } = useCartStore()
   const isAuthenticated = !!accessToken
+
+  // Force re-render when currency changes to update all prices dynamically
+  useEffect(() => {
+    // This dependency ensures all price calculations update when currency changes
+  }, [currency])
 
   if (items.length === 0) {
     return (
@@ -28,9 +37,9 @@ export default function CartSummary() {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        {items.map((item) => (
+        {items.map((item, index) => (
           <Link
-            key={item.id}
+            key={`${item.variantKey || item.id}-${index}`}
             href={`/product/${item.slug || item.id}`}
             className="glass rounded-xl p-4 flex items-center justify-between group hover:shadow-lg transition-smooth"
           >
@@ -47,11 +56,31 @@ export default function CartSummary() {
                   ☕
                 </div>
               )}
-              <div>
+              <div className="flex flex-col">
                 <h3 className="font-semibold text-primary dark:text-secondary group-hover:text-accent transition-smooth">
                   {item.name}
                 </h3>
-                <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
+                {/* Display the dynamic price in current currency */}
+                <FormattedPrice amount={getItemPrice(item, currency)} className="text-sm font-medium text-accent" />
+                
+                {/* Selected Attributes Display - FORCED */}
+                <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-2">
+                  {item.selectedWeightLabel && (
+                    <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
+                      Weight: {item.selectedWeightLabel}
+                    </span>
+                  )}
+                  {item.selectedRoast && (
+                    <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
+                      Roast: {item.selectedRoast}
+                    </span>
+                  )}
+                  {item.selectedGrind && (
+                    <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
+                      Grind: {item.selectedGrind}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -60,7 +89,7 @@ export default function CartSummary() {
                 <button
                   onClick={(e) => {
                     e.preventDefault()
-                    updateQuantity(item.id, Math.max(1, item.quantity - 1), isAuthenticated)
+                    updateQuantity(item.variantKey || item.id, Math.max(1, item.quantity - 1), isAuthenticated)
                   }}
                   className="p-1 hover:bg-accent/10 transition-smooth"
                 >
@@ -70,7 +99,7 @@ export default function CartSummary() {
                 <button
                   onClick={(e) => {
                     e.preventDefault()
-                    updateQuantity(item.id, item.quantity + 1, isAuthenticated)
+                    updateQuantity(item.variantKey || item.id, item.quantity + 1, isAuthenticated)
                   }}
                   className="p-1 hover:bg-accent/10 transition-smooth"
                 >
@@ -79,13 +108,16 @@ export default function CartSummary() {
               </div>
 
               <span className="w-20 text-right font-semibold text-primary dark:text-secondary">
-                ${(item.price * item.quantity).toFixed(2)}
+                <FormattedPrice amount={getItemPrice(item, currency) * item.quantity} />
               </span>
 
               <button
                 onClick={(e) => {
                   e.preventDefault()
-                  removeItem(item.id, isAuthenticated)
+                  // Use cartItemId (backend item id) for DELETE /basket/{itemId};
+                  // fallback to variantKey/id for local-only items
+                  const idToRemove = item.cartItemId || item.variantKey || item.id
+                  removeItem(idToRemove, isAuthenticated)
                 }}
                 className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-smooth"
               >
@@ -99,7 +131,7 @@ export default function CartSummary() {
       <div className="glass rounded-xl p-6 space-y-4">
         <div className="flex justify-between text-muted-foreground">
           <span>Subtotal</span>
-          <span>${total().toFixed(2)}</span>
+          <FormattedPrice amount={total(currency)} />
         </div>
         <div className="flex justify-between text-muted-foreground">
           <span>Shipping</span>
@@ -107,7 +139,7 @@ export default function CartSummary() {
         </div>
         <div className="border-t border-border pt-4 flex justify-between font-bold text-primary dark:text-secondary text-lg">
           <span>Total</span>
-          <span>${total().toFixed(2)}</span>
+          <FormattedPrice amount={total(currency)} />
         </div>
 
         <Link

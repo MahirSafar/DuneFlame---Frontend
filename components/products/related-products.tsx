@@ -79,25 +79,19 @@ export default function RelatedProducts({ categoryId, currentProductId }: Relate
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {products.map((product, index) => (
-          <motion.div
-            key={product.id}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
-            viewport={{ once: true }}
-          >
-            <ProductCard
-                id={product.id}
-                slug={product.slug!}
-              name={product.name}
-              price={product.price}
-              images={product.images}
-              roastLevel={product.roastLevel ? `Level ${product.roastLevel}` : "Medium"}
-              origin={product.originName || product.categoryName || "DuneFlame"}
-            />
-          </motion.div>
-        ))}
+        {products.map((product, index) => {
+          return (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
+              viewport={{ once: true }}
+            >
+              <ProductCard product={product} />
+            </motion.div>
+          )
+        })}
       </div>
     </motion.section>
   )

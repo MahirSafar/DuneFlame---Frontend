@@ -176,6 +176,11 @@
   
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
+    color: #2B1B13 !important;
+  }
+  
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: #2B1B13 !important;
   }
 }
 

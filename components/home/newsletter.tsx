@@ -10,7 +10,6 @@ export default function Newsletter() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Newsletter signup:", email)
     setEmail("")
   }
 

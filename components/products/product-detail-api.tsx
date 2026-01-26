@@ -3,16 +3,35 @@
 import { useState } from "react";
 import { ShoppingCart, Star } from "lucide-react";
 import type { ProductResponse } from "@/lib/services/products";
-import { useCartStore } from "@/lib/cart-store";
+import { useAddToCart } from "@/hooks/use-add-to-cart";
+import { useCurrency } from "@/lib/currency-context";
+import { getAvailableWeights, resolvePrice, type ProductWithPricing } from "@/lib/currency-utils";
+import { FormattedPrice } from "@/components/currency/formatted-price";
+import { EMPTY_GUID } from "@/lib/cart-store";
 
 export default function ProductDetailApi({ product }: { product: ProductResponse }) {
   const [quantity, setQuantity] = useState(1);
-  const { addItem } = useCartStore();
+  const { addToCart } = useAddToCart();
+  const { currency } = useCurrency();
+  
+  // Get default weight
+  const availableWeights = getAvailableWeights(product);
+  const defaultWeight = availableWeights[0] ?? product.availablePrices?.[0]?.grams ?? 250;
+  
+  // Get price for display
+  const displayPrice = resolvePrice(product as unknown as ProductWithPricing, currency, defaultWeight)?.price ?? 0;
 
   const mainImage = product.images?.find((i) => i.isMain)?.imageUrl || product.images?.[0]?.imageUrl;
 
   const handleAddToCart = () => {
-    addItem({ id: product.id, name: product.name, price: product.price, quantity });
+    addToCart(product, quantity, {
+      productPriceId: product.availablePrices?.[0]?.productPriceId,
+      price: displayPrice,
+      selectedWeight: defaultWeight,
+      weightLabel: `${defaultWeight}g`,
+      roastLevelId: EMPTY_GUID,
+      grindTypeId: EMPTY_GUID,
+    });
   };
 
   return (
@@ -55,8 +74,10 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
 
         <div className="glass rounded-xl p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-3xl font-bold text-primary dark:text-secondary">${product.price}</span>
-            <span className="text-sm text-muted-foreground">{product.stockQuantity > 0 ? "In Stock" : "Out of Stock"}</span>
+            <span className="text-3xl font-bold text-primary dark:text-secondary">
+              <FormattedPrice amount={displayPrice} />
+            </span>
+            <span className="text-sm text-muted-foreground">In Stock</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -69,12 +90,14 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
                 +
               </button>
             </div>
-            <span className="text-lg font-semibold text-accent">${(product.price * quantity).toFixed(2)}</span>
+            <span className="text-lg font-semibold text-accent">
+              <FormattedPrice amount={displayPrice * quantity} />
+            </span>
           </div>
 
           <button
             onClick={handleAddToCart}
-            disabled={product.stockQuantity <= 0}
+            disabled={product.stockInKg <= 0}
             className="w-full px-6 py-3 bg-accent hover:bg-accent/90 disabled:opacity-70 text-accent-foreground font-bold rounded-lg transition-smooth flex items-center justify-center gap-2 glow-accent"
           >
             <ShoppingCart size={20} />

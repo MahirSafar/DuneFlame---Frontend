@@ -1,5 +1,6 @@
 import axios from "@/lib/axios";
 import { apiFetch } from "../api-client";
+import type { MasterData, CreateProductPayload } from "@/lib/types";
 
 export interface PagedResult<T> {
   items: T[];
@@ -29,22 +30,29 @@ export interface ProductImageDto {
   isMain: boolean;
 }
 
+export interface ProductPriceDto {
+  productPriceId: string;
+  weightLabel: string;
+  grams: number;
+  price: number;
+}
+
 export interface ProductResponse {
   id: string;
   slug: string;
   name: string;
   description: string;
-  price: number;
-  discountPercentage: number;
-  stockQuantity: number;
-  categoryName: string;
+  stockInKg: number;
+  isActive: boolean;
   categoryId: string;
+  categoryName: string;
   originName?: string;
   originId?: string;
-  roastLevel: number;
-  flavorNotes: string;
-  weight: number;
-  isActive: boolean;
+  availablePrices: ProductPriceDto[];
+  roastLevelNames: string[];
+  roastLevelIds: string[];
+  grindTypeNames: string[];
+  grindTypeIds: string[];
   createdAt: string;
   updatedAt?: string;
   images: ProductImageDto[];
@@ -76,16 +84,28 @@ export async function getProducts(params: ProductQuery = {}) {
   if (pageNumber) query.set("pageNumber", String(pageNumber));
   if (pageSize) query.set("pageSize", String(pageSize));
   if (params.sort) query.set("sort", params.sort);
-  if (params.sortBy) query.set("sortBy", params.sortBy);
   if (params.search) query.set("search", params.search);
   if (params.categoryId) query.set("categoryId", params.categoryId);
-  if (params.originId) query.set("originId", params.originId);
-  if (params.minPrice !== undefined) query.set("minPrice", String(params.minPrice));
-  if (params.maxPrice !== undefined) query.set("maxPrice", String(params.maxPrice));
-  if (params.roastLevel !== undefined) query.set("roastLevel", String(params.roastLevel));
-
+  
   const qs = query.toString();
-  return apiFetch<PagedResult<ProductResponse>>(`/products${qs ? `?${qs}` : ""}`);
+  const response = await apiFetch<PagedResult<ProductResponse>>(`/products${qs ? `?${qs}` : ""}`);
+  return response;
+}
+
+export async function getAdminProducts(params: ProductQuery = {}) {
+  const query = new URLSearchParams();
+
+  const pageNumber = params.pageNumber ?? params.page;
+  const pageSize = params.pageSize ?? params.size;
+
+  if (pageNumber) query.set("pageNumber", String(pageNumber));
+  if (pageSize) query.set("pageSize", String(pageSize));
+  if (params.sort) query.set("sort", params.sort);
+  if (params.search) query.set("search", params.search);
+  if (params.categoryId) query.set("categoryId", params.categoryId);
+  
+  const qs = query.toString();
+  return apiFetch<PagedResult<ProductResponse>>(`/admin/products${qs ? `?${qs}` : ""}`);
 }
 
 export function getProduct(idOrSlug: string, options?: { admin?: false }): Promise<ProductResponse>;
@@ -126,4 +146,23 @@ export async function updateProduct(id: string, data: FormData) {
 
 export async function deleteProduct(id: string) {
   await axios.delete(`/admin/products/${id}`);
+}
+
+/**
+ * Fetch all master data for Silo Inventory v2
+ * Returns weights, roast levels, grind types, categories, and origins
+ */
+export async function getMasterData(): Promise<MasterData> {
+  return apiFetch<MasterData>("/master-data/all");
+}
+
+/**
+ * Create a new product using Silo Inventory v2
+ * Accepts FormData with product details
+ */
+export async function createProductV2(data: FormData) {
+  const response = await axios.post<Product>("/admin/products", data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
 }

@@ -1,12 +1,15 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Urbanist, Satisfy as Satoshi } from "next/font/google"
+import { cookies } from "next/headers"
+import { Urbanist, Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import AuthInit from "@/components/auth/auth-init"
 import AuthProvider from "@/components/auth/auth-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { DarkModeProvider } from "@/lib/dark-mode-context"
+import { CurrencyProvider } from "@/lib/currency-context"
+import { readCurrencyCookie, type CurrencyType } from "@/lib/currency-utils"
 import { Toaster } from "react-hot-toast"
 
 const urbanist = Urbanist({
@@ -15,10 +18,10 @@ const urbanist = Urbanist({
   weight: ["400", "500", "600", "700"],
 })
 
-const satoshi = Satoshi({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-serif",
-  weight: "400",
+  weight: ["400", "500", "600", "700"],
 })
 
 export const metadata: Metadata = {
@@ -45,14 +48,19 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Read currency from server-side cookies to prevent hydration mismatch
+  const cookieStore = await cookies()
+  const currencyCookie = cookieStore.get("df_currency")?.value
+  const serverCurrency = (currencyCookie === "AED" ? "AED" : "USD") as CurrencyType
+
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${urbanist.variable} ${satoshi.variable} font-sans antialiased bg-background text-foreground`}>
+      <body className={`${urbanist.variable} ${inter.variable} font-sans antialiased bg-background text-foreground`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
@@ -60,12 +68,14 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <DarkModeProvider>
-            <AuthProvider>
-              <AuthInit />
-              {children}
-              <Analytics />
-              <Toaster position="top-right" />
-            </AuthProvider>
+            <CurrencyProvider initialCurrency={serverCurrency}>
+              <AuthProvider>
+                <AuthInit />
+                {children}
+                <Analytics />
+                <Toaster position="top-right" />
+              </AuthProvider>
+            </CurrencyProvider>
           </DarkModeProvider>
         </ThemeProvider>
       </body>

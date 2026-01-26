@@ -16,7 +16,7 @@ export default function ProductsPage() {
     roastLevel: [],
     originIds: [],
     categoryIds: [],
-    priceRange: [0, 100],
+    priceRange: [0, 10000], // Wide range to prevent filtering on first load
   })
   const [searchQuery, setSearchQuery] = useState("")
   const debouncedSearch = useDebounce(searchQuery, 500)
@@ -27,7 +27,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [minPrice, setMinPrice] = useState(0)
-  const [maxPrice, setMaxPrice] = useState(100)
+  const [maxPrice, setMaxPrice] = useState(10000)
 
   useEffect(() => {
     let cancelled = false
@@ -49,51 +49,68 @@ export default function ProductsPage() {
     getProducts(params)
       .then((res) => {
         if (!cancelled) {
-          // Calculate min and max prices from all items
+          
+          // Calculate min and max prices from all items using availablePrices
           if (res.items.length > 0) {
-            const prices = res.items.map(p => p.price)
-            const calculatedMin = Math.floor(Math.min(...prices))
-            const calculatedMax = Math.ceil(Math.max(...prices))
-            setMinPrice(calculatedMin)
-            setMaxPrice(calculatedMax)
-            
-            // Update filter ranges if they're at default values
-            if (filters.priceRange[0] === 0 && filters.priceRange[1] === 100) {
-              setFilters(prev => ({
-                ...prev,
-                priceRange: [calculatedMin, calculatedMax]
-              }))
+            const allPrices = res.items.flatMap(p => 
+              p.availablePrices?.map(ap => ap.price) || []
+            )
+            if (allPrices.length > 0) {
+              const calculatedMin = Math.floor(Math.min(...allPrices))
+              const calculatedMax = Math.ceil(Math.max(...allPrices))
+              setMinPrice(calculatedMin)
+              setMaxPrice(calculatedMax)
+              
+              // DO NOT call setFilters here - it causes infinite loop!
+              // User can adjust the price range manually if needed
             }
           }
           
           let filteredItems = res.items
+ 
           
           // Client-side filtering for multiple selections
           if (filters.categoryIds.length > 0) {
+            const beforeCount = filteredItems.length;
             filteredItems = filteredItems.filter(p => filters.categoryIds.includes(p.categoryId))
           }
           
           if (filters.originIds.length > 0) {
+            const beforeCount = filteredItems.length;
             filteredItems = filteredItems.filter(p => p.originId && filters.originIds.includes(p.originId))
           }
           
           if (filters.roastLevel.length > 0) {
-            filteredItems = filteredItems.filter(p => filters.roastLevel.includes(p.roastLevel))
+            const beforeCount = filteredItems.length;
+            filteredItems = filteredItems.filter(p => 
+              p.roastLevelIds?.some(id => filters.roastLevel.includes(Number(id))) || false
+            )
           }
           
-          // Client-side price range filtering as fallback
-          filteredItems = filteredItems.filter(p => 
-            p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]
-          )
+          // Client-side price range filtering using availablePrices
+          const beforePriceFilter = filteredItems.length;
+          filteredItems = filteredItems.filter(p => {
+            const productPrices = p.availablePrices?.map(ap => ap.price) || []
+            const hasMatchingPrice = productPrices.some(price => 
+              price >= filters.priceRange[0] && price <= filters.priceRange[1]
+            )
+            if (!hasMatchingPrice && productPrices.length > 0) {
+            }
+            return hasMatchingPrice || productPrices.length === 0; // Keep products with no prices to avoid hiding them
+          })
           
           // Client-side sorting as fallback
           if (sortBy) {
             filteredItems = [...filteredItems].sort((a, b) => {
               switch (sortBy) {
                 case 'price':
-                  return a.price - b.price
+                  const priceA = Math.min(...(a.availablePrices?.map(p => p.price) || [Infinity]))
+                  const priceB = Math.min(...(b.availablePrices?.map(p => p.price) || [Infinity]))
+                  return priceA - priceB
                 case 'price_desc':
-                  return b.price - a.price
+                  const priceDescA = Math.min(...(a.availablePrices?.map(p => p.price) || [0]))
+                  const priceDescB = Math.min(...(b.availablePrices?.map(p => p.price) || [0]))
+                  return priceDescB - priceDescA
                 case 'name':
                   return a.name.localeCompare(b.name)
                 case 'name_desc':
@@ -205,22 +222,19 @@ export default function ProductsPage() {
               
               {!loading && !error && products.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((p) => (
-                    <ProductCard
-                      key={p.id}
-                      id={p.id}
-                      slug={p.slug}
-                      name={p.name}
-                      price={p.price}
-                      images={p.images}
-                      roastLevel={""}
-                      origin={p.originName || p.categoryName || ""}
-                    />
-                  ))}
+                  {products.map((p) => {
+                    try {
+                      return <ProductCard key={p.id} product={p} />
+                    } catch (err) {
+                      console.error(`[Shop] Failed to render product ${p.id}:`, err);
+                      return null;
+                    }
+                  })}
                 </div>
               ) : !loading && !error ? (
                 <div className="glass rounded-xl p-12 text-center">
-                  <p className="text-muted-foreground">No products found matching your filters.</p>
+                  <p className="text-muted-foreground text-lg mb-2">No products found</p>
+                  <p className="text-muted-foreground text-sm">Try adjusting your filters or check back later.</p>
                 </div>
               ) : null}
             </div>

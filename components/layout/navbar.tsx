@@ -7,6 +7,7 @@ import { useTheme } from "next-themes"
 import { useDarkMode } from "@/lib/dark-mode-context"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useCartStore } from "@/lib/cart-store"
+import { InstantCurrencySwitcher } from "@/components/currency/instant-switcher"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -59,6 +60,11 @@ export default function Navbar() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">
+            {/* Currency Switcher */}
+            <div className="hidden sm:block">
+              <InstantCurrencySwitcher />
+            </div>
+
             <button
               onClick={() => {
                 setTheme(theme === "dark" ? "light" : "dark")
@@ -118,6 +124,9 @@ export default function Navbar() {
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden pb-4 border-t border-border animate-in slide-in-from-top duration-300">
+            <div className="px-4 py-3 flex items-center justify-center">
+              <InstantCurrencySwitcher />
+            </div>
             {navLinks.map((link) => (
               <Link
                 key={link.href}

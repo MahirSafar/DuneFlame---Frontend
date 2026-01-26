@@ -13,7 +13,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [isFavorite, setIsFavorite] = useState(false)
 
   const handleAddToCart = () => {
-    console.log(`Added ${quantity} of ${product.name} to cart`)
   }
 
   return (

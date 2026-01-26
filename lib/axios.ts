@@ -1,10 +1,10 @@
-// 1. Satırı şu şekilde güncelleyin:
 import axios from "axios";
 import { API_URL } from "./config";
 import toast from "react-hot-toast";
 import { getErrorMessage } from "./utils";
 import { useAuthStore } from "@/lib/auth-store";
 import { refreshAccessToken } from "./services/auth";
+import { getCurrencyFromStorage } from "@/lib/currency-utils";
 
 const instance = axios.create({
   baseURL: API_URL,
@@ -14,12 +14,21 @@ const instance = axios.create({
   },
 });
 
+// Request interceptor with currency and auth headers
 instance.interceptors.request.use(
   (config) => {
+    // Add auth token
     const token = useAuthStore.getState().accessToken;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add currency header - ALWAYS reads from latest storage value
+    const currency = getCurrencyFromStorage();
+    if (config.headers) {
+      config.headers["X-Currency"] = currency;
+    }
+
     return config;
   },
   (error) => {
@@ -109,13 +118,7 @@ instance.interceptors.response.use(
       }
 
       try {
-        // Attempt to refresh the token
-        console.log("[Axios Refresh] About to call refreshAccessToken", {
-          email: user.email,
-          refreshToken,
-          prevAccessToken: accessToken,
-          originalUrl: originalRequest?.url,
-        });
+        
         const newTokens = await refreshAccessToken(user.email, refreshToken);
 
         // Record the refresh timestamp BEFORE updating store to prevent bad rehydration
@@ -126,12 +129,7 @@ instance.interceptors.response.use(
         // AWAIT the store update to ensure localStorage write completes
         // This guarantees tokens are on disk BEFORE the retry request fires
         await useAuthStore.getState().setTokens(newTokens.accessToken, newTokens.refreshToken);
-        console.log("[Axios Refresh] Tokens updated in store and persisted", {
-          newAccessToken: newTokens.accessToken,
-          newRefreshToken: newTokens.refreshToken,
-          storeAccessToken: useAuthStore.getState().accessToken,
-          storeRefreshToken: useAuthStore.getState().refreshToken,
-        });
+      
 
         // Update the failed request with the new token
         if (originalRequest.headers) {
@@ -142,11 +140,6 @@ instance.interceptors.response.use(
         processQueue();
         isRefreshing = false;
 
-        // Retry the original request with confidence that tokens are persisted
-        console.log("[Axios Refresh] Retrying original request with new access token", {
-          url: originalRequest?.url,
-          hasAuthHeader: !!originalRequest?.headers?.Authorization,
-        });
         return instance(originalRequest);
       } catch (refreshError) {
         // Refresh failed, logout user
