@@ -62,7 +62,7 @@ interface CartStore {
 
 const getItemKey = (item: Pick<CartItem, "id" | "variantKey">) => item.variantKey || item.id
 
-const getItemPrice = (item: CartItem, currency: CurrencyType): number => {
+export const getItemPrice = (item: CartItem, currency: CurrencyType): number => {
   if (item.product && item.selectedWeight !== undefined) {
     const resolved = resolvePrice(item.product, currency, item.selectedWeight)
     if (resolved?.price) return resolved.price

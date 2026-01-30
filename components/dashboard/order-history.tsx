@@ -1,11 +1,12 @@
 "use client"
 
 import { Calendar, MapPin } from "lucide-react"
+import { useFormatter, useTranslations } from "next-intl"
 
 interface Order {
   id: string
   number: string
-  date: string
+  date: Date
   total: number
   status: "delivered" | "processing" | "shipped"
   items: number
@@ -15,7 +16,7 @@ const ORDERS: Order[] = [
   {
     id: "1",
     number: "#DF-2026-001234",
-    date: "Dec 15, 2025",
+    date: new Date("2025-12-15"),
     total: 68,
     status: "delivered",
     items: 3,
@@ -23,7 +24,7 @@ const ORDERS: Order[] = [
   {
     id: "2",
     number: "#DF-2025-001233",
-    date: "Nov 28, 2025",
+    date: new Date("2025-11-28"),
     total: 45,
     status: "delivered",
     items: 2,
@@ -31,7 +32,7 @@ const ORDERS: Order[] = [
   {
     id: "3",
     number: "#DF-2025-001232",
-    date: "Nov 10, 2025",
+    date: new Date("2025-11-10"),
     total: 92,
     status: "delivered",
     items: 4,
@@ -45,6 +46,14 @@ const statusColors = {
 }
 
 export default function OrderHistory() {
+  const t = useTranslations()
+  const format = useFormatter()
+    const statusTranslations = {
+      delivered: t("dashboard.orderStatus.delivered", { defaultValue: "Delivered" }),
+      processing: t("dashboard.orderStatus.processing", { defaultValue: "Processing" }),
+      shipped: t("dashboard.orderStatus.shipped", { defaultValue: "Shipped" }),
+    }
+
   return (
     <div className="space-y-4">
       <h3 className="text-xl font-bold text-primary dark:text-secondary">Order History</h3>
@@ -56,7 +65,7 @@ export default function OrderHistory() {
               <div className="flex flex-col gap-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Calendar size={16} />
-                  {order.date}
+                    {format.dateTime(order.date, { year: "numeric", month: "long", day: "numeric" })}
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin size={16} />
@@ -70,11 +79,11 @@ export default function OrderHistory() {
                 <span
                   className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold capitalize ${statusColors[order.status]}`}
                 >
-                  {order.status}
+                    {statusTranslations[order.status]}
                 </span>
               </div>
               <button className="px-4 py-2 border border-border hover:bg-muted rounded-lg transition-smooth font-medium">
-                View Details
+                  {t("common.actions.viewDetails")}
               </button>
             </div>
           </div>

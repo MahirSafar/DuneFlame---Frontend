@@ -32,7 +32,7 @@ export function InstantCurrencySwitcher() {
       {/* Animated background pill */}
       <motion.div
         layoutId="active-pill"
-        className="absolute inset-y-1 bg-amber-700 rounded-full shadow-sm"
+        className="absolute inset-y-1 rounded-full shadow-sm"
         initial={false}
         transition={{
           type: "spring",
@@ -40,6 +40,7 @@ export function InstantCurrencySwitcher() {
           duration: 0.6,
         }}
         style={{
+          backgroundColor: '#4B2E2B',
           left: isUSDActive ? "4px" : "calc(50% + 2px)",
           right: isUSDActive ? "calc(50% + 2px)" : "4px",
         }}
@@ -57,10 +58,11 @@ export function InstantCurrencySwitcher() {
           transition-colors duration-200 z-10
           ${
             isUSDActive
-              ? "text-white"
-              : "text-gray-700 hover:text-gray-900"
+              ? "text-[#4B2E2B]"
+              : "hover:text-white"
           }
         `}
+        style={!isUSDActive ? { color: 'text-white' } : {}}
       >
         $ USD
       </motion.button>
@@ -77,10 +79,11 @@ export function InstantCurrencySwitcher() {
           transition-colors duration-200 z-10
           ${
             isAEDActive
-              ? "text-white"
-              : "text-gray-700 hover:text-gray-900"
+              ? "text-[#4B2E2B]"
+              : "hover:text-white"
           }
         `}
+        style={!isAEDActive ? { color: 'text-white' } : {}}
       >
         د.إ AED
       </motion.button>
@@ -109,7 +112,7 @@ export function InstantCurrencySwitcherCompact() {
       {/* Animated background pill */}
       <motion.div
         layoutId="active-pill-compact"
-        className="absolute inset-y-0.5 bg-amber-700 rounded-full shadow-sm"
+        className="absolute inset-y-0.5 rounded-full shadow-sm"
         initial={false}
         transition={{
           type: "spring",
@@ -117,6 +120,7 @@ export function InstantCurrencySwitcherCompact() {
           duration: 0.6,
         }}
         style={{
+          backgroundColor: '#4B2E2B',
           left: isUSDActive ? "2px" : "calc(50% + 1px)",
           right: isUSDActive ? "calc(50% + 1px)" : "2px",
         }}
@@ -136,7 +140,7 @@ export function InstantCurrencySwitcherCompact() {
           ${
             isUSDActive
               ? "text-white"
-              : "text-gray-700 hover:text-gray-900"
+              : "text-white"
           }
         `}
       >
@@ -157,7 +161,7 @@ export function InstantCurrencySwitcherCompact() {
           ${
             isAEDActive
               ? "text-white"
-              : "text-gray-700 hover:text-gray-900"
+              : "text-white"
           }
         `}
       >
@@ -182,10 +186,11 @@ export function InstantCurrencySwitcherMobile() {
           px-2 py-1 rounded-full font-semibold text-xs transition-all duration-200
           ${
             currency === "USD"
-              ? "bg-amber-700 text-white shadow-sm"
-              : "bg-transparent text-gray-600"
+              ? "text-white"
+              : "text-white"
           }
         `}
+        style={currency === "USD" ? { backgroundColor: '#4B2E2B' } : {}}
       >
         $
       </button>
@@ -196,10 +201,11 @@ export function InstantCurrencySwitcherMobile() {
           px-2 py-1 rounded-full font-semibold text-xs transition-all duration-200
           ${
             currency === "AED"
-              ? "bg-amber-700 text-white shadow-sm"
-              : "bg-transparent text-gray-600"
+              ? "text-white"
+              : "text-white"
           }
         `}
+        style={currency === "AED" ? { backgroundColor: '#4B2E2B' } : {}}
       >
         د.إ
       </button>

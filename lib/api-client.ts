@@ -11,6 +11,7 @@ export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let isHandlingTokenExpiry = false;
+let currentLocale: string = "en";
 
 export function getAccessToken(): string | null {
   return accessToken;
@@ -87,11 +88,21 @@ async function refreshTokens(): Promise<boolean> {
 
 export async function apiFetch<T>(path: string, init: RequestInit & { method?: HttpMethod } = {}): Promise<T> {
   const url = path.startsWith("http") ? path : `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
-  const headers: Record<string, string> = {
+  let headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(init.headers as any),
   };
+  // If body is FormData, remove Content-Type so browser sets it (for file upload)
+  if (typeof window !== "undefined" && init.body instanceof FormData) {
+    // Remove Content-Type header for FormData
+    const { ["Content-Type"]: _, ...rest } = headers;
+    headers = rest;
+  }
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+  // Add locale header for language-specific responses
+  if (currentLocale) {
+    headers["Accept-Language"] = currentLocale;
+  }
 
   const doFetch = async () =>
     fetch(url, {
@@ -129,4 +140,14 @@ export async function apiFetch<T>(path: string, init: RequestInit & { method?: H
 
   const text = await res.text();
   return text ? (JSON.parse(text) as T) : (undefined as unknown as T);
+}
+
+/**
+ * Set the current locale for apiFetch requests
+ * Call this from client components when locale changes
+ * 
+ * @param locale - The locale code (e.g., 'en', 'ar')
+ */
+export function setApiClientLocale(locale: string) {
+  currentLocale = locale;
 }

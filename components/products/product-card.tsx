@@ -4,19 +4,23 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { ShoppingCart } from "lucide-react"
 import type { ProductResponse } from "@/lib/services/products"
+import { useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/utils"
 import ProductVariantModal from "./product-variant-modal"
 import { useCurrency } from "@/hooks/use-currency"
 import { resolvePrice, getAvailableWeights, type ProductWithPricing } from "@/lib/currency-utils"
 import { FormattedPrice } from "@/components/currency/formatted-price"
+import { useTranslations } from "next-intl"
 
 interface ProductCardProps {
   product: ProductResponse
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const locale = useLocale();
   const [isModalOpen, setIsModalOpen] = useState(false)
   const { currency, currencySymbol } = useCurrency()
+  const t = useTranslations()
 
   const rawMainImage = product.images?.find((i) => i.isMain)?.imageUrl || product.images?.[0]?.imageUrl
   const mainImage = rawMainImage ? getImageUrl(rawMainImage) : null
@@ -41,7 +45,17 @@ export default function ProductCard({ product }: ProductCardProps) {
   const displayPrice = resolved?.price ?? 0;
   const isPriceAvailable = displayPrice > 0;
   
-  const roastLevel = product.roastLevelNames?.[0] || "Signature"
+  let flavorNotes = t('products.card.signature');
+  if (Array.isArray(product.flavourNotes) && product.flavourNotes.length > 0) {
+    // Try to get translation for current locale, fallback to English, then fallback to name
+    flavorNotes = product.flavourNotes
+      .map(note => {
+        const translation = note.translations?.find(tr => tr.languageCode === locale)
+          || note.translations?.find(tr => tr.languageCode === 'en');
+        return translation?.name || note.name;
+      })
+      .join(", ");
+  }
   const origin = product.originName || product.categoryName || "DuneFlame"
 
   const openModal = (e: React.MouseEvent) => {
@@ -83,8 +97,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           </div>
 
-          <p className="text-sm text-muted-foreground mb-4 group-hover:text-muted-foreground/80 transition-smooth">
-            {roastLevel} Roast
+          <p className="text-sm text-muted-foreground mb-4 group-hover:text-muted-foreground/80 transition-smooth whitespace-nowrap overflow-hidden text-ellipsis">
+            {flavorNotes}
           </p>
 
           <div className="flex items-center justify-between">
@@ -92,11 +106,11 @@ export default function ProductCard({ product }: ProductCardProps) {
               {isPriceAvailable ? (
                 <FormattedPrice amount={displayPrice} />
               ) : (
-                <span className="text-muted-foreground text-base">Loading price...</span>
+                <span className="text-muted-foreground text-base">{t('common.actions.loadingPrice')}</span>
               )}
             </span>
             <span className="text-sm font-semibold text-accent opacity-0 translate-x-2 transition-smooth group-hover:opacity-100 group-hover:translate-x-0">
-              View details →
+              {t('common.actions.viewDetails')} →
             </span>
           </div>
         </div>

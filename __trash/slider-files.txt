@@ -1,0 +1,6 @@
+Removed slider-related files:
+- components/admin/sliders/sliders-admin-page.tsx
+- components/ui/slider.tsx
+- components/home/HeroCarousel.tsx
+- lib/services/admin-sliders.ts
+- app/[locale]/admin/(manage)/sliders/page.tsx

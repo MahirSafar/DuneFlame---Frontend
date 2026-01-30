@@ -3,12 +3,14 @@
 import { useState } from "react"
 import { Heart, ShoppingCart, Star } from "lucide-react"
 import type { Product } from "@/lib/mock-data"
+import type { ProductResponse } from "@/lib/services/products"
+import { useLocale } from "next-intl"
 
-interface ProductDetailProps {
-  product: Product
+  product: ProductResponse
 }
 
 export default function ProductDetail({ product }: ProductDetailProps) {
+  const locale = useLocale();
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
 
@@ -20,7 +22,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       {/* Image Section */}
       <div className="flex items-center justify-center">
         <div className="glass rounded-2xl p-8 w-full aspect-square flex items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-flame-apricot/50 to-flame-caramel/50 dark:from-flame-caramel/30 dark:to-flame-red/30" />
+          <div className="absolute inset-0 bg-linear-to-br from-flame-apricot/50 to-flame-caramel/50 dark:from-flame-caramel/30 dark:to-flame-red/30" />
           <div className="relative text-8xl">☕</div>
         </div>
       </div>
@@ -79,11 +81,17 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <div>
               <p className="text-xs text-muted-foreground font-semibold uppercase mb-2">Flavor Notes</p>
               <div className="flex flex-wrap gap-2">
-                {product.notes.map((note) => (
-                  <span key={note} className="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full font-medium">
-                    {note}
-                  </span>
-                ))}
+                {Array.isArray(product.flavourNotes) && product.flavourNotes.length > 0
+                  ? product.flavourNotes.map((note) => {
+                      const translation = note.translations?.find(tr => tr.languageCode === locale)
+                        || note.translations?.find(tr => tr.languageCode === 'en');
+                      return (
+                        <span key={note.id} className="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full font-medium">
+                          {translation?.name || note.name}
+                        </span>
+                      );
+                    })
+                  : null}
               </div>
             </div>
           </div>

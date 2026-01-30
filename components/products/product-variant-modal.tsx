@@ -15,6 +15,7 @@ import { FormattedPrice } from "@/components/currency/formatted-price"
 import type { ProductResponse } from "@/lib/services/products"
 import { cn, getImageUrl } from "@/lib/utils"
 import { EMPTY_GUID } from "@/lib/cart-store"
+import { useTranslations } from "next-intl"
 
 interface ProductVariantModalProps {
   product: ProductResponse
@@ -23,6 +24,7 @@ interface ProductVariantModalProps {
 }
 
 export function ProductVariantModal({ product, isOpen, onClose }: ProductVariantModalProps) {
+  const t = useTranslations()
   const { addToCart } = useAddToCart()
   const { currency, currencySymbol } = useCurrency()
 
@@ -181,11 +183,11 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
 
   const handleAddToCart = () => {
     if (!hasValidSelection || !resolved) {
-      toast.error("Please select weight, roast, and grind options")
+      toast.error(t('products.detail.selectWeight'))
       return
     }
     if (!fullProduct || !fullProduct.roastLevelIds || fullProduct.roastLevelIds.length === 0 || !fullProduct.grindTypeIds || fullProduct.grindTypeIds.length === 0) {
-      toast.error("Loading product details... please wait.")
+      toast.error(t('common.actions.loading'))
       return
     }
 
@@ -244,7 +246,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 {fullProduct.originName && <Badge variant="outline">{fullProduct.originName}</Badge>}
-                <Badge variant="secondary">{fullProduct.categoryName}</Badge>
+                {/* Removed category badge as requested */}
               </div>
               <h3 className="text-2xl font-bold text-primary dark:text-secondary">{fullProduct.name}</h3>
               <p className="text-sm text-muted-foreground line-clamp-3">{fullProduct.description}</p>
@@ -252,13 +254,13 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                 {isPriceAvailable ? (
                   <FormattedPrice amount={currentPrice} />
                 ) : (
-                  <span className="text-muted-foreground text-xl">Loading price...</span>
+                  <span className="text-muted-foreground text-xl">{t('common.actions.loadingPrice')}</span>
                 )}
               </p>
             </div>
 
             <div className="space-y-3">
-              <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Weight</Label>
+              <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{t('common.weight')}</Label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {getAvailableWeights(fullProduct as unknown as ProductWithPricing).map((grams) => {
                   // Resolve price for this specific weight
@@ -349,10 +351,10 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Roast</Label>
+                <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{t('common.roast')}</Label>
                 <Select value={selectedRoast} onValueChange={setSelectedRoast}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select roast" />
+                    <SelectValue placeholder={t('products.detail.selectRoast')} />
                   </SelectTrigger>
                   <SelectContent>
                     {fullProduct.roastLevelNames?.map((name) => (
@@ -365,10 +367,10 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Grind</Label>
+                <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{t('common.grind')}</Label>
                 <Select value={selectedGrind} onValueChange={setSelectedGrind}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select grind" />
+                    <SelectValue placeholder={t('products.detail.selectGrind')} />
                   </SelectTrigger>
                   <SelectContent>
                     {fullProduct.grindTypeNames?.map((name) => (
@@ -388,16 +390,28 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
               <Button
                 size="lg"
                 className="w-full sm:w-auto"
+                style={{
+                  backgroundColor: 'rgb(56, 109, 118)',
+                  color: '#fff',
+                  borderRadius: '0.5rem',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  transition: 'background 0.2s',
+                }}
+                onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
+                onMouseOut={e => (e.currentTarget.style.backgroundColor = 'rgb(56, 109, 118)')}
                 onClick={handleAddToCart}
                 disabled={!hasValidSelection || !isPriceAvailable}
               >
                 <ShoppingCart className="h-4 w-4" />
                 {isPriceAvailable ? (
-                  <>
-                    Add to Cart — <FormattedPrice amount={currentPrice} />
-                  </>
+                  t('common.actions.addToCart')
                 ) : (
-                  "Select options"
+                  t('products.detail.selectWeight')
                 )}
               </Button>
             </DialogFooter>

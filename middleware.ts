@@ -1,18 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
+import createMiddleware from "next-intl/middleware";
+import { locales, defaultLocale } from "./i18n";
 import { readCurrencyCookie, DEFAULT_CURRENCY } from "@/lib/currency-utils";
 
+// Create next-intl middleware
+const intlMiddleware = createMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: "always", // Always show locale in URL
+});
+
 /**
- * Middleware to handle currency cookie and ensure SSR components are aware
- * of the selected currency before rendering.
- * 
- * This middleware:
- * 1. Reads the currency cookie from the request
- * 2. Ensures the cookie is passed to server components
- * 3. Sets X-Currency header for API requests
- * 4. Ensures currency cookie exists (sets default if missing)
+ * Middleware to handle:
+ * 1. Locale detection and redirection (next-intl)
+ * 2. Currency cookie management
+ * 3. Locale header for API requests
  */
 export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+  // Handle locale routing first
+  const intlResponse = intlMiddleware(request);
+
+  // If the path was redirected due to locale, return early
+  if (intlResponse.status !== 200) {
+    return intlResponse;
+  }
+
+  const response = intlResponse || NextResponse.next();
+
+  // Extract locale from pathname (format: /locale/...)
+  const pathname = request.nextUrl.pathname;
+  const localeMatch = pathname.match(/^\/([a-z]{2})(?:\/|$)/);
+  const locale = localeMatch ? localeMatch[1] : defaultLocale;
 
   // Read the currency from the cookie string
   const cookieHeader = request.headers.get("cookie") || "";
@@ -20,6 +38,9 @@ export function middleware(request: NextRequest) {
 
   // Set X-Currency header for downstream API requests
   response.headers.set("X-Currency", currency);
+
+  // Set Accept-Language header for API requests to indicate preferred language
+  response.headers.set("Accept-Language", locale);
 
   // Optional: Ensure the currency cookie exists (set default if missing)
   const hasCurrencyCookie = request.cookies.has("df_currency");
@@ -34,17 +55,12 @@ export function middleware(request: NextRequest) {
   return response;
 }
 
-// Optionally, you can configure which paths this middleware runs on
+// Configure which paths this middleware runs on
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
+    // Skip all internal paths (_next) and static files (svg, png, jpg, etc.)
+    '/((?!_next|favicon.ico|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
   ],
 };

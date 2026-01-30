@@ -37,6 +37,8 @@ export interface ProductPriceDto {
   price: number;
 }
 
+import type { FlavourNoteDto } from "@/lib/types/flavour-note";
+
 export interface ProductResponse {
   id: string;
   slug: string;
@@ -56,6 +58,7 @@ export interface ProductResponse {
   createdAt: string;
   updatedAt?: string;
   images: ProductImageDto[];
+  flavourNotes?: FlavourNoteDto[];
 }
 
 export type Product = Omit<ProductResponse, "slug"> & { slug?: string };

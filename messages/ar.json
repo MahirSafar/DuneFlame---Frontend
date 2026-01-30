@@ -1,0 +1,299 @@
+{
+  "common": {
+    "nav": {
+      "home": "الرئيسية",
+      "about": "حول",
+      "products": "المنتجات",
+      "contact": "اتصل",
+      "cart": "السلة",
+      "dashboard": "لوحة التحكم",
+      "login": "تسجيل الدخول",
+      "register": "إنشاء حساب",
+      "logout": "تسجيل الخروج",
+      "profile": "الملف الشخصي"
+        ,"shop": "المتجر"
+    },
+    "footer": {
+      "company": "الشركة",
+      "about": "من نحن",
+      "careers": "الوظائف",
+      "press": "الصحافة",
+      "blog": "المدونة",
+      "contact": "اتصل",
+      "supportEmail": "info@duneflame.com",
+      "copyright": "© 2025 DuneFlame. جميع الحقوق محفوظة.",
+      "privacy": "سياسة الخصوصية",
+      "terms": "شروط الخدمة",
+      "followUs": "تابعنا"
+    },
+    "actions": {
+      "viewDetails": "عرض التفاصيل",
+      "learnMore": "اعرف المزيد",
+      "addToCart": "أضف للسلة",
+      "buyNow": "اشترِ الآن",
+      "remove": "إزالة",
+      "update": "تحديث",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد",
+      "close": "إغلاق",
+      "save": "حفظ",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "search": "بحث",
+      "filter": "تصفية",
+      "sort": "ترتيب",
+      "apply": "تطبيق",
+      "reset": "إعادة تعيين",
+      "loading": "جاري التحميل...",
+      "loadingPrice": "جاري تحميل السعر..."
+    },
+    "weight": "الوزن",
+    "roast": "التحميص",
+    "grind": "الطحن",
+    "origin": "المنشأ"
+  },
+  "home": {
+    "hero": {
+      "desertAwakening": "صحوة الصحراء",
+      "desertAwakeningDesc": "حيث يلتقي الرمل بالنار",
+      "crimsonDunes": "الكثبان القرمزية",
+      "crimsonDunesDesc": "أفق اللهب الأبدي",
+      "goldenMirage": "السراب الذهبي",
+      "goldenMirageDesc": "موجات الجمر المتحركة",
+      "volcanicWhisper": "همسة البركان",
+      "volcanicWhisperDesc": "النار القديمة تتحدث",
+      "sunsetInfinity": "غروب اللانهاية",
+      "sunsetInfinityDesc": "الأبدية المتوهجة",
+      "phoenixRising": "نهوض العنقاء",
+      "phoenixRisingDesc": "ولادة جديدة في اللهب",
+      "exploreCollection": "استكشف المجموعة",
+      "shopNow": "تسوق الآن"
+    },
+    "featured": {
+      "discover": "اكتشف",
+      "title": "فن",
+      "titleAccent": "القهوة الاستثنائية",
+      "limitedEdition": "إصدار محدود",
+      "limitedEditionDesc": "يرغاشيف الإثيوبية - زهرية ومشرقة",
+      "roastersSelection": "اختيار المحمصة",
+      "roastersSelectionDesc": "خلطات حصرية من مصدر واحد",
+      "newArrival": "وصول جديد",
+      "curated": "مختارة"
+    },
+    "categories": {
+      "title": "استكشف حسب",
+      "titleAccent": "الفئة",
+      "description": "اكتشف مجموعتنا المختارة بعناية"
+    },
+    "story": {
+      "title": "قصتنا",
+      "description": "من الكثبان الذهبية إلى كوبك، كل حبة تحكي قصة من الشغف والتميز.",
+      "cta": "اكتشف رحلتنا"
+    },
+    "trending": {
+      "title": "الأكثر رواجاً",
+      "titleAccent": "هذا الأسبوع"
+    },
+    "newsletter": {
+      "title": "ابق على اتصال",
+      "description": "اشترك لتلقي العروض الحصرية ورؤى القهوة",
+      "placeholder": "أدخل بريدك الإلكتروني",
+      "subscribe": "اشترك",
+      "success": "تم الاشتراك بنجاح!"
+    }
+  },
+  "products": {
+    "title": "منتجاتنا",
+    "filters": {
+      "title": "التصفية",
+      "roastLevel": "مستوى التحميص",
+      "origin": "المنشأ",
+      "category": "الفئة",
+      "priceRange": "نطاق السعر",
+      "clearAll": "مسح الكل",
+      "light": "خفيف",
+      "lightMedium": "خفيف-متوسط",
+      "medium": "متوسط",
+      "mediumDark": "متوسط-غامق",
+      "dark": "غامق"
+    },
+    "sort": {
+      "title": "الترتيب حسب",
+      "featured": "مميز",
+      "priceLowHigh": "السعر: من الأقل للأعلى",
+      "priceHighLow": "السعر: من الأعلى للأقل",
+      "nameAZ": "الاسم: أ-ي",
+      "nameZA": "الاسم: ي-أ",
+      "newest": "الأحدث"
+    },
+    "card": {
+      "roast": "التحميص",
+      "signature": "التوقيع"
+    },
+    "detail": {
+      "description": "الوصف",
+      "specifications": "المواصفات",
+      "reviews": "التقييمات",
+      "relatedProducts": "منتجات ذات صلة",
+      "selectWeight": "اختر الوزن",
+      "selectRoast": "اختر مستوى التحميص",
+      "selectGrind": "اختر نوع الطحن",
+      "quantity": "الكمية",
+      "inStock": "متوفر",
+      "outOfStock": "غير متوفر",
+      "addedToCart": "تمت الإضافة إلى السلة بنجاح!",
+      "wholeBean": "حبوب كاملة",
+      "fine": "ناعم",
+      "medium": "متوسط",
+      "coarse": "خشن",
+      "espresso": "إسبريسو"
+    },
+    "noProducts": "لم يتم العثور على منتجات",
+    "loading": "جاري تحميل المنتجات..."
+  },
+  "cart": {
+    "title": "سلة التسوق",
+    "empty": "السلة فارغة",
+    "continueShoppping": "متابعة التسوق",
+    "remove": "إزالة",
+    "quantity": "الكمية",
+    "price": "السعر",
+    "total": "الإجمالي",
+    "checkout": "الذهاب للدفع",
+    "subtotal": "الإجمالي الفرعي",
+    "shipping": "الشحن",
+    "tax": "الضريبة",
+    "orderTotal": "إجمالي الطلب",
+    "itemRemoved": "تمت إزالة العنصر من السلة",
+    "quantityUpdated": "تم تحديث الكمية"
+  },
+  "checkout": {
+    "title": "الدفع",
+    "summary": "ملخص الطلب",
+    "shippingAddress": "عنوان الشحن",
+    "billingAddress": "عنوان الفاتورة",
+    "paymentMethod": "طريقة الدفع",
+    "continue": "متابعة",
+    "placeOrder": "تأكيد الطلب",
+    "orderTotal": "إجمالي الطلب",
+    "subtotal": "الإجمالي الفرعي",
+    "shipping": "الشحن",
+    "tax": "الضريبة",
+    "discount": "الخصم",
+    "applyCoupon": "تطبيق كود الخصم",
+    "couponCode": "كود الخصم",
+    "paymentSuccessful": "تم الدفع بنجاح",
+    "orderConfirmed": "تم تأكيد طلبك",
+    "orderNumber": "رقم الطلب",
+    "estimatedDelivery": "التسليم المتوقع",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "address": "العنوان",
+    "city": "المدينة",
+    "state": "الولاية",
+    "zipCode": "الرمز البريدي",
+    "country": "الدولة"
+  },
+  "auth": {
+    "login": {
+      "title": "تسجيل الدخول إلى DuneFlame",
+      "subtitle": "مرحباً بعودتك - يرجى إدخال بيانات الاعتماد.",
+      "email": "البريد الإلكتروني",
+      "emailPlaceholder": "أدخل بريدك الإلكتروني",
+      "password": "كلمة المرور",
+      "passwordPlaceholder": "أدخل كلمة المرور",
+      "forgotPassword": "هل نسيت كلمة المرور؟",
+      "signIn": "تسجيل الدخول",
+      "signingIn": "جاري تسجيل الدخول...",
+      "orContinueWith": "أو تابع مع",
+      "google": "جوجل",
+      "noAccount": "ليس لديك حساب؟",
+      "signUp": "إنشاء حساب",
+      "success": "تم تسجيل الدخول بنجاح",
+      "error": "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+    },
+    "register": {
+      "title": "إنشاء حسابك",
+      "subtitle": "انضم إلى DuneFlame اليوم",
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "createAccount": "إنشاء حساب",
+      "creating": "جاري إنشاء الحساب...",
+      "orContinueWith": "أو تابع مع",
+      "google": "جوجل",
+      "haveAccount": "لديك حساب بالفعل؟",
+      "signIn": "تسجيل الدخول",
+      "success": "تم إنشاء الحساب بنجاح",
+      "error": "فشل التسجيل"
+    },
+    "validation": {
+      "emailRequired": "البريد الإلكتروني مطلوب",
+      "emailInvalid": "البريد الإلكتروني غير صالح",
+      "passwordRequired": "كلمة المرور مطلوبة",
+      "passwordMin": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+      "passwordMatch": "يجب أن تتطابق كلمات المرور",
+      "firstNameRequired": "الاسم الأول مطلوب",
+      "lastNameRequired": "اسم العائلة مطلوب"
+    }
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "orders": "الطلبات",
+    "profile": "الملف الشخصي",
+    "rewards": "المكافآت",
+    "savedCoffees": "القهوة المحفوظة",
+    "orderHistory": "سجل الطلبات",
+    "noOrders": "لا توجد طلبات بعد",
+    "viewOrder": "عرض الطلب",
+    "reorder": "إعادة الطلب",
+    "orderStatus": {
+      "delivered": "تم التسليم",
+      "processing": "قيد المعالجة",
+      "shipped": "تم الشحن"
+    }
+  },
+  "errors": {
+    "generic": "حدث خطأ ما",
+    "network": "خطأ في الشبكة. يرجى التحقق من اتصالك.",
+    "notFound": "الصفحة غير موجودة",
+    "unauthorized": "يرجى تسجيل الدخول للمتابعة",
+    "serverError": "خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقاً."
+    },
+  "metadata": {
+      "home": {
+        "title": "الرئيسية | ديون فليم - سوق القهوة المميزة",
+        "description": "اختبر المزيج المثالي من الدفء والرائحة والفخامة. حبوب قهوة مميزة من جميع أنحاء العالم."
+      },
+      "about": {
+        "title": "حول | ديون فليم - قصتنا",
+        "description": "تعرف على شغفنا بالقهوة والتزامنا بالتميز."
+      },
+      "products": {
+        "title": "المنتجات | ديون فليم - مجموعة القهوة",
+        "description": "استكشف مجموعتنا المختارة بعناية من حبوب القهوة المميزة."
+      },
+      "contact": {
+        "title": "اتصل | ديون فليم - تواصل معنا",
+        "description": "هل لديك أسئلة؟ نود أن نسمع منك. تواصل معنا اليوم."
+      },
+      "dashboard": {
+        "title": "لوحة التحكم | ديون فليم - حسابك",
+        "description": "أدارة طلباتك وملفك الشخصي والتفضيلات."
+      }
+    },
+    "notFound": {
+      "title": "الصفحة غير موجودة",
+      "description": "الصفحة التي تبحث عنها تبخرت مثل البخار.",
+      "backHome": "العودة للرئيسية",
+      "subtitle": "404"
+    },
+    "loading": {
+      "text": "جاري التحميل...",
+      "skeleton": "جاري تحميل المحتوى..."
+    }
+}

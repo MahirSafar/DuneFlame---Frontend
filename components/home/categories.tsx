@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 const CATEGORIES = [
   {
@@ -30,10 +31,12 @@ const CATEGORIES = [
 ]
 
 export default function Categories() {
+  const t = useTranslations()
+  
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 grain-bg dark:grain-bg">
       <h2 className="text-4xl font-bold text-primary dark:text-secondary mb-12 text-center text-balance">
-        Shop by Category
+        {t('home.categories.title')} <span className="text-accent">{t('home.categories.titleAccent')}</span>
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

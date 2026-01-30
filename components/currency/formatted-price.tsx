@@ -21,7 +21,7 @@ export function FormattedPrice({ amount, showCode = false, className = "" }: For
   });
 
   return (
-    <span className={className}>
+    <span className={`text-espresso-brown ${className}`}>
       {currencySymbol}
       {formatted}
       {showCode && <span className="text-sm text-muted-foreground ml-1">{currency}</span>}

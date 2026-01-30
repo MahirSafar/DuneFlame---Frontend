@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { ChevronDown } from "lucide-react"
 import { getCategories, getOrigins, type Category, type Origin } from "@/lib/services/products"
+import { useTranslations } from "next-intl"
 
 interface FilterSidebarProps {
   onFilterChange: (filters: FilterState) => void
@@ -18,14 +19,15 @@ export interface FilterState {
 }
 
 const ROAST_LEVELS = [
-  { value: 1, label: "Light" },
-  { value: 2, label: "Light-Medium" },
-  { value: 3, label: "Medium" },
-  { value: 4, label: "Medium-Dark" },
-  { value: 5, label: "Dark" },
+  { value: 1, labelKey: "products.filters.light" },
+  { value: 2, labelKey: "products.filters.lightMedium" },
+  { value: 3, labelKey: "products.filters.medium" },
+  { value: 4, labelKey: "products.filters.mediumDark" },
+  { value: 5, labelKey: "products.filters.dark" },
 ]
 
 export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice = 100 }: FilterSidebarProps) {
+  const t = useTranslations()
   const [filters, setFilters] = useState<FilterState>({
     roastLevel: [],
     originIds: [],
@@ -133,10 +135,11 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
       <div className="mb-6">
         <button
           onClick={() => toggleSection("category")}
-          className="w-full flex justify-between items-center mb-4 font-semibold text-primary dark:text-secondary hover:text-accent transition-smooth"
+          className="w-full flex justify-between items-center mb-4 font-semibold transition-smooth"
+          style={{ color: '#4B2E2B' }}
         >
-          Category
-          <ChevronDown size={18} className={`transition-transform ${expandedSections.category ? "" : "-rotate-90"}`} />
+          {t('products.filters.category')}
+          <ChevronDown size={18} className={`transition-transform rtl:rotate-180 ${expandedSections.category ? "" : "-rotate-90"}`} />
         </button>
 
         {expandedSections.category && (
@@ -149,7 +152,7 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
                   onChange={() => handleCategoryChange(category.id)}
                   className="rounded border-border accent-accent"
                 />
-                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-smooth">
+                <span className="text-sm" style={{ color: '#4B2E2B' }}>
                   {category.name}
                 </span>
               </label>
@@ -164,10 +167,11 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
       <div className="mb-6">
         <button
           onClick={() => toggleSection("roast")}
-          className="w-full flex justify-between items-center mb-4 font-semibold text-primary dark:text-secondary hover:text-accent transition-smooth"
+          className="w-full flex justify-between items-center mb-4 font-semibold transition-smooth"
+          style={{ color: '#4B2E2B' }}
         >
-          Roast Level
-          <ChevronDown size={18} className={`transition-transform ${expandedSections.roast ? "" : "-rotate-90"}`} />
+          {t('products.filters.roastLevel')}
+          <ChevronDown size={18} className={`transition-transform rtl:rotate-180 ${expandedSections.roast ? "" : "-rotate-90"}`} />
         </button>
 
         {expandedSections.roast && (
@@ -180,8 +184,8 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
                   onChange={() => handleRoastChange(level.value)}
                   className="rounded border-border accent-accent"
                 />
-                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-smooth">
-                  {level.label}
+                <span className="text-sm" style={{ color: '#4B2E2B' }}>
+                  {t(level.labelKey)}
                 </span>
               </label>
             ))}
@@ -195,10 +199,11 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
       <div className="mb-6">
         <button
           onClick={() => toggleSection("origin")}
-          className="w-full flex justify-between items-center mb-4 font-semibold text-primary dark:text-secondary hover:text-accent transition-smooth"
+          className="w-full flex justify-between items-center mb-4 font-semibold transition-smooth"
+          style={{ color: '#4B2E2B' }}
         >
-          Origin
-          <ChevronDown size={18} className={`transition-transform ${expandedSections.origin ? "" : "-rotate-90"}`} />
+          {t('products.filters.origin')}
+          <ChevronDown size={18} className={`transition-transform rtl:rotate-180 ${expandedSections.origin ? "" : "-rotate-90"}`} />
         </button>
 
         {expandedSections.origin && (
@@ -211,7 +216,7 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
                   onChange={() => handleOriginChange(origin.id)}
                   className="rounded border-border accent-accent"
                 />
-                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-smooth">
+                <span className="text-sm" style={{ color: '#4B2E2B' }}>
                   {origin.name}
                 </span>
               </label>
@@ -226,10 +231,11 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
       <div>
         <button
           onClick={() => toggleSection("price")}
-          className="w-full flex justify-between items-center mb-4 font-semibold text-primary dark:text-secondary hover:text-accent transition-smooth"
+          className="w-full flex justify-between items-center mb-4 font-semibold transition-smooth"
+          style={{ color: '#4B2E2B' }}
         >
-          Price Range
-          <ChevronDown size={18} className={`transition-transform ${expandedSections.price ? "" : "-rotate-90"}`} />
+          {t('products.filters.priceRange')}
+          <ChevronDown size={18} className={`transition-transform rtl:rotate-180 ${expandedSections.price ? "" : "-rotate-90"}`} />
         </button>
 
         {expandedSections.price && (
@@ -296,7 +302,7 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
         }}
         className="w-full mt-6 px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent/10 transition-smooth"
       >
-        Reset Filters
+        {t('products.filters.clearAll')}
       </button>
     </aside>
   )

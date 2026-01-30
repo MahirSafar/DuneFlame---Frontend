@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import ProductCard from "@/components/products/product-card"
 import { getProducts, type ProductResponse } from "@/lib/services/products"
+import { useTranslations } from "next-intl"
 
 // Helper function to convert roast level number to descriptive text
 const getRoastLevelText = (level: number): string => {
@@ -12,6 +13,7 @@ const getRoastLevelText = (level: number): string => {
 }
 
 export default function Trending() {
+  const t = useTranslations()
   const [products, setProducts] = useState<ProductResponse[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -26,15 +28,15 @@ export default function Trending() {
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="flex justify-between items-center mb-12">
         <div>
-          <span className="text-accent font-semibold text-sm uppercase tracking-wider">Trending Now</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-primary dark:text-secondary mt-2">Customer Favorites</h2>
+          <span className="text-accent font-semibold text-sm uppercase tracking-wider">{t('home.trending.title')}</span>
+          <h2 className="text-3xl md:text-4xl font-bold text-primary dark:text-secondary mt-2">{t('home.trending.titleAccent')}</h2>
         </div>
         <a
           href="/products"
           className="text-accent font-semibold hover:gap-2 flex items-center gap-1 transition-smooth group"
         >
-          View All
-          <span className="group-hover:translate-x-1 transition-transform">→</span>
+          {t('common.actions.viewDetails')}
+          <span className="group-hover:translate-x-1 transition-transform rtl:rotate-180">→</span>
         </a>
       </div>
 

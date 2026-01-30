@@ -6,6 +6,9 @@ import { useAuthStore } from "@/lib/auth-store";
 import { refreshAccessToken } from "./services/auth";
 import { getCurrencyFromStorage } from "@/lib/currency-utils";
 
+// Store for current locale (to be set from client components)
+let currentLocale: string = "en";
+
 const instance = axios.create({
   baseURL: API_URL,
   withCredentials: true,
@@ -27,6 +30,11 @@ instance.interceptors.request.use(
     const currency = getCurrencyFromStorage();
     if (config.headers) {
       config.headers["X-Currency"] = currency;
+    }
+
+    // Add locale header - uses the current locale from store
+    if (config.headers && currentLocale) {
+      config.headers["Accept-Language"] = currentLocale;
     }
 
     return config;
@@ -173,6 +181,18 @@ instance.interceptors.response.use(
 export function setAxiosAuthToken(token: string | null) {
   if (token) instance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   else delete instance.defaults.headers.common["Authorization"];
+}
+
+/**
+ * Set the current locale for axios requests
+ * Call this from client components when locale changes
+ * 
+ * @param locale - The locale code (e.g., 'en', 'ar')
+ */
+export function setAxiosLocale(locale: string) {
+  currentLocale = locale;
+  // Also set as default header for consistency
+  instance.defaults.headers.common["Accept-Language"] = locale;
 }
 
 export default instance;

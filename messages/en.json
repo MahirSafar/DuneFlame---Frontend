@@ -1,0 +1,304 @@
+{
+  "common": {
+    "nav": {
+      "home": "Home",
+      "about": "About",
+      "products": "Products",
+      "shop": "Shop",
+      "contact": "Contact",
+      "cart": "Cart",
+      "dashboard": "Dashboard",
+      "login": "Login",
+      "register": "Register",
+      "logout": "Logout",
+      "profile": "Profile"
+    },
+    "footer": {
+      "company": "Company",
+      "about": "About Us",
+      "careers": "Careers",
+      "press": "Press",
+      "blog": "Blog",
+      "contact": "Contact",
+      "supportEmail": "info@duneflame.com",
+      "copyright": "© 2025 DuneFlame. All rights reserved.",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "followUs": "Follow Us"
+    },
+    "actions": {
+      "viewDetails": "View details",
+      "learnMore": "Learn More",
+      "addToCart": "Add to Cart",
+      "buyNow": "Buy Now",
+      "remove": "Remove",
+      "update": "Update",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "close": "Close",
+      "save": "Save",
+      "edit": "Edit",
+      "delete": "Delete",
+      "search": "Search",
+      "filter": "Filter",
+      "sort": "Sort",
+      "apply": "Apply",
+      "reset": "Reset",
+      "loading": "Loading...",
+      "loadingPrice": "Loading price..."
+    },
+    "weight": "Weight",
+    "roast": "Roast",
+    "grind": "Grind",
+    "origin": "Origin"
+  },
+  "home": {
+    "hero": {
+      "desertAwakening": "Desert Awakening",
+      "desertAwakeningDesc": "Where sand meets fire",
+      "crimsonDunes": "Crimson Dunes",
+      "crimsonDunesDesc": "Eternal flame horizon",
+      "goldenMirage": "Golden Mirage",
+      "goldenMirageDesc": "Shifting ember waves",
+      "volcanicWhisper": "Volcanic Whisper",
+      "volcanicWhisperDesc": "Ancient fire speaks",
+      "sunsetInfinity": "Sunset Infinity",
+      "sunsetInfinityDesc": "Blazing eternity",
+      "phoenixRising": "Phoenix Rising",
+      "phoenixRisingDesc": "Rebirth in flames",
+      "exploreCollection": "Explore Collection",
+      "shopNow": "Shop Now"
+    },
+    "featured": {
+      "discover": "Discover",
+      "title": "The Art of",
+      "titleAccent": "Exceptional Coffee",
+      "limitedEdition": "Limited Edition",
+      "limitedEditionDesc": "Ethiopian Yirgacheffe - Floral & Bright",
+      "roastersSelection": "Roaster's Selection",
+      "roastersSelectionDesc": "Exclusive single-origin blends",
+      "newArrival": "New Arrival",
+      "curated": "Curated"
+    },
+    "categories": {
+      "title": "Explore by",
+      "titleAccent": "Category",
+      "description": "Discover our carefully curated selection"
+    },
+    "story": {
+      "title": "Our Story",
+      "description": "From the golden dunes to your cup, every bean tells a tale of passion and excellence.",
+      "cta": "Discover Our Journey"
+    },
+    "trending": {
+      "title": "Trending",
+      "titleAccent": "This Week"
+    },
+    "newsletter": {
+      "title": "Stay Connected",
+      "description": "Subscribe to receive exclusive offers and coffee insights",
+      "placeholder": "Enter your email",
+      "subscribe": "Subscribe",
+      "success": "Successfully subscribed!"
+    }
+  },
+  "products": {
+    "title": "Our Products",
+    "filters": {
+      "title": "Filters",
+      "roastLevel": "Roast Level",
+      "origin": "Origin",
+      "category": "Category",
+      "priceRange": "Price Range",
+      "clearAll": "Clear All",
+      "light": "Light",
+      "lightMedium": "Light-Medium",
+      "medium": "Medium",
+      "mediumDark": "Medium-Dark",
+      "dark": "Dark"
+    },
+    "sort": {
+      "title": "Sort by",
+      "featured": "Featured",
+      "priceLowHigh": "Price: Low to High",
+      "priceHighLow": "Price: High to Low",
+      "nameAZ": "Name: A-Z",
+      "nameZA": "Name: Z-A",
+      "newest": "Newest"
+    },
+    "card": {
+      "roast": "Roast",
+      "signature": "Signature"
+    },
+    "detail": {
+      "description": "Description",
+      "specifications": "Specifications",
+      "reviews": "Reviews",
+      "relatedProducts": "Related Products",
+      "selectWeight": "Select Weight",
+      "selectRoast": "Select Roast Level",
+      "selectGrind": "Select Grind Type",
+      "quantity": "Quantity",
+      "inStock": "In Stock",
+      "outOfStock": "Out of Stock",
+      "addedToCart": "Added to cart successfully!",
+      "wholeBean": "Whole Bean",
+      "fine": "Fine",
+      "medium": "Medium",
+      "coarse": "Coarse",
+      "espresso": "Espresso"
+    },
+    "noProducts": "No products found",
+    "loading": "Loading products..."
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty",
+    "continueShoppping": "Continue Shopping",
+    "remove": "Remove",
+    "quantity": "Quantity",
+    "price": "Price",
+    "total": "Total",
+    "checkout": "Proceed to Checkout",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "tax": "Tax",
+    "orderTotal": "Order Total",
+    "itemRemoved": "Item removed from cart",
+    "quantityUpdated": "Quantity updated"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "summary": "Order Summary",
+    "shippingAddress": "Shipping Address",
+    "billingAddress": "Billing Address",
+    "paymentMethod": "Payment Method",
+    "continue": "Continue",
+    "placeOrder": "Place Order",
+    "orderTotal": "Order Total",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "tax": "Tax",
+    "discount": "Discount",
+    "applyCoupon": "Apply Coupon",
+    "couponCode": "Coupon Code",
+    "paymentSuccessful": "Payment Successful",
+    "orderConfirmed": "Your order has been confirmed",
+    "orderNumber": "Order Number",
+    "estimatedDelivery": "Estimated Delivery",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "state": "State",
+    "zipCode": "Zip Code",
+    "country": "Country"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in to DuneFlame",
+      "subtitle": "Welcome back — please enter your credentials.",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "forgotPassword": "Forgot password?",
+      "signIn": "Sign In",
+      "signingIn": "Signing in...",
+      "orContinueWith": "Or continue with",
+      "google": "Google",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "success": "Logged in successfully",
+      "error": "Invalid email or password"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Join DuneFlame today",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "createAccount": "Create Account",
+      "creating": "Creating account...",
+      "orContinueWith": "Or continue with",
+      "google": "Google",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "success": "Account created successfully",
+      "error": "Registration failed"
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email",
+      "passwordRequired": "Password is required",
+      "passwordMin": "Password must be at least 6 characters",
+      "passwordMatch": "Passwords must match",
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required"
+    }
+  },
+  "dashboard": {
+    "title": "My Dashboard",
+    "orders": "Orders",
+    "profile": "Profile",
+    "rewards": "Rewards",
+    "savedCoffees": "Saved Coffees",
+    "orderHistory": "Order History",
+    "noOrders": "No orders yet",
+    "viewOrder": "View Order",
+    "reorder": "Reorder",
+    "orderStatus": {
+      "delivered": "Delivered",
+      "processing": "Processing",
+      "shipped": "Shipped"
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "network": "Network error. Please check your connection.",
+    "notFound": "Page not found",
+    "unauthorized": "Please login to continue",
+    "serverError": "Server error. Please try again later.",
+      "orderStatus": {
+        "delivered": "Delivered",
+        "processing": "Processing",
+        "shipped": "Shipped"
+    }
+  },
+  "metadata": {
+      "home": {
+        "title": "Home | DuneFlame - Premium Coffee Marketplace",
+        "description": "Experience the perfect blend of warmth, aroma, and luxury. Premium coffee roasts from around the world."
+      },
+      "about": {
+        "title": "About | DuneFlame - Our Story",
+        "description": "Learn about our passion for coffee and commitment to excellence."
+      },
+      "products": {
+        "title": "Products | DuneFlame - Our Coffee Collection",
+        "description": "Explore our carefully curated selection of premium coffee beans."
+      },
+      "contact": {
+        "title": "Contact | DuneFlame - Get in Touch",
+        "description": "Have questions? We'd love to hear from you. Contact us today."
+      },
+      "dashboard": {
+        "title": "Dashboard | DuneFlame - Your Account",
+        "description": "Manage your orders, profile, and preferences."
+      }
+    },
+    "notFound": {
+      "title": "Page Not Found",
+      "description": "The page you are looking for has evaporated like steam.",
+      "backHome": "Return Home",
+      "subtitle": "404"
+    },
+    "loading": {
+      "text": "Loading...",
+      "skeleton": "Loading content..."
+    }
+}

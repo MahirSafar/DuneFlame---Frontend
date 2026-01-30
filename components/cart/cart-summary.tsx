@@ -8,8 +8,10 @@ import { useCurrency } from "@/lib/currency-context"
 import { getImageUrl } from "@/lib/utils"
 import { useAuthStore } from "@/lib/auth-store"
 import { FormattedPrice } from "@/components/currency/formatted-price"
+import { useTranslations } from "next-intl"
 
 export default function CartSummary() {
+  const t = useTranslations()
   const { accessToken } = useAuthStore()
   const { currency } = useCurrency()
   const { items, removeItem, updateQuantity, total, getItemPrice } = useCartStore()
@@ -23,12 +25,12 @@ export default function CartSummary() {
   if (items.length === 0) {
     return (
       <div className="glass rounded-xl p-12 text-center">
-        <p className="text-muted-foreground text-lg mb-6">Your cart is empty</p>
+        <p className="text-muted-foreground text-lg mb-6">{t('cart.empty')}</p>
         <Link
           href="/products"
           className="inline-block px-6 py-3 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-lg transition-smooth"
         >
-          Continue Shopping
+          {t('cart.continueShoppping')}
         </Link>
       </div>
     )
@@ -67,17 +69,17 @@ export default function CartSummary() {
                 <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-2">
                   {item.selectedWeightLabel && (
                     <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
-                      Weight: {item.selectedWeightLabel}
+                      {t('common.weight')}: {item.selectedWeightLabel}
                     </span>
                   )}
                   {item.selectedRoast && (
                     <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
-                      Roast: {item.selectedRoast}
+                      {t('common.roast')}: {item.selectedRoast}
                     </span>
                   )}
                   {item.selectedGrind && (
                     <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
-                      Grind: {item.selectedGrind}
+                      {t('common.grind')}: {item.selectedGrind}
                     </span>
                   )}
                 </div>
@@ -130,15 +132,15 @@ export default function CartSummary() {
 
       <div className="glass rounded-xl p-6 space-y-4">
         <div className="flex justify-between text-muted-foreground">
-          <span>Subtotal</span>
+          <span>{t('cart.subtotal')}</span>
           <FormattedPrice amount={total(currency)} />
         </div>
         <div className="flex justify-between text-muted-foreground">
-          <span>Shipping</span>
+          <span>{t('cart.shipping')}</span>
           <span>Free</span>
         </div>
         <div className="border-t border-border pt-4 flex justify-between font-bold text-primary dark:text-secondary text-lg">
-          <span>Total</span>
+          <span>{t('cart.total')}</span>
           <FormattedPrice amount={total(currency)} />
         </div>
 
@@ -146,14 +148,14 @@ export default function CartSummary() {
           href="/checkout"
           className="w-full px-6 py-3 bg-accent hover:bg-accent/90 text-accent-foreground font-bold rounded-lg transition-smooth flex items-center justify-center glow-accent"
         >
-          Proceed to Checkout
+          {t('cart.checkout')}
         </Link>
 
         <Link
           href="/products"
           className="w-full px-6 py-3 border border-border hover:bg-muted rounded-lg transition-smooth text-center font-semibold"
         >
-          Continue Shopping
+          {t('cart.continueShoppping')}
         </Link>
       </div>
     </div>

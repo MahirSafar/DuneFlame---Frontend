@@ -42,6 +42,7 @@ const config = {
         'logo': ['Bank Gothic BT', 'sans-serif'],
         'heading': ['DIN 2014', 'sans-serif'],
         'body': ['Source Sans Pro', 'sans-serif'],
+        'arabic': ['var(--font-arabic)', 'Noto Sans Arabic', 'sans-serif'],
       },
     },
   },

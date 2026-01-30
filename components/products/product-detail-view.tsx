@@ -155,10 +155,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           </div>
         )}
 
-        <div className="absolute left-6 top-6 z-20 inline-flex items-center gap-2 rounded-full bg-black/40 px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-white backdrop-blur">
-          <Sparkles size={14} />
-          Artisan Roast
-        </div>
+        // ...removed Artisan Roast badge...
         <div className="absolute right-6 bottom-6 z-20 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs text-white backdrop-blur">
           {product.stockInKg > 0 ? "In stock" : "Limited"}
         </div>
@@ -190,9 +187,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
       >
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-            <span className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-accent">
-              {product.categoryName || "Signature"}
-            </span>
+            {/* Removed category badge span as requested */}
             <div className="flex items-center gap-2">
               <Leaf size={14} className="text-accent" />
               <span>{product.originName || "DuneFlame Reserve"}</span>
@@ -318,8 +313,26 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           <button
             onClick={handleAddToCart}
             disabled={product.stockInKg <= 0 || !selectedWeight || !resolved}
-            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-accent to-orange-500 px-6 py-4 text-lg font-semibold text-accent-foreground shadow-[0_20px_60px_-30px_rgba(255,115,29,0.8)] transition hover:shadow-[0_20px_60px_-22px_rgba(255,115,29,0.95)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
+            style={{
+              backgroundColor: 'rgb(56, 109, 118)',
+              color: '#fff',
+              borderRadius: '0.75rem',
+              width: '100%',
+              padding: '1rem 1.5rem',
+              fontSize: '1.125rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              marginTop: '1.5rem',
+              boxShadow: '0 20px 60px -30px rgba(56,109,118,0.8)',
+              transition: 'box-shadow 0.2s, background 0.2s',
+            }}
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
             title={!resolved ? "Price not loaded for this currency/weight combination" : undefined}
+            onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
+            onMouseOut={e => (e.currentTarget.style.backgroundColor = 'rgb(56, 109, 118)')}
           >
             <ShoppingCart size={20} />
             Add to Basket

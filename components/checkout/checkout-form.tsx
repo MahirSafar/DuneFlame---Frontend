@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
+import { useLocale } from "next-intl"
 import { MapPin, Package, AlertCircle, Loader2 } from "lucide-react"
-import { useCartStore } from "@/lib/cart-store"
+import { useCartStore, getItemPrice } from "@/lib/cart-store"
 import { useCurrency } from "@/lib/currency-context"
 import { apiFetch, setTokens } from "@/lib/api-client"
 import { basketService } from "@/lib/services/basket"
@@ -210,6 +211,7 @@ export default function CheckoutForm() {
   const total = useCartStore((state) => state.total)
   const { currency } = useCurrency()
   const { user, accessToken, refreshToken } = useAuthStore()
+  const locale = useLocale()
 
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     street: "",
@@ -398,6 +400,7 @@ export default function CheckoutForm() {
           basketId,
           shippingAddress,
           currency: currency.toUpperCase(),  // CRITICAL: Include currency for Stripe amount calculation
+          languageCode: locale, // "en", "ar" (next-intl returns clean locale)
         }),
       })
 
@@ -466,11 +469,11 @@ export default function CheckoutForm() {
         {/* Left Column - Shipping Form */}
         <div className="lg:col-span-2">
           <form onSubmit={handleContinueToPayment} className="space-y-6">
-            <Card>
+            <Card style={{ backgroundColor: 'rgb(253, 250, 247)', color: '#4B2E2B' }}>
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <MapPin className="text-accent h-6 w-6" />
-                  <CardTitle className="text-2xl">Shipping Address</CardTitle>
+                  <CardTitle className="text-2xl" style={{ color: '#4B2E2B' }}>Shipping Address</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -600,6 +603,7 @@ export default function CheckoutForm() {
               type="submit"
               size="lg"
               className="w-full text-lg font-semibold"
+              style={{ backgroundColor: 'rgb(56, 109, 118)', color: '#fff' }}
               disabled={isInitializingPayment}
             >
               {isInitializingPayment ? "Preparing Payment..." : "Proceed to Payment"}
@@ -618,11 +622,11 @@ export default function CheckoutForm() {
 
         {/* Right Column - Order Summary */}
         <div className="lg:col-span-1">
-          <Card className="sticky top-8">
+          <Card className="sticky top-8" style={{ backgroundColor: 'rgb(253, 250, 247)', color: '#4B2E2B' }}>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <Package className="text-accent h-6 w-6" />
-                <CardTitle className="text-2xl">Order Summary</CardTitle>
+                <CardTitle className="text-2xl" style={{ color: '#4B2E2B' }}>Order Summary</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -655,7 +659,7 @@ export default function CheckoutForm() {
                         Qty: {item.quantity}
                       </p>
                       <p className="text-sm font-semibold mt-1">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        <FormattedPrice amount={getItemPrice(item, currency) * item.quantity} />
                       </p>
                     </div>
                   </div>

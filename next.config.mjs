@@ -1,3 +1,7 @@
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -33,8 +37,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'localhost',
+        port: '', // Allow any port
+        pathname: '/**',
+      },
     ],
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig);
