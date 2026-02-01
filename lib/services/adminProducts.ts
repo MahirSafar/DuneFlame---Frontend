@@ -4,7 +4,8 @@
  */
 
 import axios from "@/lib/axios";
-import type { AdminProductResponse, PagedResult } from "@/lib/types/product";
+import { PagedResult } from "@/lib/services/products";
+import type { AdminProductResponse } from "@/lib/types/product";
 
 interface GetProductsParams {
   pageNumber?: number;

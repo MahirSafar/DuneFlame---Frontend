@@ -1,0 +1,15 @@
+{
+  "hosting": {
+    "public": "public",
+    "cleanUrls": true,
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "duneflame-frontend",
+          "region": "me-central1"
+        }
+      }
+    ]
+  }
+}

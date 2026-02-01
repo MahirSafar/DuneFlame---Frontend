@@ -19,8 +19,8 @@ const localeNames: Record<Locale, string> = {
 }
 
 const localeFlags: Record<Locale, string> = {
-  en: '🇺🇸',
-  ar: '🇸🇦',
+  en: '',
+  ar: '',
 }
 
 export function LanguageSwitcher() {
@@ -48,13 +48,13 @@ export function LanguageSwitcher() {
         <Button
           variant="outline"
           size="sm"
-          className="gap-2 text-white hover:text-white"
-          style={{ backgroundColor: '#4B2E2B', borderColor: '#4B2E2B' }}
+          className="gap-2 text-white hover:text-white text-xs font-medium"
+          style={{ backgroundColor: '#2b1b13', borderColor: '#2b1b13' }}
           disabled={isPending}
           aria-label="Select language"
         >
           <Globe className="h-4 w-4" />
-          <span className="hidden sm:inline text-xs font-medium">
+          <span>
             {localeFlags[currentLocale]} {localeNames[currentLocale]}
           </span>
         </Button>

@@ -2,7 +2,7 @@ import type { Config } from 'tailwindcss'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
 const config = {
-  darkMode: ['class', '.dark'],
+  // darkMode removed
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',

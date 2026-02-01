@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
-import type { PagedResult, Product } from "@/lib/services/products"
+import type { PagedResult, ProductResponse } from "@/lib/services/products"
 import { getProducts } from "@/lib/services/products"
 import ProductCard from "./product-card"
 
@@ -12,7 +12,7 @@ interface RelatedProductsProps {
 }
 
 export default function RelatedProducts({ categoryId, currentProductId }: RelatedProductsProps) {
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<ProductResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -74,11 +74,11 @@ export default function RelatedProducts({ categoryId, currentProductId }: Relate
       className="space-y-6 border-t border-white/10 pt-12"
     >
       <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-primary dark:text-secondary">You May Also Like</h2>
+        <h2 className="font-heading text-[24px] font-bold text-primary dark:text-secondary uppercase">YOU MAY ALSO LIKE</h2>
         <p className="text-muted-foreground">Explore more from this collection</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
         {products.map((product, index) => {
           return (
             <motion.div

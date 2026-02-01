@@ -1,6 +1,8 @@
 import axios from "@/lib/axios";
 import { apiFetch } from "../api-client";
-import type { MasterData, CreateProductPayload } from "@/lib/types";
+import type { MasterData, Product, ProductPriceDto } from "@/lib/types";
+
+export type { Product };
 
 export interface PagedResult<T> {
   items: T[];
@@ -30,12 +32,7 @@ export interface ProductImageDto {
   isMain: boolean;
 }
 
-export interface ProductPriceDto {
-  productPriceId: string;
-  weightLabel: string;
-  grams: number;
-  price: number;
-}
+
 
 import type { FlavourNoteDto } from "@/lib/types/flavour-note";
 
@@ -61,8 +58,7 @@ export interface ProductResponse {
   flavourNotes?: FlavourNoteDto[];
 }
 
-export type Product = Omit<ProductResponse, "slug"> & { slug?: string };
-
+// Use Product from @/lib/types
 type ProductQuery = {
   pageNumber?: number;
   pageSize?: number;
@@ -78,7 +74,7 @@ type ProductQuery = {
   sortBy?: string;
 };
 
-export async function getProducts(params: ProductQuery = {}) {
+export async function getProducts(params: ProductQuery = {}): Promise<PagedResult<ProductResponse>> {
   const query = new URLSearchParams();
 
   const pageNumber = params.pageNumber ?? params.page;
@@ -95,7 +91,8 @@ export async function getProducts(params: ProductQuery = {}) {
   return response;
 }
 
-export async function getAdminProducts(params: ProductQuery = {}) {
+
+export async function getAdminProducts(params: ProductQuery = {}): Promise<{ items: Product[], totalCount: number, totalPages: number, hasNextPage: boolean, hasPreviousPage: boolean }> {
   const query = new URLSearchParams();
 
   const pageNumber = params.pageNumber ?? params.page;
@@ -108,7 +105,26 @@ export async function getAdminProducts(params: ProductQuery = {}) {
   if (params.categoryId) query.set("categoryId", params.categoryId);
   
   const qs = query.toString();
-  return apiFetch<PagedResult<ProductResponse>>(`/admin/products${qs ? `?${qs}` : ""}`);
+  const response = await apiFetch<PagedResult<ProductResponse>>(`/admin/products${qs ? `?${qs}` : ""}`);
+  // Map ProductResponse[] to Product[] (add empty fields if needed)
+  const items: Product[] = response.items.map((item) => ({
+    ...item,
+    activePrice: null,
+    otherAvailableCurrencies: [],
+    availablePrices: item.availablePrices,
+    images: item.images,
+    roastLevelNames: item.roastLevelNames,
+    grindTypeNames: item.grindTypeNames,
+    roastLevelIds: item.roastLevelIds,
+    grindTypeIds: item.grindTypeIds,
+  }));
+  return {
+    items,
+    totalCount: response.totalCount,
+    totalPages: response.totalPages,
+    hasNextPage: response.hasNextPage,
+    hasPreviousPage: response.hasPreviousPage,
+  };
 }
 
 export function getProduct(idOrSlug: string, options?: { admin?: false }): Promise<ProductResponse>;

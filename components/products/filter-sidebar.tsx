@@ -135,7 +135,7 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
       <div className="mb-6">
         <button
           onClick={() => toggleSection("category")}
-          className="w-full flex justify-between items-center mb-4 font-semibold transition-smooth"
+          className="w-full flex justify-between items-center mb-4 text-sm font-semibold transition-smooth uppercase"
           style={{ color: '#4B2E2B' }}
         >
           {t('products.filters.category')}
@@ -167,7 +167,7 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
       <div className="mb-6">
         <button
           onClick={() => toggleSection("roast")}
-          className="w-full flex justify-between items-center mb-4 font-semibold transition-smooth"
+          className="w-full flex justify-between items-center mb-4 text-sm font-semibold transition-smooth uppercase"
           style={{ color: '#4B2E2B' }}
         >
           {t('products.filters.roastLevel')}
@@ -199,7 +199,7 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
       <div className="mb-6">
         <button
           onClick={() => toggleSection("origin")}
-          className="w-full flex justify-between items-center mb-4 font-semibold transition-smooth"
+          className="w-full flex justify-between items-center mb-4 text-sm font-semibold transition-smooth uppercase"
           style={{ color: '#4B2E2B' }}
         >
           {t('products.filters.origin')}
@@ -231,7 +231,7 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
       <div>
         <button
           onClick={() => toggleSection("price")}
-          className="w-full flex justify-between items-center mb-4 font-semibold transition-smooth"
+          className="w-full flex justify-between items-center mb-4 text-sm font-semibold transition-smooth uppercase"
           style={{ color: '#4B2E2B' }}
         >
           {t('products.filters.priceRange')}

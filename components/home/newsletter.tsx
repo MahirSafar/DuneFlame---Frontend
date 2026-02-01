@@ -19,7 +19,7 @@ export default function Newsletter() {
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="glass rounded-3xl p-12 md:p-16">
         <div className="max-w-2xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-primary dark:text-secondary mb-4">{t('home.newsletter.title')}</h2>
+          <h2 className="font-heading font-bold text-primary dark:text-secondary mb-4" style={{ fontSize: "24px" }}>{t('home.newsletter.title')}</h2>
           <p className="text-muted-foreground mb-8">
             {t('home.newsletter.description')}
           </p>
@@ -38,7 +38,7 @@ export default function Newsletter() {
             </div>
             <button
               type="submit"
-              className="px-6 py-3 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-lg transition-smooth flex items-center gap-2"
+              className="px-6 py-3 font-semibold rounded-lg transition-smooth flex items-center gap-2 btn-subscribe"
             >
               {t('home.newsletter.subscribe')}
               <ArrowRight size={18} className="rtl:rotate-180" />

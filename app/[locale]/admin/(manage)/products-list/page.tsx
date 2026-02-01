@@ -28,7 +28,8 @@ import {
   getAdminProducts,
   deleteAdminProduct,
 } from "@/lib/services/adminProducts";
-import type { AdminProductResponse, PagedResult } from "@/lib/types/product";
+import { PagedResult } from "@/lib/services/products";
+import type { AdminProductResponse } from "@/lib/types/product";
 import { getErrorMessage, getImageUrl } from "@/lib/utils";
 import { API_URL } from "@/lib/config";
 import {

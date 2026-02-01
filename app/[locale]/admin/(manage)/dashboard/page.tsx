@@ -228,12 +228,12 @@ export default function AdminDashboard() {
                   contentStyle={{
                     backgroundColor: "rgba(0, 0, 0, 0.95)",
                     border: "2px solid rgba(255, 255, 255, 0.5)",
-                    borderRadius: "8px"
+                    borderRadius: "8px",
+                    padding: "8px 12px"
                   }}
                   labelStyle={{ color: "#ffffff", fontSize: "14px", fontWeight: "bold" }}
                   itemStyle={{ color: "#ffffff", fontSize: "13px" }}
                   formatter={(value) => [value, "Count"]}
-                  contentStyleN={{ padding: "8px 12px" }}
                 />
                 <Legend wrapperStyle={{ paddingTop: "20px" }} />
               </RechartsPie>

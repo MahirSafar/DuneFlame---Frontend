@@ -128,15 +128,17 @@ function PaymentContent({
   }
 
   return (
-    <div className="space-y-4">
-      <PaymentElement />
+    <div className="space-y-4 w-full">
+      <div className="w-full overflow-x-hidden">
+        <PaymentElement />
+      </div>
       {paymentError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{paymentError}</AlertDescription>
         </Alert>
       )}
-      <div className="flex gap-3">
+      <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
         <Button
           type="button"
           className="flex-1"
@@ -152,7 +154,7 @@ function PaymentContent({
             "Pay Now"
           )}
         </Button>
-        <Button type="button" variant="outline" onClick={onClose} disabled={isProcessing}>
+        <Button type="button" variant="outline" onClick={onClose} disabled={isProcessing} className="sm:flex-none">
           Cancel
         </Button>
       </div>
@@ -175,7 +177,7 @@ function StripePaymentModal({
 
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!isProcessing && !val) onClose() }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[95vw] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Complete your payment</DialogTitle>
           <DialogDescription>

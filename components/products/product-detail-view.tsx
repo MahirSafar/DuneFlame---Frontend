@@ -13,7 +13,10 @@ import { EMPTY_GUID } from "@/lib/cart-store"
 
 const formatWeight = (grams?: number) => {
   if (!grams) return "";
-  if (grams >= 1000) return `${(grams / 1000).toFixed(1)} kg`;
+  if (grams >= 1000) {
+    const kg = grams / 1000;
+    return kg === Math.floor(kg) ? `${Math.floor(kg)} kg` : `${kg.toFixed(1)} kg`;
+  }
   return `${grams} g`;
 }
 
@@ -196,23 +199,8 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
 
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold leading-tight text-primary dark:text-secondary md:text-5xl">{product.name}</h1>
+              <h1 className="font-heading font-bold leading-tight text-primary dark:text-secondary uppercase" style={{ fontSize: "24px" }}>{product.name}</h1>
               <p className="mt-2 text-base text-muted-foreground md:text-lg">{product.description}</p>
-            </div>
-            <div className="rounded-2xl bg-linear-to-br from-white/10 to-white/5 px-4 py-3 text-right shadow-inner">
-              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                {currentPrice > 0 ? "Starting at" : "Price"}
-              </p>
-              <p className="text-3xl font-semibold text-primary dark:text-secondary">
-                {currentPrice > 0 ? (
-                  <FormattedPrice amount={currentPrice} />
-                ) : (
-                  <span className="text-gray-400 text-base">Price not available</span>
-                )}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {currentPrice > 0 ? "Taxes included" : "Select different weight/currency"}
-              </p>
             </div>
           </div>
         </div>
@@ -230,14 +218,11 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                     onClick={() => {
                       handleWeightSelect(grams)
                     }}
-                    className={`flex flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:border-accent ${
-                      selectedWeight === grams ? "border-accent bg-accent/10" : "border-white/10"
+                    className={`flex flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:border-espresso-brown ${
+                      selectedWeight === grams ? "border-espresso-brown bg-espresso-brown/10" : "border-white/10"
                     }`}
                   >
-                    <span className="font-semibold text-primary dark:text-secondary">{label}</span>
-                    <span className="text-xs text-muted-foreground">
-                      <FormattedPrice amount={priceForWeight} />
-                    </span>
+                    <span className="font-semibold text-espresso-brown dark:text-espresso-brown">{label}</span>
                   </button>
                 )
               })}
@@ -252,7 +237,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                   key={name}
                   onClick={() => setSelectedRoast(name)}
                   className={`rounded-full px-3 py-1 text-sm transition border ${
-                    selectedRoast === name ? "border-accent bg-accent/10 text-accent" : "border-white/10 text-primary dark:text-secondary"
+                    selectedRoast === name ? "border-[#2b1b13] bg-[#2b1b13]/10 text-[#2b1b13]" : "border-transparent text-[#2b1b13] dark:text-[#2b1b13]"
                   }`}
                 >
                   {name}
@@ -267,7 +252,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                   key={name}
                   onClick={() => setSelectedGrind(name)}
                   className={`rounded-full px-3 py-1 text-sm transition border ${
-                    selectedGrind === name ? "border-accent bg-accent/10 text-accent" : "border-white/10 text-primary dark:text-secondary"
+                    selectedGrind === name ? "border-[#2b1b13] bg-[#2b1b13]/10 text-[#2b1b13]" : "border-transparent text-[#2b1b13] dark:text-[#2b1b13]"
                   }`}
                 >
                   {name}
@@ -283,7 +268,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
               <p className="text-sm text-muted-foreground">
                 {currentPrice > 0 ? "Crafted for indulgent mornings" : "Select weight and currency"}
               </p>
-              <p className="text-2xl font-bold text-primary dark:text-secondary">
+              <p className="font-heading text-2xl font-bold text-primary dark:text-secondary">
                 {currentPrice > 0 ? (
                   <FormattedPrice amount={currentPrice * quantity} />
                 ) : (
@@ -341,7 +326,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">
               <Sparkles size={14} className="text-accent" />
-              Free 2-day shipping on orders over $50
+              Free 2-day shipping on orders over $200
             </span>
             <span className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">
               <Leaf size={14} className="text-accent" />

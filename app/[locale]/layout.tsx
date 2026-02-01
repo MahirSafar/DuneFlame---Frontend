@@ -10,7 +10,6 @@ import { Analytics } from "@vercel/analytics/next"
 import AuthInit from "@/components/auth/auth-init"
 import AuthProvider from "@/components/auth/auth-provider"
 import { ThemeProvider } from "@/components/theme-provider"
-import { DarkModeProvider } from "@/lib/dark-mode-context"
 import { CurrencyProvider } from "@/lib/currency-context"
 import { ToasterWrapper } from "@/components/toaster-wrapper"
 import { LocaleHeaderInit } from "@/components/locale-header-init"
@@ -126,17 +125,15 @@ export default async function LocaleLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <DarkModeProvider>
-              <CurrencyProvider initialCurrency={serverCurrency}>
-                <AuthProvider>
-                  <LocaleHeaderInit />
-                  <AuthInit />
-                  {children}
-                  <Analytics />
-                  <ToasterWrapper />
-                </AuthProvider>
-              </CurrencyProvider>
-            </DarkModeProvider>
+            <CurrencyProvider initialCurrency={serverCurrency}>
+              <AuthProvider>
+                <LocaleHeaderInit />
+                <AuthInit />
+                {children}
+                <Analytics />
+                <ToasterWrapper />
+              </AuthProvider>
+            </CurrencyProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

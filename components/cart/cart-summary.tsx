@@ -54,12 +54,12 @@ export default function CartSummary() {
                   className="w-20 h-20 object-cover rounded-lg"
                 />
               ) : (
-                <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900 dark:to-orange-900 rounded-lg flex items-center justify-center text-2xl">
+                <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg flex items-center justify-center text-2xl">
                   ☕
                 </div>
               )}
               <div className="flex flex-col">
-                <h3 className="font-semibold text-primary dark:text-secondary group-hover:text-accent transition-smooth">
+                <h3 className="font-semibold text-primary group-hover:text-accent transition-smooth">
                   {item.name}
                 </h3>
                 {/* Display the dynamic price in current currency */}
@@ -68,17 +68,17 @@ export default function CartSummary() {
                 {/* Selected Attributes Display - FORCED */}
                 <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-2">
                   {item.selectedWeightLabel && (
-                    <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
+                    <span className="bg-gray-100 px-2 py-1 rounded border border-gray-200">
                       {t('common.weight')}: {item.selectedWeightLabel}
                     </span>
                   )}
                   {item.selectedRoast && (
-                    <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
+                    <span className="bg-gray-100 px-2 py-1 rounded border border-gray-200">
                       {t('common.roast')}: {item.selectedRoast}
                     </span>
                   )}
                   {item.selectedGrind && (
-                    <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
+                    <span className="bg-gray-100 px-2 py-1 rounded border border-gray-200">
                       {t('common.grind')}: {item.selectedGrind}
                     </span>
                   )}
@@ -109,7 +109,7 @@ export default function CartSummary() {
                 </button>
               </div>
 
-              <span className="w-20 text-right font-semibold text-primary dark:text-secondary">
+              <span className="w-20 text-right font-semibold text-primary">
                 <FormattedPrice amount={getItemPrice(item, currency) * item.quantity} />
               </span>
 
@@ -139,7 +139,7 @@ export default function CartSummary() {
           <span>{t('cart.shipping')}</span>
           <span>Free</span>
         </div>
-        <div className="border-t border-border pt-4 flex justify-between font-bold text-primary dark:text-secondary text-lg">
+        <div className="border-t border-border pt-4 flex justify-between font-bold text-primary text-lg">
           <span>{t('cart.total')}</span>
           <FormattedPrice amount={total(currency)} />
         </div>

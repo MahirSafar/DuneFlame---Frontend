@@ -86,16 +86,16 @@
       "description": "Discover our carefully curated selection"
     },
     "story": {
-      "title": "Our Story",
+      "title": "OUR STORY",
       "description": "From the golden dunes to your cup, every bean tells a tale of passion and excellence.",
       "cta": "Discover Our Journey"
     },
     "trending": {
-      "title": "Trending",
-      "titleAccent": "This Week"
+      "title": "BEST-SELLING PRODUCTS",
+      "titleAccent": "THIS WEEK"
     },
     "newsletter": {
-      "title": "Stay Connected",
+      "title": "STAY CONNECTED",
       "description": "Subscribe to receive exclusive offers and coffee insights",
       "placeholder": "Enter your email",
       "subscribe": "Subscribe",

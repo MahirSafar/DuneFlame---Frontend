@@ -3,20 +3,20 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, X, ShoppingCart, Moon, Sun, User, LogOut } from "lucide-react"
-import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation"
+import { Menu, X, User, LogOut, ShoppingBag, Search, ChevronUp } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { useDarkMode } from "@/lib/dark-mode-context"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useCartStore } from "@/lib/cart-store"
 import { InstantCurrencySwitcher } from "@/components/currency/instant-switcher"
 import { LanguageSwitcher } from "./language-switcher"
 
 export default function Navbar() {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
-  const { theme, setTheme } = useTheme()
-  const { isDarkMode, toggleDarkMode } = useDarkMode()
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const { isLoggedIn, logout } = useAuth()
   const { loadBasket, items } = useCartStore()
   const t = useTranslations('common.nav')
@@ -54,9 +54,26 @@ export default function Navbar() {
   // Calculate total items count
   const cartItemCount = items.reduce((total, item) => total + item.quantity, 0)
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/products?search=${encodeURIComponent(searchQuery)}`)
+      setIsSearchOpen(false)
+      setSearchQuery("")
+    }
+  }
+
+  // Close search when mobile menu opens
+  useEffect(() => {
+    if (isOpen) {
+      setIsSearchOpen(false)
+    }
+  }, [isOpen])
+
   const navLinks = [
-    { href: "/products", key: "shop" },
-    { href: "/about", key: "about" },
+    { href: "/products", key: "our-coffee", label: "OUR COFFEE" },
+    { href: "/wholesale", key: "wholesale", label: "WHOLESALE" },
+    { href: "/about", key: "about", label: "ABOUT US" },
     { href: "/contact", key: "contact" },
   ]
 
@@ -65,67 +82,71 @@ export default function Navbar() {
       {/* Free Shipping Note */}
       {isHidden && (
         <div
-          className="w-full text-green-900 text-center py-2 text-sm font-semibold transition-opacity duration-300 animate-in fade-in z-60 fixed top-0 left-0"
-          style={{ backgroundColor: "rgb(253, 250, 247)" }}
+          className="w-full text-center py-2 text-sm font-semibold transition-opacity duration-300 animate-in fade-in z-60 fixed top-0 left-0"
+          style={{ backgroundColor: "#2b1b13", color: "white" }}
         >
           🚚 Free Shipping on Orders Over 200 AED in UAE! 🌿
         </div>
       )}
-      <nav className={`sticky top-0 z-50 glass glow-accent transition-transform duration-300 ${isHidden ? "-translate-y-full" : "translate-y-0"}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
+      <nav 
+        className={`sticky top-0 z-50 glass transition-transform duration-300 ${isSearchOpen || isHidden ? "-translate-y-full" : "translate-y-0"}`}
+        style={{ boxShadow: "0 8px 16px rgba(230, 211, 191, 0.5)" }}
+      >
+        <div className="w-full px-4 sm:px-6 md:px-10">
+        <div className="relative flex items-center h-16 sm:h-20 gap-3 sm:gap-6">
+          {/* Logo - Left Side */}
+          <Link href="/" className="flex items-center gap-2 group flex-shrink-0 z-10">
             <Image
               src="/logo.svg"
               alt="DuneFlame Logo"
-              width={192}
-              height={192}
-              className="w-32 h-32 rounded-full group-hover:scale-110 transition-smooth"
+              width={168}
+              height={168}
+              className="w-16 sm:w-24 md:w-28 h-16 sm:h-24 md:h-28 rounded-full group-hover:scale-110 transition-smooth"
               style={{ display: "block" }}
               priority
             />
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* Desktop Navigation - True Center */}
+          <div className="hidden lg:flex items-center gap-6 lg:gap-8 absolute left-1/2 transform -translate-x-1/2">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-foreground hover:text-accent transition-smooth relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-smooth hover:after:w-full"
+                className="text-sm font-heading uppercase tracking-wide text-foreground hover:text-accent transition-smooth relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-smooth hover:after:w-full"
               >
-                {t(link.key)}
+                {link.label ? link.label : t(link.key)}
               </Link>
             ))}
           </div>
 
-          {/* Right Actions */}
-          <div className="flex items-center gap-4">
+          {/* Right Actions - Right Side */}
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-shrink-0 ml-auto z-10" suppressHydrationWarning>
             {/* Language Switcher */}
-            <div className="hidden sm:block">
+            <div className="hidden md:block navbar-switcher" suppressHydrationWarning>
               <LanguageSwitcher />
             </div>
 
             {/* Currency Switcher */}
-            <div className="hidden sm:block">
+            <div className="hidden md:block navbar-switcher" suppressHydrationWarning>
               <InstantCurrencySwitcher />
             </div>
 
+            {/* Search Icon */}
             <button
-              onClick={() => {
-                setTheme(theme === "dark" ? "light" : "dark")
-                toggleDarkMode()
-              }}
-              className="p-2 hover:bg-accent/10 rounded-lg transition-smooth scale-100 hover:scale-110"
+              onClick={() => setIsSearchOpen(true)}
+              className="p-1.5 sm:p-2 hover:bg-accent/10 rounded-lg transition-smooth scale-100 hover:scale-110"
+              aria-label="Search"
             >
-              {isDarkMode ? <Sun size={20} className="animate-spin duration-500" /> : <Moon size={20} />}
+              <Search size={18} className="sm:w-5 sm:h-5" />
             </button>
+
+            {/* Basket */}
             <Link
               href="/cart"
-              className="relative p-2 hover:bg-accent/10 rounded-lg transition-smooth scale-100 hover:scale-110"
+              className="relative p-1.5 sm:p-2 hover:bg-accent/10 rounded-lg transition-smooth scale-100 hover:scale-110"
             >
-              <ShoppingCart size={20} />
+              <ShoppingBag size={18} className="sm:w-5 sm:h-5" />
               {cartItemCount > 0 && (
                 <span className="absolute -top-1 -end-1 bg-accent text-accent-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                   {cartItemCount}
@@ -133,34 +154,25 @@ export default function Navbar() {
               )}
             </Link>
 
-            {isLoggedIn ? (
-              <div className="flex items-center gap-2">
-                <Link href="/en/dashboard" className="p-2 hover:bg-accent/10 rounded-lg transition-smooth">
-                  <User size={20} />
-                </Link>
+            {/* Profile - Always visible */}
+            <div className="flex items-center gap-1.5">
+              <Link href="/en/dashboard" className="p-1.5 sm:p-2 hover:bg-accent/10 rounded-lg transition-smooth">
+                <User size={18} className="sm:w-5 sm:h-5" />
+              </Link>
+              {isLoggedIn && (
                 <button
                   onClick={() => void logout()}
-                  className="px-3 py-2 bg-destructive/5 text-destructive rounded-lg hover:bg-destructive/10 transition-smooth flex items-center gap-2"
+                  className="p-1.5 sm:p-2 transition-smooth flex items-center"
+                  aria-label="Logout"
                 >
-                  <LogOut size={16} /> {t('logout')}
+                  <LogOut size={18} className="sm:w-5 sm:h-5" style={{ color: "#4B2E2B" }} />
                 </button>
-              </div>
-            ) : (
-              <div className="hidden md:flex items-center gap-2">
-                <Link href="/auth/login" className="px-3 py-2 text-sm font-medium text-foreground hover:text-accent">
-                  {t('login')}
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-3 py-2 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-lg"
-                >
-                  {t('register')}
-                </Link>
-              </div>
-            )}
+              )}
+            </div>
 
+            {/* Mobile/Tablet Menu Button */}
             <button
-              className="md:hidden p-2 hover:bg-accent/10 rounded-lg transition-smooth"
+              className="lg:hidden p-1.5 sm:p-2 hover:bg-accent/10 rounded-lg transition-smooth"
               onClick={() => setIsOpen(!isOpen)}
             >
               {isOpen ? <X size={20} /> : <Menu size={20} />}
@@ -170,46 +182,60 @@ export default function Navbar() {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden pb-4 border-t border-border animate-in slide-in-from-top duration-300">
-            <div className="px-4 py-3 flex items-center justify-center gap-2">
-              <LanguageSwitcher />
-              <InstantCurrencySwitcher />
-            </div>
+          <div className="lg:hidden pb-4 border-t border-border animate-in slide-in-from-top duration-300">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="block py-2 text-sm font-medium text-foreground hover:text-accent transition-smooth"
+                className="block py-2 px-4 text-sm font-heading uppercase tracking-wide text-foreground hover:text-accent transition-smooth text-left"
                 onClick={() => setIsOpen(false)}
               >
-                {t(link.key)}
+                {link.label ? link.label : t(link.key)}
               </Link>
             ))}
-            <div className="mt-2 flex flex-col gap-2 px-4">
-              {isLoggedIn ? (
-                <>
-                  <Link href="/en/dashboard" className="py-2 text-sm font-medium">
-                    Profile
-                  </Link>
-                  <button onClick={() => void logout()} className="py-2 text-left text-sm text-destructive">
-                    {t('logout')}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link href="/auth/login" className="py-2 text-sm font-medium">
-                    {t('login')}
-                  </Link>
-                  <Link href="/register" className="py-2 text-sm font-medium">
-                    {t('register')}
-                  </Link>
-                </>
-              )}
+            <div className="mt-2 flex flex-col gap-3 px-4">
+              <div className="pt-3 border-t border-border flex items-center gap-2">
+                <div className="[&>button]:!bg-white [&>button]:!border-[#4B2E2B] [&>button]:!text-[#4B2E2B] [&>button]:hover:!bg-gray-50">
+                  <LanguageSwitcher />
+                </div>
+                <div className="[&>button]:!bg-white [&>button]:!border-[#4B2E2B] [&>button]:!text-[#4B2E2B] [&>button]:hover:!bg-gray-50">
+                  <InstantCurrencySwitcher />
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
       </nav>
+
+      {/* Search Panel - Slides down from top */}
+      {isSearchOpen && (
+        <div className="fixed top-0 left-0 right-0 z-40 glass border-b border-border animate-in slide-in-from-top duration-300">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <form onSubmit={handleSearch} className="flex gap-2 items-center">
+              <Search size={20} className="text-foreground/70" />
+              <input
+                type="text"
+                placeholder="Search for coffee, products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                className="flex-1 px-0 py-2 bg-transparent text-foreground placeholder:text-foreground/50 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSearchOpen(false)
+                  setSearchQuery("")
+                }}
+                className="p-2 hover:bg-accent/10 rounded-lg transition-smooth"
+              >
+                <ChevronUp size={20} />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   )
 }

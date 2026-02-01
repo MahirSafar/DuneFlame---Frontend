@@ -28,12 +28,11 @@ export default function Trending() {
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="flex justify-between items-center mb-12">
         <div>
-          <span className="text-accent font-semibold text-sm uppercase tracking-wider">{t('home.trending.title')}</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-primary dark:text-secondary mt-2">{t('home.trending.titleAccent')}</h2>
+          <span className="text-espresso-brown font-heading font-semibold uppercase tracking-wider" style={{ fontSize: "24px" }}>{t('home.trending.title')}</span>
         </div>
         <a
           href="/products"
-          className="text-accent font-semibold hover:gap-2 flex items-center gap-1 transition-smooth group"
+          className="text-espresso-brown font-heading font-semibold hover:gap-2 flex items-center gap-1 transition-smooth group"
         >
           {t('common.actions.viewDetails')}
           <span className="group-hover:translate-x-1 transition-transform rtl:rotate-180">→</span>

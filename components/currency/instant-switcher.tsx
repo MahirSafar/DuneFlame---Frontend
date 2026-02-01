@@ -4,16 +4,22 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useCurrency } from "@/hooks/use-currency";
 import { CurrencyType } from "@/lib/currency-context";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 /**
- * Animated Navbar Currency Switcher with framer-motion
+ * Dropdown Currency Switcher
  * 
  * Features:
- * - Smooth sliding background pill animation (layoutId="active-pill")
- * - Spring animation for premium feel (bounce: 0.2, duration: 0.6)
- * - Full accessibility support (aria-pressed, aria-label)
- * - Instant currency switching with SSR hydration
- * - Perfect for navbar integration
+ * - Clean dropdown menu interface
+ * - Shows current currency
+ * - Easy currency switching between USD and AED
  */
 export function InstantCurrencySwitcher() {
   const { currency, setCurrency } = useCurrency();
@@ -24,70 +30,41 @@ export function InstantCurrencySwitcher() {
     }
   };
 
-  const isUSDActive = currency === "USD";
-  const isAEDActive = currency === "AED";
+  const currencyLabels: Record<CurrencyType, string> = {
+    USD: "$ USD",
+    AED: "د.إ AED"
+  };
 
   return (
-    <div className="relative inline-flex gap-1 bg-gray-100 rounded-full p-1">
-      {/* Animated background pill */}
-      <motion.div
-        layoutId="active-pill"
-        className="absolute inset-y-1 rounded-full shadow-sm"
-        initial={false}
-        transition={{
-          type: "spring",
-          bounce: 0.2,
-          duration: 0.6,
-        }}
-        style={{
-          backgroundColor: '#4B2E2B',
-          left: isUSDActive ? "4px" : "calc(50% + 2px)",
-          right: isUSDActive ? "calc(50% + 2px)" : "4px",
-        }}
-      />
-
-      {/* USD Button */}
-      <motion.button
-        onClick={() => handleCurrencyChange("USD")}
-        aria-pressed={isUSDActive}
-        aria-label="Switch to USD currency"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className={`
-          relative px-3 py-1.5 rounded-full font-medium text-sm
-          transition-colors duration-200 z-10
-          ${
-            isUSDActive
-              ? "text-[#4B2E2B]"
-              : "hover:text-white"
-          }
-        `}
-        style={!isUSDActive ? { color: 'text-white' } : {}}
-      >
-        $ USD
-      </motion.button>
-
-      {/* AED Button */}
-      <motion.button
-        onClick={() => handleCurrencyChange("AED")}
-        aria-pressed={isAEDActive}
-        aria-label="Switch to AED currency"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className={`
-          relative px-3 py-1.5 rounded-full font-medium text-sm
-          transition-colors duration-200 z-10
-          ${
-            isAEDActive
-              ? "text-[#4B2E2B]"
-              : "hover:text-white"
-          }
-        `}
-        style={!isAEDActive ? { color: 'text-white' } : {}}
-      >
-        د.إ AED
-      </motion.button>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 text-white hover:text-white text-xs font-medium"
+          style={{ backgroundColor: "#2b1b13", borderColor: "#2b1b13" }}
+          aria-label="Select currency"
+        >
+          {currencyLabels[currency]}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuCheckboxItem
+          checked={currency === "USD"}
+          onCheckedChange={() => handleCurrencyChange("USD")}
+          className="cursor-pointer"
+        >
+          $ USD
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          checked={currency === "AED"}
+          onCheckedChange={() => handleCurrencyChange("AED")}
+          className="cursor-pointer"
+        >
+          د.إ AED
+        </DropdownMenuCheckboxItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

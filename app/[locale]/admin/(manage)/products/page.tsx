@@ -47,9 +47,9 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+
 import {
   type Category,
-  type Product,
   type Origin,
   createProduct,
   deleteProduct,
@@ -60,7 +60,13 @@ import {
   updateProduct,
   getMasterData,
 } from "@/lib/services/products"
-import type { MasterData, ProductPricePayload } from "@/lib/types"
+import type { 
+  MasterData, 
+  ProductPricePayload, 
+  Product,
+  ProductPriceDto,
+  CurrencyOptionDto 
+} from "@/lib/types"
 import { getErrorMessage } from "@/lib/utils"
 import { API_URL } from "@/lib/config"
 import {
@@ -84,30 +90,37 @@ const PAGE_SIZE = 10
 
 interface WeightPrice {
   weightId: string
+  currencyCode: string
   enabled: boolean
   price: string
 }
 
 type SiloEditFormState = {
-  name: string
-  description: string
-  stockInKg: string
-  categoryId: string
-  originId: string
-  selectedRoasts: string[]
-  selectedGrinds: string[]
-  weightPrices: WeightPrice[]
+  nameEn: string;
+  nameAr: string;
+  descriptionEn: string;
+  descriptionAr: string;
+  stockInKg: string;
+  categoryId: string;
+  originId: string;
+  selectedRoasts: string[];
+  selectedGrinds: string[];
+  weightPrices: WeightPrice[];
+  flavourNotes: { nameEn: string; nameAr: string }[];
 }
 
 const emptySiloForm: SiloEditFormState = {
-  name: "",
-  description: "",
+  nameEn: "",
+  nameAr: "",
+  descriptionEn: "",
+  descriptionAr: "",
   stockInKg: "",
   categoryId: "",
   originId: "",
   selectedRoasts: [],
   selectedGrinds: [],
   weightPrices: [],
+  flavourNotes: [],
 }
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
@@ -164,6 +177,7 @@ export default function AdminProductsPage() {
   const [mainImageId, setMainImageId] = useState<string | null>(null)
   
   const [saving, setSaving] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [loadingProduct, setLoadingProduct] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -211,12 +225,12 @@ export default function AdminProductsPage() {
 
   // Fetch master data for edit form
   const fetchMasterDataForEdit = async (): Promise<MasterData | null> => {
-    if (masterData) return masterData // Return existing if available
+    if (masterData) return masterData
     setMasterDataLoading(true)
     try {
       const data = await getMasterData()
-      setMasterData(data) // Update state
-      return data // Return for immediate use
+      setMasterData(data)
+      return data
     } catch (error) {
       toast.error("Failed to load form options")
       return null
@@ -235,6 +249,7 @@ export default function AdminProductsPage() {
         search: debouncedSearch || undefined,
         categoryId: categoryFilter || undefined,
       })
+      console.log('getAdminProducts result:', res)
       setProducts(res.items)
       setTotalPages(res.totalPages)
       setTotalCount(res.totalCount)
@@ -257,69 +272,98 @@ export default function AdminProductsPage() {
     setViewDialogOpen(true)
   }
 
-  const handleOpenEdit = async (productId: string) => {
-    setLoadingProduct(true)
-    
-    // 1. Get Master Data safely
-    const currentMasterData = await fetchMasterDataForEdit()
-    
-    setSheetOpen(true)
-    try {
-      // 2. Get Product Details (Admin mode)
-      const product = await getProduct(productId, { admin: true })
-      setSelectedProduct(product)
+const handleOpenEdit = async (productId: string) => {
+  setLoadingProduct(true);
+  const currentMasterData = await fetchMasterDataForEdit();
+  setSheetOpen(true);
 
-      // 3. Merge MasterData with Product Prices
-      const priceMap: Record<string, { enabled: boolean; price: string }> = {}
-      
-      // Use currentMasterData directly (not the state variable)
-      if (currentMasterData) {
-        currentMasterData.weights.forEach((weight) => {
-          const existingPrice = product.availablePrices?.find((p) => p.grams === weight.grams)
-          priceMap[weight.id] = {
-            enabled: !!existingPrice,
-            price: existingPrice ? existingPrice.price.toString() : "",
-          }
-        })
-      }
+  try {
+    const product = await getProduct(productId, { admin: true });
+    const p = product as any; // Yeni DTO (translations, activePrice və s. gəlir)
+    setSelectedProduct(product);
 
-      // 4. Set Form State
-      setSiloFormState({
-        name: product.name || "",
-        description: product.description || "",
-        stockInKg: String(product.stockInKg || "0"),
-        categoryId: product.categoryId || "",
-        originId: product.originId || "",
-        selectedRoasts: product.roastLevelIds ?? [],
-        selectedGrinds: product.grindTypeIds ?? [],
-        weightPrices: Object.entries(priceMap).map(([weightId, data]) => ({
-          weightId,
-          enabled: data.enabled,
-          price: data.price,
-        })),
-      })
+    // --- Tərcümələr ---
+    const getTrans = (lang: string) =>
+      p.translations?.find(
+        (t: any) => (t.languageCode || t.LanguageCode) === lang
+      );
 
-      // 5. Handle Images
-      const fixedImages = product.images?.map((i) => ({
-        id: i.id,
-        url: getImageUrl(i.imageUrl)!,
-        isMain: i.isMain,
-      })).filter(img => img.url) ?? []
-      
-      const mainImg = fixedImages.find(img => img.isMain)
-      setExistingImages(fixedImages)
-      setMainImageId(mainImg?.id || null)
-      setDeletedImageIds([])
-      setPreviewUrls([])
-      setSelectedFiles([])
-      setMainImageIndex(0)
-    } catch (err) {
-      toast.error(getErrorMessage(err))
-      setSheetOpen(false)
-    } finally {
-      setLoadingProduct(false)
+    const enTrans = getTrans("en");
+    const arTrans = getTrans("ar");
+
+    // --- Qiymət Matrisini Birləşdiririk ---
+    const allPrices = [p.activePrice, ...(p.otherAvailableCurrencies || [])].filter(Boolean);
+    const weightPrices: WeightPrice[] = [];
+
+    if (currentMasterData) {
+      currentMasterData.weights.forEach((weight) => {
+        ["USD", "AED"].forEach((curr) => {
+          const existing = allPrices.find(
+            (price) => price.grams === weight.grams && price.currencyCode === curr
+          );
+
+          weightPrices.push({
+            weightId: weight.id,
+            currencyCode: curr,
+            enabled: !!existing,
+            price: existing ? existing.price.toString() : "",
+          });
+        });
+      });
     }
+
+    // --- Form State ---
+    setSiloFormState({
+      nameEn: enTrans?.name || p.name || "",
+      nameAr: arTrans?.name || "",
+      descriptionEn: enTrans?.description || p.description || "",
+      descriptionAr: arTrans?.description || "",
+      stockInKg: String(p.stockInKg || "0"),
+      categoryId: p.categoryId || "",
+      originId: p.originId || "",
+      selectedRoasts: p.roastLevelIds || [],
+      selectedGrinds: p.grindTypeIds || [],
+      weightPrices,
+      flavourNotes:
+        p.flavourNotes?.map((fn: any) => ({
+          nameEn:
+            fn.translations?.find(
+              (t: any) => (t.languageCode || t.LanguageCode) === "en"
+            )?.name || fn.name || "",
+          nameAr:
+            fn.translations?.find(
+              (t: any) => (t.languageCode || t.LanguageCode) === "ar"
+            )?.name || "",
+        })) || [],
+    });
+
+    // --- Şəkil hissəsi (birinci koddan) ---
+    const fixedImages =
+      p.images
+        ?.map((i: any) => ({
+          id: i.id,
+          url: getImageUrl(i.imageUrl)!,
+          isMain: i.isMain,
+        }))
+        .filter((img: any) => img.url) ?? [];
+
+    const mainImg = fixedImages.find((img: any) => img.isMain);
+
+    setExistingImages(fixedImages);
+    setMainImageId(mainImg?.id || null);
+    setDeletedImageIds([]);
+    setPreviewUrls([]);
+    setSelectedFiles([]);
+    setMainImageIndex(0);
+
+  } catch (err) {
+    toast.error(getErrorMessage(err));
+    setSheetOpen(false);
+  } finally {
+    setLoadingProduct(false);
   }
+};
+
 
   // --- Image Logic ---
   const handleFileSelect = (files: File[]) => {
@@ -390,152 +434,184 @@ export default function AdminProductsPage() {
   // Update weight price
   const updateWeightPrice = (
     weightId: string,
+    currencyCode: string,
     field: "enabled" | "price",
     value: boolean | string
   ) => {
     setSiloFormState((prev) => ({
       ...prev,
       weightPrices: prev.weightPrices.map((wp) =>
-        wp.weightId === weightId ? { ...wp, [field]: value } : wp
+        wp.weightId === weightId && wp.currencyCode === currencyCode
+          ? { ...wp, [field]: value }
+          : wp
       ),
     }))
   }
 
   // --- Submit Logic (Silo v2) ---
   const handleSiloSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+    event.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    // Validation
-    if (!siloFormState.name.trim()) {
-      toast.error("Product name is required")
-      return
-    }
-    if (!siloFormState.description.trim()) {
-      toast.error("Description is required")
-      return
-    }
-    if (!siloFormState.categoryId) {
-      toast.error("Please select a category")
-      return
-    }
-    if (!siloFormState.stockInKg || parseFloat(siloFormState.stockInKg) <= 0) {
-      toast.error("Stock in KG must be greater than 0")
-      return
-    }
-    if (siloFormState.selectedRoasts.length === 0) {
-      toast.error("Please select at least one roast level")
-      return
-    }
-    if (siloFormState.selectedGrinds.length === 0) {
-      toast.error("Please select at least one grind type")
-      return
-    }
-
-    // Build prices array
-    const prices: ProductPricePayload[] = siloFormState.weightPrices
-      .filter((wp) => wp.enabled && wp.price && parseFloat(wp.price) > 0)
-      .map((wp) => ({
-        productWeightId: wp.weightId,
-        price: parseFloat(wp.price),
-      }))
-
-    if (prices.length === 0) {
-      toast.error("Please enable at least one weight with a valid price")
-      return
-    }
-
-    if (selectedFiles.length === 0 && existingImages.length === 0) {
-      toast.error("Please upload at least one image")
-      return
-    }
-
-    // Build FormData (PascalCase keys for backend)
-    const formData = new FormData()
-    formData.append("Name", siloFormState.name)
-    formData.append("Description", siloFormState.description)
-    formData.append("StockInKg", siloFormState.stockInKg)
-    formData.append("CategoryId", siloFormState.categoryId)
-    if (siloFormState.originId) {
-      formData.append("OriginId", siloFormState.originId)
-    }
-
-    // Append roast level IDs
-    siloFormState.selectedRoasts.forEach((id) => {
-      formData.append("RoastLevelIds", id)
-    })
-
-    // Append grind type IDs
-    siloFormState.selectedGrinds.forEach((id) => {
-      formData.append("GrindTypeIds", id)
-    })
-
-    // Append prices
-    prices.forEach((p, index) => {
-      formData.append(`Prices[${index}].ProductWeightId`, p.productWeightId)
-      formData.append(`Prices[${index}].Price`, p.price.toString())
-    })
-
-    // Handle image management for edit mode
-    if (selectedProduct) {
-      // Send deleted image IDs
-      deletedImageIds.forEach((id) => {
-        formData.append("deletedImageIds", id)
-      })
-      // Send main image ID if set
-      if (mainImageId) {
-        formData.append("setMainImageId", mainImageId)
-      }
-    }
-
-    // Append new images
-    if (selectedFiles.length > 0) {
-      const filesToSend = [...selectedFiles]
-      const mainFile = filesToSend[mainImageIndex]
-      const otherFiles = filesToSend.filter((_, idx) => idx !== mainImageIndex)
-      const sortedFiles = [mainFile, ...otherFiles]
-      sortedFiles.forEach((file) => {
-        formData.append("images", file)
-      })
-    }
-
-    setSaving(true)
     try {
-      if (selectedProduct) {
-        await updateProduct(selectedProduct.id, formData)
-        toast.success("Product updated successfully!")
-      } else {
-        await createProduct(formData)
-        toast.success("Product created successfully!")
+      // Validation
+      if (!siloFormState.nameEn.trim()) {
+        toast.error("Product name (EN) is required");
+        return;
       }
-      setSheetOpen(false)
-      resetSiloForm()
-      setSelectedProduct(null)
-      loadProducts()
-    } catch (err: any) {
-      console.error("Error submitting product:", err)
-      if (err.response?.data?.errors) {
-        const errors = err.response.data.errors
-        const errorMessages: string[] = []
-        Object.keys(errors).forEach((field) => {
-          const fieldErrors = errors[field]
-          if (Array.isArray(fieldErrors)) {
-            errorMessages.push(...fieldErrors)
-          } else if (typeof fieldErrors === 'string') {
-            errorMessages.push(fieldErrors)
-          }
-        })
-        if (errorMessages.length > 0) {
-          errorMessages.forEach((msg) => toast.error(msg))
-        } else {
-          toast.error(getErrorMessage(err))
+      if (!siloFormState.descriptionEn.trim()) {
+        toast.error("Description (EN) is required");
+        return;
+      }
+      if (!siloFormState.categoryId) {
+        toast.error("Please select a category");
+        return;
+      }
+      if (!siloFormState.stockInKg || parseFloat(siloFormState.stockInKg) <= 0) {
+        toast.error("Stock in KG must be greater than 0");
+        return;
+      }
+      if (siloFormState.selectedRoasts.length === 0) {
+        toast.error("Please select at least one roast level");
+        return;
+      }
+      if (siloFormState.selectedGrinds.length === 0) {
+        toast.error("Please select at least one grind type");
+        return;
+      }
+
+      // Build prices array (multi-currency)
+      const prices = siloFormState.weightPrices
+        .filter((wp) => wp.enabled && wp.price && parseFloat(wp.price) > 0)
+        .map((wp) => ({
+          productWeightId: wp.weightId,
+          price: parseFloat(wp.price),
+          currencyCode: wp.currencyCode,
+        }));
+
+      if (prices.length === 0) {
+        toast.error("Please enable at least one weight/currency with a valid price");
+        return;
+      }
+
+      if (selectedFiles.length === 0 && existingImages.length === 0) {
+        toast.error("Please upload at least one image");
+        return;
+      }
+
+      // Build FormData (PascalCase keys for backend)
+      const formData = new FormData();
+      // Translations array
+      formData.append("Translations[0].LanguageCode", "en");
+      formData.append("Translations[0].Name", siloFormState.nameEn);
+      formData.append("Translations[0].Description", siloFormState.descriptionEn);
+      formData.append("Translations[1].LanguageCode", "ar");
+      formData.append("Translations[1].Name", siloFormState.nameAr);
+      formData.append("Translations[1].Description", siloFormState.descriptionAr);
+      // Fallback fields
+      formData.append("Name", siloFormState.nameEn);
+      formData.append("Description", siloFormState.descriptionEn);
+      formData.append("StockInKg", siloFormState.stockInKg);
+      formData.append("CategoryId", siloFormState.categoryId);
+      if (siloFormState.originId) {
+        formData.append("OriginId", siloFormState.originId);
+      }
+
+      // Append roast level IDs
+      siloFormState.selectedRoasts.forEach((id) => {
+        formData.append("RoastLevelIds", id);
+      });
+
+      // Append grind type IDs
+      siloFormState.selectedGrinds.forEach((id) => {
+        formData.append("GrindTypeIds", id);
+      });
+
+      // Append prices (multi-currency)
+      prices.forEach((p, index) => {
+        formData.append(`Prices[${index}].ProductWeightId`, p.productWeightId);
+        formData.append(`Prices[${index}].Price`, p.price.toString());
+        formData.append(`Prices[${index}].CurrencyCode`, p.currencyCode);
+      });
+
+      // Append Flavour Notes (Dad notlarını bazaya göndərmək üçün)
+      siloFormState.flavourNotes.forEach((note, index) => {
+        const enName = note.nameEn?.trim();
+        const arName = note.nameAr?.trim();
+
+        if (enName) {
+          formData.append(`FlavourNotes[${index}].Name`, enName);
+          formData.append(`FlavourNotes[${index}].DisplayOrder`, (index + 1).toString());
+          formData.append(`FlavourNotes[${index}].Translations[0].LanguageCode`, "en");
+          formData.append(`FlavourNotes[${index}].Translations[0].Name`, enName);
+          formData.append(`FlavourNotes[${index}].Translations[1].LanguageCode`, "ar");
+          formData.append(`FlavourNotes[${index}].Translations[1].Name`, arName || enName);
         }
-      } else {
-        toast.error(getErrorMessage(err))
+      });
+
+      // Handle image management for edit mode
+      if (selectedProduct) {
+        deletedImageIds.forEach((id) => {
+          formData.append("deletedImageIds", id);
+        });
+        if (mainImageId) {
+          formData.append("setMainImageId", mainImageId);
+        }
+      }
+
+      // Append new images
+      if (selectedFiles.length > 0) {
+        const filesToSend = [...selectedFiles];
+        const mainFile = filesToSend[mainImageIndex];
+        const otherFiles = filesToSend.filter((_, idx) => idx !== mainImageIndex);
+        const sortedFiles = [mainFile, ...otherFiles];
+        sortedFiles.forEach((file) => {
+          formData.append("images", file);
+        });
+      }
+
+      setSaving(true);
+      try {
+        if (selectedProduct) {
+          await updateProduct(selectedProduct.id, formData);
+          toast.success("Product updated successfully!");
+        } else {
+          await createProduct(formData);
+          toast.success("Product created successfully!");
+        }
+        setSheetOpen(false);
+        resetSiloForm();
+        setSelectedProduct(null);
+        loadProducts();
+      } catch (err: any) {
+        console.error("Error submitting product:", err);
+        if (err.response?.data?.errors) {
+          const errors = err.response.data.errors;
+          const errorMessages: string[] = [];
+          Object.keys(errors).forEach((field) => {
+            const fieldErrors = errors[field];
+            if (Array.isArray(fieldErrors)) {
+              errorMessages.push(...fieldErrors);
+            } else if (typeof fieldErrors === 'string') {
+              errorMessages.push(fieldErrors);
+            }
+          });
+          if (errorMessages.length > 0) {
+            errorMessages.forEach((msg) => toast.error(msg));
+          } else {
+            toast.error(getErrorMessage(err));
+          }
+        } else {
+          toast.error(getErrorMessage(err));
+        }
+      } finally {
+        setSaving(false);
       }
     } finally {
-      setSaving(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Delete Logic
   const confirmDelete = (id: string) => {
@@ -688,7 +764,7 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Table */}
-      <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-xl min-h-[500px] relative">
+      <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-xl min-h-125 relative">
         {loading && (
              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
                  <Loader2 className="size-8 animate-spin text-accent" />
@@ -761,17 +837,26 @@ export default function AdminProductsPage() {
                       )}
                     </div>
                   </TableCell>
-                  {/* Prices Column: Show all available prices */}
+                  {/* Prices Column: Show all available prices (camelCase only, robust) */}
                   <TableCell className="py-4 px-4">
-                    <div className="flex flex-col text-xs gap-1">
-                      {product.availablePrices && product.availablePrices.length > 0 ? (
-                        product.availablePrices.map((p) => (
-                          <span key={p.productPriceId || p.grams}>
-                            {(p.weightLabel || "").trim() || `${p.grams}g`}: {currency.format(p.price)}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-muted-foreground">No prices set</span>
+                    <div className="flex flex-col gap-1">
+                      {[
+                        product.activePrice,
+                        ...(product.otherAvailableCurrencies || [])
+                      ]
+                        .filter(Boolean)
+                        .map((price: any, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[10px] font-mono py-0 px-1">
+                              {price.weightLabel}
+                            </Badge>
+                            <span className={`text-sm font-semibold ${price.currencyCode === 'USD' ? 'text-green-600' : 'text-blue-600'}`}>
+                              {price.currencyCode === 'USD' ? '$' : 'AED'} {price.price.toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      {!product.activePrice && (!product.otherAvailableCurrencies || product.otherAvailableCurrencies.length === 0) && (
+                        <span className="text-muted-foreground text-xs italic">No prices set</span>
                       )}
                     </div>
                   </TableCell>
@@ -883,44 +968,60 @@ export default function AdminProductsPage() {
             {/* Basic Info Section */}
             <div className="space-y-5">
               <div className="text-xs font-bold uppercase tracking-wider text-accent/70 pb-2 border-b border-border/20">Basic Info</div>
-              <div className="space-y-5">
+              {/* Name Fields */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Product Name *</label>
-                  <Input
-                    value={siloFormState.name}
-                    onChange={(e) => setSiloFormState((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g. Arabica Dark Roast"
+                  <label className="text-xs font-bold text-accent">Product Name (EN)</label>
+                  <Input 
+                    value={siloFormState.nameEn} 
+                    onChange={(e) => setSiloFormState({...siloFormState, nameEn: e.target.value})} 
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Description *</label>
-                  <Textarea
-                    value={siloFormState.description}
-                    onChange={(e) => setSiloFormState((prev) => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                    placeholder="Product details..."
+                <div className="space-y-2" dir="rtl">
+                  <label className="text-xs font-bold text-accent">اسم المنتج (AR)</label>
+                  <Input 
+                    className="text-right font-arabic" 
+                    value={siloFormState.nameAr} 
+                    onChange={(e) => setSiloFormState({...siloFormState, nameAr: e.target.value})} 
                   />
                 </div>
-
+              </div>
+              {/* Description Fields */}
+              <div className="grid grid-cols-2 gap-4 pt-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Category *</label>
-                  <Select
-                    value={siloFormState.categoryId}
-                    onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, categoryId: val }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <label className="text-xs font-bold text-accent">Description (EN)</label>
+                  <Textarea 
+                    value={siloFormState.descriptionEn} 
+                    onChange={(e) => setSiloFormState({...siloFormState, descriptionEn: e.target.value})} 
+                  />
                 </div>
+                <div className="space-y-2" dir="rtl">
+                  <label className="text-xs font-bold text-accent">الوصف (AR)</label>
+                  <Textarea 
+                    className="text-right font-arabic" 
+                    value={siloFormState.descriptionAr} 
+                    onChange={(e) => setSiloFormState({...siloFormState, descriptionAr: e.target.value})} 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Category *</label>
+                <Select
+                  value={siloFormState.categoryId}
+                  onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, categoryId: val }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -998,42 +1099,102 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
+            {/* Flavour Notes Section */}
+            <div className="space-y-4 pt-6 border-t border-border/20">
+              <div className="text-xs font-bold uppercase tracking-wider text-accent/70">Flavour Notes (EN / AR)</div>
+              <div className="space-y-3">
+                {siloFormState.flavourNotes.map((note, idx) => (
+                  <div key={idx} className="flex gap-2 items-start bg-white/5 p-3 rounded-lg border border-border/10">
+                    <div className="flex-1 space-y-2">
+                      <Input 
+                        placeholder="EN: e.g. Chocolate" 
+                        value={note.nameEn} 
+                        onChange={(e) => {
+                          const newNotes = [...siloFormState.flavourNotes];
+                          newNotes[idx].nameEn = e.target.value;
+                          setSiloFormState(prev => ({ ...prev, flavourNotes: newNotes }));
+                        }}
+                      />
+                      <Input 
+                        dir="rtl"
+                        placeholder="AR: شوكولاتة" 
+                        className="text-right font-arabic"
+                        value={note.nameAr} 
+                        onChange={(e) => {
+                          const newNotes = [...siloFormState.flavourNotes];
+                          newNotes[idx].nameAr = e.target.value;
+                          setSiloFormState(prev => ({ ...prev, flavourNotes: newNotes }));
+                        }}
+                      />
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setSiloFormState(prev => ({ ...prev, flavourNotes: prev.flavourNotes.filter((_, i) => i !== idx) }))}
+                    >
+                      <X size={14} className="text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full border-dashed"
+                  onClick={() => setSiloFormState(prev => ({ ...prev, flavourNotes: [...prev.flavourNotes, { nameEn: "", nameAr: "" }] }))}
+                >
+                  <Plus size={14} className="mr-2" /> Add Flavour Note
+                </Button>
+              </div>
+            </div>
+              
             {/* Pricing Matrix Section */}
             <div className="space-y-4">
               <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Pricing Matrix *</div>
               <div className="space-y-3 bg-accent/5 p-4 rounded-lg border border-accent/20">
-                {siloFormState.weightPrices.map((wp) => {
-                  const weight = masterData?.weights.find((w) => w.id === wp.weightId)
-                  return (
-                    <div key={wp.weightId} className="flex items-end gap-3">
-                      <div className="flex-1">
-                        <label className="text-xs font-medium text-muted-foreground">
-                          {weight?.label} ({weight?.grams}g)
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={wp.price}
-                          onChange={(e) => updateWeightPrice(wp.weightId, "price", e.target.value)}
-                          placeholder="0.00"
-                          disabled={!wp.enabled}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id={`price-${wp.weightId}`}
-                          checked={wp.enabled}
-                          onCheckedChange={(checked) => updateWeightPrice(wp.weightId, "enabled", checked)}
-                        />
-                        <label htmlFor={`price-${wp.weightId}`} className="text-sm cursor-pointer">
-                          Enable
-                        </label>
-                      </div>
+                {masterData?.weights.map((weight) => (
+                  <div key={weight.id} className="space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground">
+                      {weight.label} ({weight.grams}g)
                     </div>
-                  )
-                })}
+                    {['USD', 'AED'].map((curr) => {
+                      const wp = siloFormState.weightPrices.find(
+                        p => p.weightId === weight.id && p.currencyCode === curr
+                      );
+                      if (!wp) return null;
+                      
+                      return (
+                        <div key={`${weight.id}-${curr}`} className="flex items-end gap-3">
+                          <div className="flex-1">
+                            <label className="text-xs font-medium text-muted-foreground">
+                              {curr}
+                            </label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={wp.price}
+                              onChange={(e) => updateWeightPrice(weight.id, curr, "price", e.target.value)}
+                              placeholder="0.00"
+                              disabled={!wp.enabled}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`price-${weight.id}-${curr}`}
+                              checked={wp.enabled}
+                              onCheckedChange={(checked) => updateWeightPrice(weight.id, curr, "enabled", !!checked)}
+                            />
+                            <label htmlFor={`price-${weight.id}-${curr}`} className="text-sm cursor-pointer">
+                              Enable
+                            </label>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -1139,8 +1300,8 @@ export default function AdminProductsPage() {
               <SheetClose asChild>
                 <Button variant="ghost" type="button">Cancel</Button>
               </SheetClose>
-              <Button type="submit" disabled={saving || loadingProduct} className="bg-linear-to-r from-amber-500 to-orange-600 text-white min-w-30">
-                {saving ? (
+              <Button type="submit" disabled={saving || loadingProduct || isSubmitting} className="bg-linear-to-r from-amber-500 to-orange-600 text-white min-w-30">
+                {(saving || isSubmitting) ? (
                   <>
                     <Loader2 className="size-4 animate-spin mr-2" />
                     Saving...
@@ -1278,7 +1439,7 @@ export default function AdminProductsPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">ID:</span>
-                    <span className="font-mono text-xs">{viewingProduct.id.substring(0, 8)}...</span>
+                    <span className="font-mono text-xs">{viewingProduct.id?.substring(0, 8) || "—"}...</span>
                   </div>
                 </div>
               </div>

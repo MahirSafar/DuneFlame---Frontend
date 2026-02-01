@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Search, ChevronDown } from "lucide-react"
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
@@ -14,13 +15,16 @@ import { useTranslations } from "next-intl"
 
 export default function ProductsPage() {
   const t = useTranslations()
+  const searchParams = useSearchParams()
+  const urlSearch = searchParams?.get("search") || ""
+  
   const [filters, setFilters] = useState<FilterState>({
     roastLevel: [],
     originIds: [],
     categoryIds: [],
     priceRange: [0, 10000], // Wide range to prevent filtering on first load
   })
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState(urlSearch)
   const debouncedSearch = useDebounce(searchQuery, 500)
   const [sortBy, setSortBy] = useState("")
 
@@ -30,6 +34,13 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null)
   const [minPrice, setMinPrice] = useState(0)
   const [maxPrice, setMaxPrice] = useState(10000)
+
+  // Update search query when URL changes
+  useEffect(() => {
+    if (urlSearch) {
+      setSearchQuery(urlSearch)
+    }
+  }, [urlSearch])
 
   useEffect(() => {
     let cancelled = false
@@ -41,7 +52,7 @@ export default function ProductsPage() {
       pageSize: 100,
     }
 
-    if (debouncedSearch) params.search = debouncedSearch
+    // Don't send search to API - we'll filter client-side for case-insensitivity
     if (sortBy) params.sort = sortBy
     
     // Always send price range
@@ -70,6 +81,13 @@ export default function ProductsPage() {
           
           let filteredItems = res.items
  
+          // Client-side case-insensitive search filtering
+          if (debouncedSearch) {
+            const searchLower = debouncedSearch.toLowerCase()
+            filteredItems = filteredItems.filter(p => 
+              p.name.toLowerCase().includes(searchLower)
+            )
+          }
           
           // Client-side filtering for multiple selections
           if (filters.categoryIds.length > 0) {
@@ -150,20 +168,24 @@ export default function ProductsPage() {
       <div className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-primary dark:text-secondary">{t('products.title')}</h1>
+            <h1 className="text-[24px] font-bold text-primary dark:text-secondary uppercase">{t('products.title')}</h1>
             <p className="text-muted-foreground mt-2">{t('home.categories.description')}</p>
           </div>
 
           {/* Search Bar */}
           <div className="mb-8">
             <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#2b1b13] z-10 pointer-events-none" size={20} />
               <Input
                 type="text"
                 placeholder={t('common.actions.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 glass"
+                style={{ 
+                  '--ring': '#2b1b13',
+                  '--ring-color': 'rgba(43, 27, 19, 0.5)',
+                } as React.CSSProperties & { '--ring': string; '--ring-color': string }}
               />
             </div>
           </div>
@@ -235,7 +257,7 @@ export default function ProductsPage() {
                 </div>
               ) : !loading && !error ? (
                 <div className="glass rounded-xl p-12 text-center">
-                  <p className="text-muted-foreground text-lg mb-2">{t('products.noProducts')}</p>
+                  <p className="text-muted-foreground text-lg mb-2">No products found</p>
                   <p className="text-muted-foreground text-sm">Try adjusting your filters or check back later.</p>
                 </div>
               ) : null}

@@ -2,6 +2,16 @@
 .register-form label {
   color: var(--espresso-brown) !important;
 }
+
+/* Subscribe button */
+.btn-subscribe {
+  background-color: #2b1b13;
+  color: white;
+}
+
+.btn-subscribe:hover {
+  background-color: #1f1410;
+}
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -31,24 +41,24 @@
   --charcoal-roast: #1F1A17;
 
   /* Design System Tokens - Light Mode */
-  --background: #FBEDDC;
+  --background: #FFFFFF;
   --foreground: #2B1B13;
-  --card: #ffffff;
+  --card: #FFFFFF;
   --card-foreground: #2B1B13;
-  --popover: #ffffff;
+  --popover: #FFFFFF;
   --popover-foreground: #2B1B13;
   --primary: #CC3323;
-  --primary-foreground: #FBEDDC;
-  --secondary: #E6D3BF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F5F5F5;
   --secondary-foreground: #2B1B13;
-  --muted: #E6D3BF;
+  --muted: #F0F0F0;
   --muted-foreground: #6b5d50;
   --accent: #1F6F78;
-  --accent-foreground: #FBEDDC;
+  --accent-foreground: #FFFFFF;
   --destructive: #A3291C;
-  --destructive-foreground: #FBEDDC;
-  --border: #C3AD98;
-  --input: #E6D3BF;
+  --destructive-foreground: #FFFFFF;
+  --border: #E0E0E0;
+  --input: #F5F5F5;
   --ring: #CC3323;
   --chart-1: #CC3323;
   --chart-2: #1F6F78;
@@ -56,50 +66,16 @@
   --chart-4: #3E4B3A;
   --chart-5: #F2C38B;
   --radius: 0.75rem;
-  --sidebar: #FBEDDC;
+  --sidebar: #FFFFFF;
   --sidebar-foreground: #2B1B13;
   --sidebar-primary: #CC3323;
-  --sidebar-primary-foreground: #FBEDDC;
+  --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #1F6F78;
-  --sidebar-accent-foreground: #FBEDDC;
-  --sidebar-border: #C3AD98;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #E0E0E0;
   --sidebar-ring: #CC3323;
 }
 
-.dark {
-  --background: #1F1A17;
-  --foreground: #FBEDDC;
-  --card: #2B1B13;
-  --card-foreground: #FBEDDC;
-  --popover: #2B1B13;
-  --popover-foreground: #FBEDDC;
-  --primary: #CC3323;
-  --primary-foreground: #FBEDDC;
-  --secondary: #3E4B3A;
-  --secondary-foreground: #FBEDDC;
-  --muted: #3d2f26;
-  --muted-foreground: #C3AD98;
-  --accent: #1F6F78;
-  --accent-foreground: #FBEDDC;
-  --destructive: #A3291C;
-  --destructive-foreground: #FBEDDC;
-  --border: #3d2f26;
-  --input: #3d2f26;
-  --ring: #CC3323;
-  --chart-1: #CC3323;
-  --chart-2: #1F6F78;
-  --chart-3: #E2A56E;
-  --chart-4: #3E4B3A;
-  --chart-5: #F2C38B;
-  --sidebar: #2B1B13;
-  --sidebar-foreground: #FBEDDC;
-  --sidebar-primary: #CC3323;
-  --sidebar-primary-foreground: #FBEDDC;
-  --sidebar-accent: #1F6F78;
-  --sidebar-accent-foreground: #FBEDDC;
-  --sidebar-border: #3d2f26;
-  --sidebar-ring: #CC3323;
-}
 
 /* ========================================
    TYPOGRAPHY - DUNEFLAME FONTS
@@ -242,35 +218,35 @@
      SOFT GLASSMORPHISM UTILITIES
      ======================================== */
   .glass-soft {
-    @apply bg-white/60 dark:bg-white/5 backdrop-blur-md border border-dune-taupe/40 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/20;
+    @apply bg-white/60 backdrop-blur-md border border-dune-taupe/40 shadow-lg shadow-black/5;
   }
 
   .glass {
-    @apply bg-white/75 dark:bg-white/8 backdrop-blur-xl border border-dune-taupe/50 dark:border-white/12 shadow-xl shadow-black/8 dark:shadow-black/25;
+    @apply bg-white/90 backdrop-blur-xl border border-dune-taupe/50 shadow-xl shadow-[#E6D3BF]/40;
   }
 
   .glass-medium {
-    @apply bg-white/85 dark:bg-white/10 backdrop-blur-2xl border border-dune-taupe/60 dark:border-white/15 shadow-2xl shadow-black/10 dark:shadow-black/30;
+    @apply bg-white/85 backdrop-blur-2xl border border-dune-taupe/60 shadow-2xl shadow-black/10;
   }
 
   .glass-strong {
-    @apply bg-white/95 dark:bg-white/15 backdrop-blur-3xl border border-dune-taupe/70 dark:border-white/20 shadow-2xl shadow-black/12 dark:shadow-black/35;
+    @apply bg-white/95 backdrop-blur-3xl border border-dune-taupe/70 shadow-2xl shadow-black/12;
   }
 
   .glass-warm {
-    @apply bg-dune-paper/80 dark:bg-espresso-brown/15 backdrop-blur-xl border border-dune-taupe/40 dark:border-dune-taupe/20 shadow-xl shadow-flame-deep/8 dark:shadow-flame-deep/20;
+    @apply bg-dune-paper/80 backdrop-blur-xl border border-dune-taupe/40 shadow-xl shadow-flame-deep/8;
   }
 
   .glass-flame {
-    @apply bg-flame-apricot/75 dark:bg-flame-deep/12 backdrop-blur-xl border border-flame-caramel/35 dark:border-flame-deep/18 shadow-xl shadow-flame-red/8 dark:shadow-flame-red/20;
+    @apply bg-flame-apricot/75 backdrop-blur-xl border border-flame-caramel/35 shadow-xl shadow-flame-red/8;
   }
 
   .glass-dune {
-    @apply bg-dune-sand/85 dark:bg-charcoal-roast/10 backdrop-blur-xl border border-dune-taupe/45 dark:border-dune-taupe/15 shadow-lg shadow-espresso-brown/6 dark:shadow-espresso-brown/20;
+    @apply bg-dune-sand/85 backdrop-blur-xl border border-dune-taupe/45 shadow-lg shadow-espresso-brown/6;
   }
 
   .glass-frost {
-    @apply bg-white/50 dark:bg-white/4 backdrop-blur-3xl backdrop-saturate-150 border border-dune-taupe/30 dark:border-white/8 shadow-lg shadow-black/5 dark:shadow-black/20;
+    @apply bg-white/50 backdrop-blur-3xl backdrop-saturate-150 border border-dune-taupe/30 shadow-lg shadow-black/5;
   }
 
   /* ========================================

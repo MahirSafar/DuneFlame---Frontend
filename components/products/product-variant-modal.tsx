@@ -222,7 +222,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="w-[95vw] sm:w-full sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Select your perfect cup</DialogTitle>
           <DialogDescription>
@@ -230,7 +230,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr]">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-[1.05fr_1fr] lg:grid-cols-[1.05fr_1fr]">
           <div className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-muted">
             {mainImage ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -248,9 +248,9 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                 {fullProduct.originName && <Badge variant="outline">{fullProduct.originName}</Badge>}
                 {/* Removed category badge as requested */}
               </div>
-              <h3 className="text-2xl font-bold text-primary dark:text-secondary">{fullProduct.name}</h3>
-              <p className="text-sm text-muted-foreground line-clamp-3">{fullProduct.description}</p>
-              <p className="text-3xl font-semibold text-primary dark:text-secondary">
+              <h3 className="text-lg sm:text-2xl font-bold text-primary dark:text-secondary uppercase">{fullProduct.name}</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3">{fullProduct.description}</p>
+              <p className="font-heading text-xl sm:text-2xl font-semibold text-primary dark:text-secondary">
                 {isPriceAvailable ? (
                   <FormattedPrice amount={currentPrice} />
                 ) : (
@@ -339,9 +339,6 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                       </div>
                       <div className="flex flex-col text-left">
                         <span className="font-semibold">{weightLabel}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {weightPrice > 0 ? <FormattedPrice amount={weightPrice} /> : "N/A"}
-                        </span>
                       </div>
                     </button>
                   )

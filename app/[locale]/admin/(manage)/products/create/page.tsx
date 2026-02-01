@@ -2,7 +2,7 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,606 +16,289 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ArrowLeft, Upload, X, Save, ImageIcon, DollarSign, Package } from "lucide-react";
+import { Loader2, ArrowLeft, X, Plus, Trash2, CheckCircle2 } from "lucide-react";
 import { getMasterData, createProductV2 } from "@/lib/services/products";
-import type { FlavourNoteDto } from "@/lib/types/flavour-note";
-import type { MasterData, ProductPricePayload } from "@/lib/types";
+import type { MasterData } from "@/lib/types";
 import toast from "react-hot-toast";
 
-interface WeightPrice {
-  weightId: string;
-  enabled: boolean;
-  price: string;
-}
-
-// Flavour note form state
 type FlavourNoteForm = {
   name: string;
   displayOrder: number;
   translations: { languageCode: string; name: string }[];
 };
+
+export default function CreateProductPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [masterData, setMasterData] = useState<MasterData | null>(null);
 
-  // Form state
-  const [flavourNotes, setFlavourNotes] = useState<FlavourNoteForm[]>([]);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  // --- Form States ---
+  const [nameEn, setNameEn] = useState("");
+  const [nameAr, setNameAr] = useState("");
+  const [descEn, setDescEn] = useState("");
+  const [descAr, setDescAr] = useState("");
   const [stockInKg, setStockInKg] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [originId, setOriginId] = useState("");
   const [selectedRoasts, setSelectedRoasts] = useState<string[]>([]);
   const [selectedGrinds, setSelectedGrinds] = useState<string[]>([]);
-  const [weightPrices, setWeightPrices] = useState<WeightPrice[]>([]);
+  const [priceMatrix, setPriceMatrix] = useState<Record<string, string>>({});
   const [images, setImages] = useState<File[]>([]);
+  const [mainImageIndex, setMainImageIndex] = useState<number>(0);
+  const [flavourNotes, setFlavourNotes] = useState<FlavourNoteForm[]>([]);
 
-  // Fetch master data on mount
   useEffect(() => {
     async function fetchData() {
       try {
         const data = await getMasterData();
         setMasterData(data);
-
-        // Initialize weight prices
-        const initialWeightPrices = data.weights.map((w) => ({
-          weightId: w.id,
-          enabled: false,
-          price: "",
-        }));
-        setWeightPrices(initialWeightPrices);
       } catch (error) {
-        console.error("Failed to fetch master data:", error);
-        toast.error("Failed to load form data");
+        toast.error("Məlumatlar yüklənmədi.");
       } finally {
         setLoading(false);
       }
     }
-
     fetchData();
   }, []);
 
-  // Handle roast level checkbox
-  const toggleRoast = (id: string) => {
-    setSelectedRoasts((prev) =>
-      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
-    );
+  const updateMatrix = (weightId: string, currency: string, value: string) => {
+    setPriceMatrix(prev => ({ ...prev, [`${weightId}_${currency}`]: value }));
   };
 
-  // Handle grind type checkbox
-  const toggleGrind = (id: string) => {
-    setSelectedGrinds((prev) =>
-      prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
-    );
-  };
-
-  // Handle weight price changes
-  const updateWeightPrice = (
-    weightId: string,
-    field: "enabled" | "price",
-    value: boolean | string
-  ) => {
-    setWeightPrices((prev) =>
-      prev.map((wp) =>
-        wp.weightId === weightId ? { ...wp, [field]: value } : wp
-      )
-    );
-  };
-
-  // Handle image selection
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newImages = Array.from(files);
-      setImages((prev) => [...prev, ...newImages]);
-    }
-  };
-
-  // Remove image
-  const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  // Form submission
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submitting) return; // Dublikat kliklərin qarşısını alırıq
 
-    // Validation
-    if (!name.trim()) {
-      toast.error("Product name is required");
-      return;
-    }
-    if (!description.trim()) {
-      toast.error("Description is required");
-      return;
-    }
-    if (!categoryId) {
-      toast.error("Please select a category");
-      return;
-    }
-    if (!stockInKg || parseFloat(stockInKg) <= 0) {
-      toast.error("Stock in KG must be greater than 0");
-      return;
-    }
-    if (selectedRoasts.length === 0) {
-      toast.error("Please select at least one roast level");
-      return;
-    }
-    if (selectedGrinds.length === 0) {
-      toast.error("Please select at least one grind type");
+    if (!selectedRoasts.length || !selectedGrinds.length || !images.length) {
+      toast.error("Atributlar və Şəkillər mütləqdir!");
       return;
     }
 
-    // Build prices array
-    const prices: ProductPricePayload[] = weightPrices
-      .filter((wp) => wp.enabled && wp.price && parseFloat(wp.price) > 0)
-      .map((wp) => ({
-        productWeightId: wp.weightId,
-        price: parseFloat(wp.price),
-      }));
+    const formData = new FormData();
 
-    if (prices.length === 0) {
-      toast.error("Please enable at least one weight with a valid price");
-      return;
-    }
+    // Backend-in top-level [Required] sahələri
+    formData.append("Name", nameEn);
+    formData.append("Description", descEn);
+    formData.append("StockInKg", stockInKg);
+    formData.append("CategoryId", categoryId);
+    if (originId) formData.append("OriginId", originId);
 
-    if (images.length === 0) {
-      toast.error("Please upload at least one image");
-      return;
-    }
+    // 1. Translations (EN & AR)
+    const translations = [
+      { languageCode: "en", name: nameEn, description: descEn },
+      { languageCode: "ar", name: nameAr, description: descAr }
+    ];
+    translations.forEach((tr, i) => {
+      formData.append(`Translations[${i}].LanguageCode`, tr.languageCode);
+      formData.append(`Translations[${i}].Name`, tr.name);
+      formData.append(`Translations[${i}].Description`, tr.description);
+    });
 
-    // Append FlavourNotes (multi-language)
-    flavourNotes.forEach((note, i) => {
-      formData.append(`FlavourNotes[${i}].Name`, note.name);
-      formData.append(`FlavourNotes[${i}].DisplayOrder`, note.displayOrder.toString());
-      note.translations.forEach((tr, j) => {
-        formData.append(`FlavourNotes[${i}].Translations[${j}].LanguageCode`, tr.languageCode);
-        formData.append(`FlavourNotes[${i}].Translations[${j}].Name`, tr.name);
+    // 2. Attributes (Repeated keys)
+    selectedRoasts.forEach(id => formData.append("RoastLevelIds", id));
+    selectedGrinds.forEach(id => formData.append("GrindTypeIds", id));
+
+    // 3. Qiymətlər (USD və AED üçün tam sinxronizasiya)
+    let pIdx = 0;
+    const seenKeys = new Set();
+    Object.entries(priceMatrix).forEach(([key, price]) => {
+      // Qiymət boşdursa və ya 0-dırsa, göndərmirik
+      if (!price || parseFloat(price) <= 0) return;
+
+      // Composite key (Weight + Currency) təkrarını yoxlayırıq
+      if (seenKeys.has(key)) return;
+      seenKeys.add(key);
+
+      const [wId, curr] = key.split("_"); // "guid_USD" -> ["guid", "USD"]
+
+      formData.append(`Prices[${pIdx}].ProductWeightId`, wId);
+      formData.append(`Prices[${pIdx}].Price`, price);
+      formData.append(`Prices[${pIdx}].CurrencyCode`, curr); // Backend-dəki yeni sahəyə uyğun
+      pIdx++;
+    });
+
+    // 4. Flavour Notes
+    flavourNotes.forEach((fn, i) => {
+      formData.append(`FlavourNotes[${i}].Name`, fn.name);
+      formData.append(`FlavourNotes[${i}].DisplayOrder`, fn.displayOrder.toString());
+      fn.translations.forEach((tr, ti) => {
+        formData.append(`FlavourNotes[${i}].Translations[${ti}].LanguageCode`, tr.languageCode);
+        formData.append(`FlavourNotes[${i}].Translations[${ti}].Name`, tr.name);
       });
     });
 
-    // Build FormData (PascalCase keys to match backend DTOs)
-            {/* Section F: Flavour Notes (Multi-language) */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Flavour Notes (Multi-language)</CardTitle>
-                <CardDescription>Add flavour notes and their translations for this product.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {flavourNotes.map((note, i) => (
-                  <div key={i} className="border rounded-md p-4 space-y-2">
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        placeholder="Flavour Note Name (default)"
-                        value={note.name}
-                        onChange={e => {
-                          const updated = [...flavourNotes];
-                          updated[i].name = e.target.value;
-                          setFlavourNotes(updated);
-                        }}
-                      />
-                      <Input
-                        type="number"
-                        min={0}
-                        placeholder="Order"
-                        value={note.displayOrder}
-                        onChange={e => {
-                          const updated = [...flavourNotes];
-                          updated[i].displayOrder = Number(e.target.value);
-                          setFlavourNotes(updated);
-                        }}
-                        className="w-24"
-                      />
-                      <Button type="button" variant="destructive" onClick={() => {
-                        setFlavourNotes(flavourNotes.filter((_, idx) => idx !== i));
-                      }}>Remove</Button>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {note.translations.map((tr, j) => (
-                        <div key={j} className="flex gap-1 items-center border rounded px-2 py-1">
-                          <Input
-                            placeholder="Lang (e.g. en)"
-                            value={tr.languageCode}
-                            onChange={e => {
-                              const updated = [...flavourNotes];
-                              updated[i].translations[j].languageCode = e.target.value;
-                              setFlavourNotes(updated);
-                            }}
-                            className="w-16"
-                          />
-                          <Input
-                            placeholder="Translation"
-                            value={tr.name}
-                            onChange={e => {
-                              const updated = [...flavourNotes];
-                              updated[i].translations[j].name = e.target.value;
-                              setFlavourNotes(updated);
-                            }}
-                          />
-                          <Button type="button" size="sm" variant="outline" onClick={() => {
-                            const updated = [...flavourNotes];
-                            updated[i].translations.splice(j, 1);
-                            setFlavourNotes(updated);
-                          }}>Remove</Button>
-                        </div>
-                      ))}
-                      <Button type="button" size="sm" onClick={() => {
-                        const updated = [...flavourNotes];
-                        updated[i].translations.push({ languageCode: '', name: '' });
-                        setFlavourNotes(updated);
-                      }}>Add Translation</Button>
-                    </div>
-                  </div>
-                ))}
-                <Button type="button" onClick={() => setFlavourNotes([...flavourNotes, { name: '', displayOrder: 0, translations: [] }])}>
-                  Add Flavour Note
-                </Button>
-              </CardContent>
-            </Card>
-    const formData = new FormData();
-    formData.append("Name", name);
-    formData.append("Description", description);
-    formData.append("StockInKg", stockInKg);
-    formData.append("CategoryId", categoryId);
-    if (originId) {
-      formData.append("OriginId", originId);
+    // 5. Images
+    images.forEach((img) => formData.append("Images", img));
+    formData.append("MainImageIndex", mainImageIndex.toString());
+
+    // FormData-nı göndərməzdən əvvəl konsola çıxarırıq
+    // eslint-disable-next-line no-console
+    console.log('--- FormData Payload ---');
+    for (let pair of formData.entries()) {
+      // eslint-disable-next-line no-console
+      console.log(pair[0] + ': ' + pair[1]);
     }
-
-    // Append array items individually so backend model binding receives multiple values
-    selectedRoasts.forEach((id) => {
-      formData.append("RoastLevelIds", id);
-    });
-
-    selectedGrinds.forEach((id) => {
-      formData.append("GrindTypeIds", id);
-    });
-
-    prices.forEach((p, index) => {
-      formData.append(`Prices[${index}].ProductWeightId`, p.productWeightId);
-      formData.append(`Prices[${index}].Price`, p.price.toString());
-    });
-
-    // Append images
-    images.forEach((image, index) => {
-      formData.append(`images`, image);
-    });
-
-    // Submit
     setSubmitting(true);
     try {
       await createProductV2(formData);
-      toast.success("Product created successfully!");
+      toast.success("Məhsul uğurla yaradıldı!");
       router.push("/admin/products");
     } catch (error: any) {
-      console.error("Failed to create product:", error);
-      toast.error(error?.response?.data?.message || "Failed to create product");
+      const errs = error?.response?.data?.errors;
+      if (errs) Object.values(errs).flat().forEach((m: any) => toast.error(m));
+      else toast.error("Server xətası baş verdi.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!masterData) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Failed to load form data</p>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>;
 
   return (
-    <div className="container max-w-4xl py-8">
-      {/* Header */}
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <h1 className="text-3xl font-bold">Create New Product</h1>
-        <p className="text-muted-foreground mt-2">
-          Add a new coffee product to your inventory using Silo v2
-        </p>
+    <div className="container max-w-5xl py-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4" /> Geri</Button>
+        <h1 className="text-3xl font-bold">Yeni Məhsul Yaradın</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Section A: Basic Info */}
         <Card>
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Product Name *</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Ethiopian Yirgacheffe"
-                required
-              />
+          <CardHeader><CardTitle>Ad və Təsvir (Çoxdilli)</CardTitle></CardHeader>
+          <CardContent className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <Badge>English (EN)</Badge>
+              <div className="grid gap-2"><Label>Name *</Label><Input value={nameEn} onChange={e => setNameEn(e.target.value)} required /></div>
+              <div className="grid gap-2"><Label>Description *</Label><Textarea value={descEn} onChange={e => setDescEn(e.target.value)} rows={3} required /></div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the coffee's flavor profile, origin story, and unique characteristics..."
-                rows={5}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
-                <Select value={categoryId} onValueChange={setCategoryId}>
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {masterData.categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="origin">Origin (Optional)</Label>
-                <Select value={originId || undefined} onValueChange={(val) => setOriginId(val || "")}>
-                  <SelectTrigger id="origin">
-                    <SelectValue placeholder="Select origin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {masterData.origins.map((origin) => (
-                      <SelectItem key={origin.id} value={origin.id}>
-                        {origin.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-4 text-right" dir="rtl">
+              <Badge variant="secondary">العربية (AR)</Badge>
+              <div className="grid gap-2"><Label>اسم المنتج *</Label><Input value={nameAr} onChange={e => setNameAr(e.target.value)} required /></div>
+              <div className="grid gap-2"><Label>وصف المنتج *</Label><Textarea value={descAr} onChange={e => setDescAr(e.target.value)} rows={3} required /></div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Section B: Inventory (The Silo) */}
         <Card>
-          <CardHeader>
-            <CardTitle>Inventory - The Silo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="stockInKg">Central Stock (kg) *</Label>
-              <Input
-                id="stockInKg"
-                type="number"
-                step="0.01"
-                min="0"
-                value={stockInKg}
-                onChange={(e) => setStockInKg(e.target.value)}
-                placeholder="e.g., 100"
-                required
-              />
-              <p className="text-sm text-muted-foreground">
-                Total coffee beans available in kilograms
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section C: Attributes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Attributes</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Atributlar</CardTitle></CardHeader>
           <CardContent className="space-y-6">
-            {/* Roast Levels */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">
-                Roast Levels *
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Select all roast levels this product is available in
-              </p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {masterData.roastLevels.map((roast) => (
-                  <div
-                    key={roast.id}
-                    className="flex items-center space-x-2 border rounded-md p-3 hover:bg-accent transition-colors"
-                  >
-                    <Checkbox
-                      id={`roast-${roast.id}`}
-                      checked={selectedRoasts.includes(roast.id)}
-                      onCheckedChange={() => toggleRoast(roast.id)}
-                    />
-                    <Label
-                      htmlFor={`roast-${roast.id}`}
-                      className="cursor-pointer flex-1"
-                    >
-                      {roast.name}
-                    </Label>
-                  </div>
-                ))}
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid gap-2">
+                <Label>Kateqoriya *</Label>
+                <Select onValueChange={setCategoryId} value={categoryId}>
+                  <SelectTrigger><SelectValue placeholder="Seç" /></SelectTrigger>
+                  <SelectContent>{masterData?.categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2"><Label>Stok (kq) *</Label><Input type="number" step="0.1" value={stockInKg} onChange={e => setStockInKg(e.target.value)} required /></div>
+              <div className="grid gap-2">
+                <Label>Mənşə (Origin)</Label>
+                <Select onValueChange={setOriginId} value={originId}>
+                  <SelectTrigger><SelectValue placeholder="Seç" /></SelectTrigger>
+                  <SelectContent>{masterData?.origins.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
             </div>
 
-            {/* Grind Types */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">
-                Grind Options *
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Select all grind types available for this product
-              </p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {masterData.grindTypes.map((grind) => (
-                  <div
-                    key={grind.id}
-                    className="flex items-center space-x-2 border rounded-md p-3 hover:bg-accent transition-colors"
-                  >
-                    <Checkbox
-                      id={`grind-${grind.id}`}
-                      checked={selectedGrinds.includes(grind.id)}
-                      onCheckedChange={() => toggleGrind(grind.id)}
-                    />
-                    <Label
-                      htmlFor={`grind-${grind.id}`}
-                      className="cursor-pointer flex-1"
-                    >
-                      {grind.name}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section D: Pricing Matrix */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pricing Matrix</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Enable the weights you want to sell and set their prices
-            </p>
-            <div className="space-y-3">
-              {masterData.weights.map((weight) => {
-                const weightPrice = weightPrices.find(
-                  (wp) => wp.weightId === weight.id
-                );
-                return (
-                  <div
-                    key={weight.id}
-                    className="flex items-center gap-4 p-3 border rounded-md hover:bg-accent transition-colors"
-                  >
-                    <Checkbox
-                      id={`weight-${weight.id}`}
-                      checked={weightPrice?.enabled || false}
-                      onCheckedChange={(checked) =>
-                        updateWeightPrice(weight.id, "enabled", !!checked)
-                      }
-                    />
-                    <Label
-                      htmlFor={`weight-${weight.id}`}
-                      className="cursor-pointer w-24 font-medium"
-                    >
-                      {weight.label}
-                    </Label>
-                    <div className="flex-1 max-w-xs">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Price"
-                        value={weightPrice?.price || ""}
-                        onChange={(e) =>
-                          updateWeightPrice(
-                            weight.id,
-                            "price",
-                            e.target.value
-                          )
-                        }
-                        disabled={!weightPrice?.enabled}
-                        className="w-full"
-                      />
+            <div className="grid md:grid-cols-2 gap-8 pt-4 border-t">
+              <div className="space-y-3">
+                <Label className="font-bold">Roast Levels *</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {masterData?.roastLevels.map(r => (
+                    <div key={r.id} className="flex items-center space-x-2 border p-2 rounded">
+                      <Checkbox id={`r-${r.id}`} checked={selectedRoasts.includes(r.id)} onCheckedChange={c => setSelectedRoasts(p => c ? [...p, r.id] : p.filter(x => x !== r.id))} />
+                      <Label htmlFor={`r-${r.id}`} className="text-xs cursor-pointer">{r.name}</Label>
                     </div>
-                    <span className="text-sm text-muted-foreground w-16">
-                      ({weight.grams}g)
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section E: Images */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Images *</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="images">Upload Images</Label>
-              <Input
-                id="images"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
-                className="cursor-pointer"
-              />
-              <p className="text-sm text-muted-foreground">
-                Upload product images (JPG, PNG, WebP)
-              </p>
-            </div>
-
-            {images.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                {images.map((image, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={URL.createObjectURL(image)}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-md border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                    <p className="text-xs text-muted-foreground mt-1 truncate">
-                      {image.name}
-                    </p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            )}
+              <div className="space-y-3">
+                <Label className="font-bold">Grind Options *</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {masterData?.grindTypes.map(g => (
+                    <div key={g.id} className="flex items-center space-x-2 border p-2 rounded">
+                      <Checkbox id={`g-${g.id}`} checked={selectedGrinds.includes(g.id)} onCheckedChange={c => setSelectedGrinds(p => c ? [...p, g.id] : p.filter(x => x !== g.id))} />
+                      <Label htmlFor={`g-${g.id}`} className="text-xs cursor-pointer">{g.name}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Submit Button */}
-        <div className="flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-            disabled={submitting}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              "Create Product"
-            )}
-          </Button>
-        </div>
+        <Card>
+          <CardHeader><CardTitle>Qiymət Matrisi (USD & AED)</CardTitle></CardHeader>
+          <CardContent>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="py-2">Çəki</th>
+                  <th className="py-2">USD ($)</th>
+                  <th className="py-2">AED (د.إ)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {masterData?.weights.map(w => (
+                  <tr key={w.id} className="border-b">
+                    <td className="py-3 font-medium">{w.label}</td>
+                    <td className="py-3 pr-2"><Input type="number" step="0.01" value={priceMatrix[`${w.id}_USD`] || ""} onChange={e => updateMatrix(w.id, "USD", e.target.value)} /></td>
+                    <td className="py-3"><Input type="number" step="0.01" value={priceMatrix[`${w.id}_AED`] || ""} onChange={e => updateMatrix(w.id, "AED", e.target.value)} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
+        {/* Flavour Notes (Dad Notları) */}
+        <Card>
+          <CardHeader><CardTitle>Dad Notları (Flavour Notes)</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            {flavourNotes.map((note, i) => (
+              <div key={i} className="p-4 border border-gray-200 rounded-lg space-y-4 relative bg-white text-gray-900 shadow-sm">
+                <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2" onClick={() => setFlavourNotes(flavourNotes.filter((_, idx) => idx !== i))}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2"><Label>Not Adı (EN)</Label><Input value={note.name} onChange={e => { const u = [...flavourNotes]; u[i].name = e.target.value; setFlavourNotes(u); }} /></div>
+                  <div className="grid gap-2"><Label>Sıra</Label><Input type="number" value={note.displayOrder} onChange={e => { const u = [...flavourNotes]; u[i].displayOrder = parseInt(e.target.value) || 0; setFlavourNotes(u); }} /></div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold">Tərcümələr</Label>
+                  {note.translations.map((tr, j) => (
+                    <div key={j} className="flex gap-2">
+                      <Input className="w-20" placeholder="en" value={tr.languageCode} onChange={e => { const u = [...flavourNotes]; u[i].translations[j].languageCode = e.target.value; setFlavourNotes(u); }} />
+                      <Input className="flex-1" placeholder="Tərcümə" value={tr.name} onChange={e => { const u = [...flavourNotes]; u[i].translations[j].name = e.target.value; setFlavourNotes(u); }} />
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={() => { const u = [...flavourNotes]; u[i].translations.push({ languageCode: "", name: "" }); setFlavourNotes(u); }}>Tərcümə əlavə et</Button>
+                </div>
+              </div>
+            ))}
+            <Button type="button" onClick={() => setFlavourNotes([...flavourNotes, { name: "", displayOrder: 0, translations: [] }])}><Plus className="mr-2 h-4 w-4" /> Yeni Not Əlavə Et</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Qalereya (Şəkillər)</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <Input type="file" multiple accept="image/*" onChange={e => e.target.files && setImages([...images, ...Array.from(e.target.files)])} />
+            <div className="flex flex-wrap gap-4">
+              {images.map((img, idx) => (
+                <div key={idx} className={`relative border-2 rounded-lg p-1 ${mainImageIndex === idx ? 'border-primary' : 'border-slate-200'}`}>
+                  <img src={URL.createObjectURL(img)} className="w-24 h-24 object-cover rounded" alt="thumb" />
+                  <div className="absolute top-1 right-1 flex gap-1">
+                    <button type="button" onClick={() => setMainImageIndex(idx)} className={`p-1 rounded-full ${mainImageIndex === idx ? 'bg-primary text-white' : 'bg-white shadow-sm'}`}><CheckCircle2 size={12} /></button>
+                    <button type="button" onClick={() => setImages(images.filter((_, i) => i !== idx))} className="bg-destructive text-white p-1 rounded-full"><X size={12} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Button type="submit" className="w-full h-14 text-xl" disabled={submitting}>
+          {submitting ? <Loader2 className="animate-spin mr-2" /> : "Məhsulu Yaradın"}
+        </Button>
       </form>
     </div>
   );
