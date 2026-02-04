@@ -19,7 +19,7 @@ export default function CheckoutPage() {
     setMounted(true)
   }, [])
 
-  // Check authentication and cart after hydration
+  // Check cart after hydration
   useEffect(() => {
     if (!mounted) return // Wait for hydration
 
@@ -28,16 +28,10 @@ export default function CheckoutPage() {
       router.push("/cart")
       return
     }
+  }, [mounted, items.length, router])
 
-    // Redirect to login if not authenticated
-    if (!accessToken) {
-      router.push("/login?redirect=/checkout")
-      return
-    }
-  }, [mounted, items.length, accessToken, router])
-
-  // Show loading state while checking authentication
-  if (!mounted || !accessToken || items.length === 0) {
+  // Show loading state while hydrating
+  if (!mounted || items.length === 0) {
     return (
       <main className="min-h-screen flex flex-col">
         <Navbar />

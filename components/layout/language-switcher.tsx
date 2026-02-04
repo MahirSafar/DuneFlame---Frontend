@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { locales, type Locale } from '@/i18n'
+import { useState, useEffect } from 'react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +11,6 @@ import {
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { Globe } from 'lucide-react'
 import { useTransition } from 'react'
 
 const localeNames: Record<Locale, string> = {
@@ -27,6 +27,13 @@ export function LanguageSwitcher() {
   const router = useRouter()
   const pathname = usePathname()
   const [isPending, startTransition] = useTransition()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
 
   // Get current locale from pathname
   const currentLocale = (pathname.split('/')[1] || 'en') as Locale
@@ -53,9 +60,8 @@ export function LanguageSwitcher() {
           disabled={isPending}
           aria-label="Select language"
         >
-          <Globe className="h-4 w-4" />
           <span>
-            {localeFlags[currentLocale]} {localeNames[currentLocale]}
+            {localeNames[currentLocale]}
           </span>
         </Button>
       </DropdownMenuTrigger>

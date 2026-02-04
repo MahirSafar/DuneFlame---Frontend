@@ -37,17 +37,24 @@ function clearAuthAndRedirect() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("df_tokens");
     
-    // Show single informative toast
-    toast.error("Session expired. Please login again.");
-    
-    // Determine redirect URL based on current path
     const currentPath = window.location.pathname;
-    const redirectUrl = currentPath.startsWith("/admin") ? "/admin/login" : "/auth/login";
-    
-    // Redirect to login
-    setTimeout(() => {
-      window.location.href = redirectUrl;
-    }, 500);
+
+    // ONLY redirect for admin panel
+    if (currentPath.startsWith("/admin")) {
+      toast.error("Admin session expired. Please login again.");
+      setTimeout(() => {
+        window.location.href = "/admin/login";
+      }, 500);
+    } else {
+      // Customer side: NO redirect to login
+      // Just reload the page so UI (Navbar etc) switches to guest mode
+      // User stays on current page (checkout, cart, etc) and continues as guest
+      toast("Session expired. Continued as guest.", { icon: "ℹ️" });
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
   }
 }
 
@@ -114,17 +121,21 @@ export async function apiFetch<T>(path: string, init: RequestInit & { method?: H
   let res = await doFetch();
 
   if (res.status === 401) {
-    const refreshed = await refreshTokens();
-    if (refreshed) {
-      // Retry with new access token
-      const retryHeaders = { ...headers };
-      if (accessToken) retryHeaders["Authorization"] = `Bearer ${accessToken}`;
-      res = await fetch(url, { ...init, headers: retryHeaders, credentials: "include" });
-    } else {
-      // Token refresh failed, redirect already triggered
-      // Don't throw or show additional errors - the redirect handles it
-      throw new Error("Session expired");
+    // Only attempt refresh if we had a token
+    if (accessToken) {
+      const refreshed = await refreshTokens();
+      if (refreshed) {
+        // Retry with new access token
+        const retryHeaders = { ...headers };
+        if (accessToken) retryHeaders["Authorization"] = `Bearer ${accessToken}`;
+        res = await fetch(url, { ...init, headers: retryHeaders, credentials: "include" });
+      } else {
+        // Token refresh failed, redirect already triggered
+        // Don't throw or show additional errors - the redirect handles it
+        throw new Error("Session expired");
+      }
     }
+    // If no token, let the response be handled as-is (backend may allow anonymous requests)
   }
 
   if (!res.ok) {

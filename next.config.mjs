@@ -9,6 +9,13 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
+      // Google Cloud Storage
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+        pathname: '/duneflame-images/**',
+      },
+      // Legacy local storage patterns (can be removed after full GCS migration)
       {
         protocol: 'https',
         hostname: 'localhost',

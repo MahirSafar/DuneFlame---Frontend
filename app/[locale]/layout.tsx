@@ -8,6 +8,7 @@ import { NextIntlClientProvider } from "next-intl"
 import { getMessages } from "next-intl/server"
 import { Analytics } from "@vercel/analytics/next"
 import AuthInit from "@/components/auth/auth-init"
+import CartInit from "@/components/cart/cart-init"
 import AuthProvider from "@/components/auth/auth-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { CurrencyProvider } from "@/lib/currency-context"
@@ -62,19 +63,17 @@ export async function generateMetadata({
     icons: {
       icon: [
         {
-          url: "/icon-light-32x32.png",
-          media: "(prefers-color-scheme: light)",
+          url: "/logo.svg",
+          sizes: "192x192",
+          type: "image/svg+xml",
         },
         {
-          url: "/icon-dark-32x32.png",
-          media: "(prefers-color-scheme: dark)",
-        },
-        {
-          url: "/icon.svg",
+          url: "/logo.svg",
+          sizes: "512x512",
           type: "image/svg+xml",
         },
       ],
-      apple: "/apple-icon.png",
+      apple: "/logo.svg",
     },
   }
 }
@@ -112,7 +111,13 @@ export default async function LocaleLayout({
       suppressHydrationWarning
       className={isArabic ? notoSansArabic.variable : ""}
     >
-      <head />
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+        <link rel="shortcut icon" href="/logo.svg" />
+        <link rel="apple-touch-icon" href="/logo.svg" />
+        <meta name="theme-color" content="#2b1b13" />
+      </head>
       <body
         className={`${urbanist.variable} ${inter.variable} ${notoSansArabic.variable} ${
           isArabic ? "font-arabic" : "font-sans"
@@ -129,6 +134,7 @@ export default async function LocaleLayout({
               <AuthProvider>
                 <LocaleHeaderInit />
                 <AuthInit />
+                <CartInit />
                 {children}
                 <Analytics />
                 <ToasterWrapper />

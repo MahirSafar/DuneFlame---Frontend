@@ -50,6 +50,18 @@ export const useAuthStore = create<AuthState>()(
           if (typeof window !== "undefined") {
             sessionStorage.setItem("token_refresh_time", Date.now().toString());
           }
+          
+          // Sync guest cart items to authenticated user's basket
+          try {
+            const { syncGuestItemsToAuthenticatedBasket } = useCartStore.getState();
+            await syncGuestItemsToAuthenticatedBasket();
+            // After syncing, reload the basket from server to get the merged state
+            const { loadBasket } = useCartStore.getState();
+            await loadBasket();
+          } catch (cartError) {
+            console.error("[Auth] Failed to sync cart after login:", cartError);
+            // Don't throw - login was successful, cart sync failure shouldn't break login
+          }
         } catch (e: any) {
           const msg = getErrorMessage(e) || "Login failed";
           set({ error: msg, loggingIn: false });
@@ -66,6 +78,18 @@ export const useAuthStore = create<AuthState>()(
           await get().setTokens(accessToken, refreshToken);
           if (typeof window !== "undefined") {
             sessionStorage.setItem("token_refresh_time", Date.now().toString());
+          }
+          
+          // Sync guest cart items to authenticated user's basket
+          try {
+            const { syncGuestItemsToAuthenticatedBasket } = useCartStore.getState();
+            await syncGuestItemsToAuthenticatedBasket();
+            // After syncing, reload the basket from server to get the merged state
+            const { loadBasket } = useCartStore.getState();
+            await loadBasket();
+          } catch (cartError) {
+            console.error("[Auth] Failed to sync cart after registration:", cartError);
+            // Don't throw - registration was successful, cart sync failure shouldn't break registration
           }
         } catch (e: any) {
           const msg = getErrorMessage(e) || "Registration failed";
@@ -101,7 +125,12 @@ export const useAuthStore = create<AuthState>()(
           await axios.post("/auth/logout");
         } catch {}
         
-        // Clear cart state
+        // Clear guest basket ID
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("guestBasketId");
+        }
+        
+        // Clear local cart state (do NOT delete backend basket - user should see it on next login)
         useCartStore.getState().clearCart();
         
         // Clear auth state

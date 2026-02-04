@@ -48,16 +48,28 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Converts relative image paths to full URLs pointing to the backend.
- * If the URL is already absolute, returns it as-is.
+ * Converts image paths to full URLs.
+ * 
+ * Handles two cases:
+ * 1. Absolute URLs (from GCS): Returns as-is
+ *    Example: https://storage.googleapis.com/duneflame-images/product-123.jpg
+ * 
+ * 2. Relative paths (legacy local storage): Prepends API base URL
+ *    Example: /images/product-123.jpg → http://localhost:7190/images/product-123.jpg
+ * 
  * @param imagePath - The image path from the backend
  * @returns Full image URL or null if path is empty
  */
 export function getImageUrl(imagePath: string | undefined | null): string | null {
   if (!imagePath) return null
-  if (imagePath.startsWith('http')) return imagePath
   
-  // Remove leading slashes to prevent double slashes
+  // If it's already an absolute URL (HTTP/HTTPS), return as-is
+  // This covers GCS URLs: https://storage.googleapis.com/duneflame-images/...
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath
+  }
+  
+  // For relative paths, prepend the API base URL (legacy local storage)
   const cleanPath = imagePath.replace(/^\/+/, '')
   const baseUrl = API_URL.replace(/\/api\/v1\s*$/, '') // Remove /api/v1 suffix
   return `${baseUrl}/${cleanPath}`

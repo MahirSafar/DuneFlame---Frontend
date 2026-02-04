@@ -99,9 +99,9 @@ export default function Navbar() {
             <Image
               src="/logo.svg"
               alt="DuneFlame Logo"
-              width={168}
-              height={168}
-              className="w-16 sm:w-24 md:w-28 h-16 sm:h-24 md:h-28 rounded-full group-hover:scale-110 transition-smooth"
+              width={96}
+              height={96}
+              className="w-8 sm:w-14 md:w-16 h-8 sm:h-14 md:h-16 rounded-full group-hover:scale-110 transition-smooth"
               style={{ display: "block" }}
               priority
             />
@@ -156,9 +156,13 @@ export default function Navbar() {
 
             {/* Profile - Always visible */}
             <div className="flex items-center gap-1.5">
-              <Link href="/en/dashboard" className="p-1.5 sm:p-2 hover:bg-accent/10 rounded-lg transition-smooth">
+              <button
+                onClick={() => router.push(isLoggedIn ? "/dashboard" : "/login")}
+                className="p-1.5 sm:p-2 hover:bg-accent/10 rounded-lg transition-smooth"
+                aria-label="Profile"
+              >
                 <User size={18} className="sm:w-5 sm:h-5" />
-              </Link>
+              </button>
               {isLoggedIn && (
                 <button
                   onClick={() => void logout()}

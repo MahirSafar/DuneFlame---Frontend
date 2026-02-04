@@ -259,8 +259,8 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {stats.topProducts.map((product) => (
-                  <tr key={product.id} className="border-b border-border/30 hover:bg-white/5 transition-smooth">
+                {stats.topProducts.map((product, productIndex) => (
+                  <tr key={`product-${productIndex}-${product.id}`} className="border-b border-border/30 hover:bg-white/5 transition-smooth">
                     <td className="py-3 px-4 text-foreground font-medium">{product.name}</td>
                     <td className="text-right py-3 px-4 text-muted-foreground">{product.sales}</td>
                     <td className="text-right py-3 px-4 text-primary font-semibold">
@@ -286,8 +286,8 @@ export default function AdminDashboard() {
           </div>
           <div className="space-y-3 overflow-y-auto flex-1">
             {stats.recentActivities.length > 0 ? (
-              stats.recentActivities.map((activity) => (
-                <div key={activity.id} className="p-3 bg-white/30 dark:bg-white/5 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-smooth">
+              stats.recentActivities.map((activity, activityIndex) => (
+                <div key={`activity-${activityIndex}-${activity.id}`} className="p-3 bg-white/30 dark:bg-white/5 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-smooth">
                   <p className="text-sm text-foreground font-medium mb-1">{activity.message}</p>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock size={12} />

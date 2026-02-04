@@ -87,23 +87,116 @@ const statusIcons: Record<OrderStatus, React.ReactNode> = {
 }
 
 /**
- * Determines the only allowed next status for an order based on backend state transitions.
- * Returns null if no transitions are allowed.
+ * Converts string status names to OrderStatus enum number OR returns the label directly.
+ * Handles both string ("Paid", "Cancelled") and numeric (0, 1, 2, 3, 4) status values.
  */
-function getNextStatus(currentStatus: OrderStatus): OrderStatus | null {
-  switch (currentStatus) {
-    case OrderStatus.Pending:
-      return OrderStatus.Paid;
-    case OrderStatus.Paid:
-      return OrderStatus.Shipped;
-    case OrderStatus.Shipped:
-      return OrderStatus.Delivered;
-    case OrderStatus.Delivered:
-    case OrderStatus.Cancelled:
-      return null; // No transitions allowed
-    default:
-      return null;
+function getStatusLabel(status: OrderStatus | string): string {
+  // Map string status names to labels
+  const stringLabels: Record<string, string> = {
+    "Pending": OrderStatusLabels[OrderStatus.Pending],
+    "Paid": OrderStatusLabels[OrderStatus.Paid],
+    "Shipped": OrderStatusLabels[OrderStatus.Shipped],
+    "Delivered": OrderStatusLabels[OrderStatus.Delivered],
+    "Cancelled": OrderStatusLabels[OrderStatus.Cancelled],
+  };
+  
+  const statusStr = String(status);
+  
+  // If it's a string name, return from stringLabels
+  if (stringLabels[statusStr]) {
+    return stringLabels[statusStr];
   }
+  
+  // If it's a numeric string or number, use OrderStatusLabels
+  const numStatus = typeof status === 'number' ? status : parseInt(statusStr, 10);
+  if (!isNaN(numStatus) && OrderStatusLabels[numStatus as OrderStatus]) {
+    return OrderStatusLabels[numStatus as OrderStatus];
+  }
+  
+  // Fallback: return the status as-is
+  return statusStr;
+}
+
+/**
+ * Returns the appropriate color class for a status (handles both string and numeric).
+ */
+function getStatusColor(status: OrderStatus | string): string {
+  const stringToEnum: Record<string, OrderStatus> = {
+    "Pending": OrderStatus.Pending,
+    "Paid": OrderStatus.Paid,
+    "Shipped": OrderStatus.Shipped,
+    "Delivered": OrderStatus.Delivered,
+    "Cancelled": OrderStatus.Cancelled,
+  };
+  
+  const statusStr = String(status);
+  let enumStatus = stringToEnum[statusStr] as OrderStatus;
+  
+  if (enumStatus === undefined) {
+    const numStatus = typeof status === 'number' ? status : parseInt(statusStr, 10);
+    enumStatus = isNaN(numStatus) ? OrderStatus.Pending : (numStatus as OrderStatus);
+  }
+  
+  return statusColors[enumStatus] || statusColors[OrderStatus.Pending];
+}
+
+/**
+ * Returns the appropriate icon for a status (handles both string and numeric).
+ */
+function getStatusIcon(status: OrderStatus | string): React.ReactNode {
+  const stringToEnum: Record<string, OrderStatus> = {
+    "Pending": OrderStatus.Pending,
+    "Paid": OrderStatus.Paid,
+    "Shipped": OrderStatus.Shipped,
+    "Delivered": OrderStatus.Delivered,
+    "Cancelled": OrderStatus.Cancelled,
+  };
+  
+  const statusStr = String(status);
+  let enumStatus = stringToEnum[statusStr] as OrderStatus;
+  
+  if (enumStatus === undefined) {
+    const numStatus = typeof status === 'number' ? status : parseInt(statusStr, 10);
+    enumStatus = isNaN(numStatus) ? OrderStatus.Pending : (numStatus as OrderStatus);
+  }
+  
+  return statusIcons[enumStatus] || statusIcons[OrderStatus.Pending];
+}
+
+/**
+ * Determines all allowed next statuses for an order based on backend state transitions.
+ * Handles both string status names ("Pending", "Paid") and numeric values (0, 1, 2, 3, 4).
+ * Returns empty array if no transitions are allowed.
+ */
+function getNextStatuses(currentStatus: OrderStatus | string): OrderStatus[] {
+  // Convert incoming value to string for normalization (e.g., "Pending" or "0")
+  const statusStr = String(currentStatus);
+  
+  console.log(`[DEBUG] getNextStatuses - Input:`, currentStatus, `Stringified:`, statusStr);
+  
+  // Check for string status names (from backend) OR numeric strings
+  if (statusStr === "Pending" || statusStr === "0") {
+    return [OrderStatus.Paid, OrderStatus.Cancelled];
+  }
+  if (statusStr === "Paid" || statusStr === "1") {
+    return [OrderStatus.Shipped, OrderStatus.Cancelled];
+  }
+  if (statusStr === "Shipped" || statusStr === "2") {
+    return [OrderStatus.Delivered, OrderStatus.Cancelled];
+  }
+  
+  // Final statuses - no transitions allowed
+  if (
+    statusStr === "Delivered" || 
+    statusStr === "3" || 
+    statusStr === "Cancelled" || 
+    statusStr === "4"
+  ) {
+    return [];
+  }
+  
+  console.warn(`[DEBUG] getNextStatuses - Unknown status:`, statusStr);
+  return [];
 }
 
 export default function OrdersPage() {
@@ -194,21 +287,28 @@ export default function OrdersPage() {
   const handleCancelOrder = async (orderId: string) => {
     try {
       setActionLoading(orderId)
+      console.log(`[DEBUG] Attempting to cancel order: ${orderId}`);
+      console.log(`[DEBUG] Current data before cancel:`, data);
+      
       await cancelOrder(orderId)
+      console.log(`[DEBUG] cancelOrder API call succeeded for: ${orderId}`);
       
       // Update local data
       if (data) {
-        setData({
+        const updatedData = {
           ...data,
           items: data.items.map((o) =>
             o.id === orderId ? { ...o, status: OrderStatus.Cancelled } : o
           ),
-        })
+        };
+        console.log(`[DEBUG] Updated local data:`, updatedData);
+        setData(updatedData)
       }
       
       toast.success("Order cancelled. Refunds and restocking processed.")
       setCancelConfirmOrder(null)
     } catch (error) {
+      console.error(`[DEBUG] cancelOrder failed:`, error);
       toast.error(getErrorMessage(error))
     } finally {
       setActionLoading(null)
@@ -328,8 +428,14 @@ export default function OrdersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              orders.map((order) => (
-                <TableRow key={order.id} className="hover:bg-muted/30">
+              orders.map((order, orderIndex) => {
+                // DEBUG: Log order status details
+                console.log(`[DEBUG] Order ID: ${order.id}, Status Raw:`, order.status, `Type:`, typeof order.status);
+                const nextStatuses = getNextStatuses(order.status);
+                console.log(`[DEBUG] Order ${order.id} - Next Statuses Available:`, nextStatuses);
+                
+                return (
+                <TableRow key={`order-${orderIndex}-${order.id}`} className="hover:bg-muted/30">
                   <TableCell className="font-mono text-sm">
                     <div>
                       <p className="font-semibold">{order.id.slice(-8)}</p>
@@ -344,9 +450,9 @@ export default function OrdersPage() {
                     {formatDate(new Date(order.createdAt), "MMM dd, yyyy")}
                   </TableCell>
                   <TableCell>
-                    <Badge className={`gap-1.5 ${statusColors[order.status]}`}>
-                      {statusIcons[order.status]}
-                      {OrderStatusLabels[order.status]}
+                    <Badge className={`gap-1.5 ${getStatusColor(order.status)}`}>
+                      {getStatusIcon(order.status)}
+                      {getStatusLabel(order.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
@@ -374,9 +480,9 @@ export default function OrdersPage() {
                           <DialogHeader>
                             <DialogTitle className="flex items-center justify-between">
                               <span>Order Logistics</span>
-                              <Badge className={`${statusColors[order.status]} gap-1.5`}>
-                                {statusIcons[order.status]}
-                                {OrderStatusLabels[order.status]}
+                              <Badge className={`${getStatusColor(order.status)} gap-1.5`}>
+                                {getStatusIcon(order.status)}
+                                {getStatusLabel(order.status)}
                               </Badge>
                             </DialogTitle>
                             <DialogDescription>
@@ -431,9 +537,9 @@ export default function OrdersPage() {
                             <div>
                               <p className="font-semibold mb-3 text-base">Order Items</p>
                               <div className="space-y-2">
-                                {order.items.map((item) => (
+                                {order.items.map((item, itemIndex) => (
                                   <div
-                                    key={item.id}
+                                    key={`${order.id}-item-${itemIndex}`}
                                     className="flex justify-between items-start p-3 bg-muted/50 rounded text-sm border-l-4 border-muted-foreground/50"
                                   >
                                     <div className="flex-1">
@@ -474,9 +580,9 @@ export default function OrdersPage() {
                                   <p className="text-xs text-muted-foreground uppercase font-semibold">
                                     Status
                                   </p>
-                                  <Badge className={`mt-1 ${statusColors[order.status]} gap-1.5`}>
-                                    {statusIcons[order.status]}
-                                    {OrderStatusLabels[order.status]}
+                                  <Badge className={`mt-1 ${getStatusColor(order.status)} gap-1.5`}>
+                                    {getStatusIcon(order.status)}
+                                    {getStatusLabel(order.status)}
                                   </Badge>
                                 </div>
                                 {order.paymentTransactionId && (
@@ -507,7 +613,7 @@ export default function OrdersPage() {
                       </Dialog>
 
                       {/* Status Change */}
-                      {!isCancelled(order) && getNextStatus(order.status) !== null && (
+                      {!isCancelled(order) && getNextStatuses(order.status).length > 0 && (
                         <Dialog
                           open={statusChangeOrder === order.id}
                           onOpenChange={(open) => {
@@ -516,10 +622,8 @@ export default function OrdersPage() {
                               setNewStatus("")
                             } else {
                               setStatusChangeOrder(order.id)
-                              const nextStatus = getNextStatus(order.status);
-                              if (nextStatus !== null) {
-                                setNewStatus(String(nextStatus));
-                              }
+                              // Don't set a default; let user choose
+                              setNewStatus("");
                             }
                           }}
                         >
@@ -550,15 +654,17 @@ export default function OrdersPage() {
                                   value={newStatus}
                                   onValueChange={setNewStatus}
                                 >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select status..." />
+                                  <SelectTrigger disabled={actionLoading === order.id}>
+                                    <SelectValue 
+                                      placeholder="Select status..."
+                                    />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {getNextStatus(order.status) !== null && (
-                                      <SelectItem value={String(getNextStatus(order.status)!)}>
-                                        {OrderStatusLabels[getNextStatus(order.status)!]}
+                                    {getNextStatuses(order.status).map((nextStatus) => (
+                                      <SelectItem key={nextStatus} value={String(nextStatus)}>
+                                        {OrderStatusLabels[nextStatus]}
                                       </SelectItem>
-                                    )}
+                                    ))}
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -663,7 +769,8 @@ export default function OrdersPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>

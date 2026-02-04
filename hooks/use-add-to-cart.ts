@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { useAuthStore } from "@/lib/auth-store"
 import { useCartStore, generateVariantKey, EMPTY_GUID } from "@/lib/cart-store"
@@ -34,18 +33,11 @@ export interface AddToCartOptions {
 }
 
 export function useAddToCart() {
-  const router = useRouter()
   const { accessToken } = useAuthStore()
   const { addItem } = useCartStore()
 
   const addToCart = (product: AddToCartProduct, quantity: number = 1, options: AddToCartOptions = {}) => {
     const isAuthenticated = !!accessToken
-
-    if (!isAuthenticated) {
-      toast.error("Please log in to shop")
-      router.push("/auth/login")
-      return
-    }
 
     const imageUrl = options.imageUrl
       || getImageUrl(product.images?.find((i) => i.isMain)?.imageUrl || product.images?.[0]?.imageUrl || "")

@@ -83,3 +83,11 @@ export async function cancelOrder(id: string): Promise<Order> {
     method: "POST",
   });
 }
+
+export async function getMyOrders(): Promise<Order[]> {
+  return apiFetch<Order[]>("/orders");
+}
+
+export async function getOrderById(id: string): Promise<Order> {
+  return apiFetch<Order>(`/orders/${id}`);
+}

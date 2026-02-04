@@ -31,6 +31,10 @@ interface ShippingAddress {
   state: string
   postalCode: string
   country: string
+  firstName?: string
+  lastName?: string
+  email?: string
+  phoneNumber?: string
 }
 
 interface ShippingRate {
@@ -221,6 +225,10 @@ export default function CheckoutForm() {
     state: "",
     postalCode: "",
     country: "",
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    email: user?.email || "",
+    phoneNumber: "",
   })
 
   const [errors, setErrors] = useState<Partial<ShippingAddress>>({})
@@ -242,6 +250,18 @@ export default function CheckoutForm() {
       setTokens({ accessToken, refreshToken })
     }
   }, [accessToken, refreshToken])
+
+  // Pre-fill form with logged-in user data if available
+  useEffect(() => {
+    if (user) {
+      setShippingAddress((prev) => ({
+        ...prev,
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+      }))
+    }
+  }, [user])
 
   const handleInputChange = (field: keyof ShippingAddress, value: string) => {
     setShippingAddress((prev) => ({ ...prev, [field]: value }))
@@ -348,6 +368,22 @@ export default function CheckoutForm() {
   const validateForm = (): boolean => {
     const newErrors: Partial<ShippingAddress> = {}
 
+    // Validate guest info if not logged in
+    if (!user) {
+      if (!shippingAddress.firstName?.trim()) {
+        newErrors.firstName = "First name is required"
+      }
+      if (!shippingAddress.lastName?.trim()) {
+        newErrors.lastName = "Last name is required"
+      }
+      if (!shippingAddress.email?.trim()) {
+        newErrors.email = "Email is required"
+      }
+      if (!shippingAddress.phoneNumber?.trim()) {
+        newErrors.phoneNumber = "Phone number is required"
+      }
+    }
+
     if (!shippingAddress.street.trim()) {
       newErrors.street = "Street address is required"
     }
@@ -373,11 +409,11 @@ export default function CheckoutForm() {
     setPaymentError(null)
 
     try {
-      let basketId: string | undefined
+      let basketId: string | null = null
 
       try {
         const basket = await basketService.getBasket()
-        basketId = basket?.id
+        basketId = basket?.id || null
       } catch (basketError) {
         console.warn("Unable to fetch basket before order creation", basketError)
       }
@@ -386,13 +422,45 @@ export default function CheckoutForm() {
         basketId = user.id
       }
 
-      if (!accessToken) {
-        throw new Error("Missing access token. Please sign in again.")
-      }
-
-
-      if (!basketId) {
-        throw new Error("Basket ID is missing")
+      // For guests: Create a guest basket and sync items to Redis
+      if (!basketId && !user) {
+        // Generate unique guest basket ID
+        basketId = "guest_" + Math.random().toString(36).substring(2, 11)
+        
+        // Get current items from Zustand store
+        const currentItems = items
+        
+        if (currentItems.length > 0) {
+          try {
+            // Format items according to BasketItem structure
+            const basketItems = currentItems.map((item) => ({
+              productId: item.id,
+              productPriceId: item.productPriceId,
+              productName: item.name,
+              slug: item.slug,
+              price: item.priceUsed ?? item.price,
+              quantity: item.quantity,
+              imageUrl: item.imageUrl || "",
+              weightLabel: item.selectedWeightLabel || item.weightLabel || "Standard",
+              grams: item.grams || 0,
+              roastLevelId: item.roastLevelId || "00000000-0000-0000-0000-000000000000",
+              roastLevelName: item.selectedRoast || item.roastLevelName || "Original",
+              grindTypeId: item.grindTypeId || "00000000-0000-0000-0000-000000000000",
+              grindTypeName: item.selectedGrind || item.grindTypeName || "Whole Bean",
+            }))
+            
+            // Send guest basket to Redis with the generated ID
+            await basketService.updateBasket({
+              id: basketId,
+              items: basketItems,
+              currencyCode: currency.toUpperCase(),
+            })
+            console.log("✅ Guest basket synced to Redis with ID:", basketId)
+          } catch (syncError) {
+            console.warn("Failed to sync guest basket to Redis:", syncError)
+            // Continue anyway - backend might still create order
+          }
+        }
       }
 
       // STEP 1: Create the pending order FIRST with currency
@@ -486,6 +554,79 @@ export default function CheckoutForm() {
                       {successMessage}
                     </AlertDescription>
                   </Alert>
+                )}
+
+                {/* Guest Checkout - Show guest info fields if not logged in */}
+                {!user && (
+                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-4">Guest Checkout - Please enter your information</h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label htmlFor="firstName" className="text-sm font-medium">
+                          First Name <span className="text-destructive">*</span>
+                        </label>
+                        <Input
+                          id="firstName"
+                          type="text"
+                          placeholder="John"
+                          value={shippingAddress.firstName || ""}
+                          onChange={(e) => handleInputChange("firstName", e.target.value)}
+                          aria-invalid={!!errors.firstName}
+                          className={errors.firstName ? "border-destructive" : ""}
+                        />
+                        {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="lastName" className="text-sm font-medium">
+                          Last Name <span className="text-destructive">*</span>
+                        </label>
+                        <Input
+                          id="lastName"
+                          type="text"
+                          placeholder="Doe"
+                          value={shippingAddress.lastName || ""}
+                          onChange={(e) => handleInputChange("lastName", e.target.value)}
+                          aria-invalid={!!errors.lastName}
+                          className={errors.lastName ? "border-destructive" : ""}
+                        />
+                        {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="email" className="text-sm font-medium">
+                          Email <span className="text-destructive">*</span>
+                        </label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="john@example.com"
+                          value={shippingAddress.email || ""}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
+                          aria-invalid={!!errors.email}
+                          className={errors.email ? "border-destructive" : ""}
+                        />
+                        {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="phoneNumber" className="text-sm font-medium">
+                          Phone Number <span className="text-destructive">*</span>
+                        </label>
+                        <Input
+                          id="phoneNumber"
+                          type="tel"
+                          placeholder="+1 (555) 123-4567"
+                          value={shippingAddress.phoneNumber || ""}
+                          onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                          aria-invalid={!!errors.phoneNumber}
+                          className={errors.phoneNumber ? "border-destructive" : ""}
+                        />
+                        {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber}</p>}
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 <div className="space-y-2">

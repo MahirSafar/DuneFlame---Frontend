@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import SliderForm from "@/components/admin/sliders/slider-form";
 import { sliderService } from "@/lib/services/sliderService";
+import { getImageUrl } from "@/lib/utils";
 
 export default function AdminSlidersPage() {
   const [sliders, setSliders] = useState<any[]>([]);
@@ -88,7 +89,7 @@ export default function AdminSlidersPage() {
                     <td className="border px-4 py-2">
                       {slider.imageUrl && (
                         <img 
-                          src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${slider.imageUrl}`}
+                          src={getImageUrl(slider.imageUrl) || ""}
                           alt="slider"
                           className="h-12 w-auto rounded object-cover" 
                         />

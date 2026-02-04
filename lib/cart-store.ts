@@ -1,12 +1,12 @@
 "use client"
 
-"use client"
-
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 import { basketService, BasketItem } from "./services/basket"
 import { resolvePrice, type ProductWithPricing, type CurrencyType } from "./currency-utils"
 import type { ProductResponse } from "./services/products"
 import { getProduct } from "./services/products"
+import { useAuthStore } from "./auth-store"
 
 export const EMPTY_GUID = "00000000-0000-0000-0000-000000000000"
 
@@ -56,8 +56,10 @@ interface CartStore {
   updateQuantity: (id: string, quantity: number, isAuthenticated?: boolean) => void
   clearCart: () => void
   loadBasket: () => Promise<void>
+  syncGuestItemsToAuthenticatedBasket: () => Promise<void>
   total: (currency?: CurrencyType) => number
   getItemPrice: (item: CartItem, currency: CurrencyType) => number
+  rehydrate: () => void // For manual hydration after skipHydration
 }
 
 const getItemKey = (item: Pick<CartItem, "id" | "variantKey">) => item.variantKey || item.id
@@ -72,10 +74,28 @@ export const getItemPrice = (item: CartItem, currency: CurrencyType): number => 
 
 const syncWithBackend = async (items: CartItem[]) => {
   try {
+    const { user } = useAuthStore.getState()
+    
+    // Determine basketId
+    let basketId: string | undefined = undefined
+    if (user?.id) {
+      basketId = user.id
+    } else {
+      const storedGuestId = typeof window !== "undefined" ? localStorage.getItem("guestBasketId") : null
+      basketId = storedGuestId ?? undefined
+    }
+
+    if (!basketId) {
+      console.warn("[Cart] No basketId available for sync")
+      return
+    }
+
     if (items.length === 0) {
-      await basketService.deleteBasket()
+      // Clear basket by sending empty items
+      await basketService.clearBasket(basketId)
     } else {
       const basketItems: BasketItem[] = items.map((item) => ({
+        id: item.cartItemId,
         productId: item.id,
         productPriceId: item.productPriceId,
         productName: item.name,
@@ -90,32 +110,39 @@ const syncWithBackend = async (items: CartItem[]) => {
         grindTypeId: item.grindTypeId || EMPTY_GUID,
         grindTypeName: item.selectedGrind || item.grindTypeName || "Whole Bean",
       }))
-      await basketService.updateBasket(basketItems)
+      
+      // Send to backend with basketId in URL
+      await basketService.updateBasket({
+        id: basketId,
+        items: basketItems,
+      })
     }
   } catch (error) {
     console.error("Failed to sync cart with backend:", error)
   }
 }
 
-export const useCartStore = create<CartStore>((set, get) => ({
-  items: [],
-  isLoading: false,
+export const useCartStore = create<CartStore>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      isLoading: false,
 
-  addItem: (item, isAuthenticated = false) =>
-    set((state) => {
-      const variantKey = generateVariantKey(item.id, item.productPriceId, item.roastLevelId, item.grindTypeId)
-      const itemWithKey = { ...item, variantKey }
+      addItem: (item, isAuthenticated = false) =>
+        set((state) => {
+          const variantKey = generateVariantKey(item.id, item.productPriceId, item.roastLevelId, item.grindTypeId)
+          const itemWithKey = { ...item, variantKey }
 
-      const existingItemIndex = state.items.findIndex((si) => si.variantKey === variantKey)
+          const existingItemIndex = state.items.findIndex((si) => si.variantKey === variantKey)
 
-      const updatedItems: CartItem[] =
-        existingItemIndex > -1
-          ? state.items.map((si, idx) => (idx === existingItemIndex ? { ...si, quantity: si.quantity + item.quantity } : si))
-          : [...state.items, itemWithKey]
+          const updatedItems: CartItem[] =
+            existingItemIndex > -1
+              ? state.items.map((si, idx) => (idx === existingItemIndex ? { ...si, quantity: si.quantity + item.quantity } : si))
+              : [...state.items, itemWithKey]
 
-      if (isAuthenticated) syncWithBackend(updatedItems)
-      return { items: updatedItems }
-    }),
+          if (isAuthenticated) syncWithBackend(updatedItems)
+          return { items: updatedItems }
+        }),
 
   removeItem: (idOrKey, isAuthenticated = false) =>
     set((state) => {
@@ -132,7 +159,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
           const matchVariantKey = itemToDelete.variantKey && i.variantKey === itemToDelete.variantKey
           return !(matchCartId || matchVariantKey)
         })
-        // Use backend basket item id for DELETE /basket/{itemId}
+        // Use backend basket item id for DELETE /basket/{basketId}/{itemId}
         backendDeleteId = itemToDelete.cartItemId || null
       } else {
         newItems = state.items.filter((i) => (i.cartItemId !== idOrKey) && (getItemKey(i) !== idOrKey))
@@ -144,24 +171,11 @@ export const useCartStore = create<CartStore>((set, get) => ({
         requestedId: idOrKey,
         localFilterCartItemId: itemToDelete?.cartItemId ?? null,
         localFilterVariantKey: itemToDelete?.variantKey ?? null,
-        backendDeleteId,
       })
 
       if (isAuthenticated) {
-        if (backendDeleteId) {
-          const isValidGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(backendDeleteId)
-          if (isValidGuid) {
-            basketService.deleteBasketItem(backendDeleteId).catch((error) =>
-              console.error("Failed to delete cart item:", error)
-            )
-          } else {
-            // Non-GUID ID edge case; fall back to syncing entire basket
-            syncWithBackend(newItems)
-          }
-        } else {
-          // No backend ID available (e.g., variantKey-only); sync full basket
-          syncWithBackend(newItems)
-        }
+        // Always sync the entire basket instead of trying to delete individual items
+        syncWithBackend(newItems)
       }
 
       return { items: newItems }
@@ -182,9 +196,29 @@ export const useCartStore = create<CartStore>((set, get) => ({
   loadBasket: async () => {
     set({ isLoading: true })
     try {
-      const basket = await basketService.getBasket()
+      const { user } = useAuthStore.getState()
+      
+      // Use user ID if authenticated, otherwise generate a guest ID
+      let basketId = user?.id
+      const isAuthenticated = !!user?.id
+      
+      if (!basketId) {
+        // Check if guest ID exists in localStorage
+        const storedGuestId = typeof window !== "undefined" ? localStorage.getItem("guestBasketId") : null
+        basketId = storedGuestId || `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        
+        // Store guest ID for consistency
+        if (typeof window !== "undefined") {
+          localStorage.setItem("guestBasketId", basketId)
+        }
+      }
+      
+      console.log("[Cart] Loading basket for:", { basketId, isAuthenticated, userId: user?.id })
+      
+      // Call getBasket with basketId in URL
+      const basket = await basketService.getBasket(basketId)
 
-      const itemPromises = basket.items
+      const itemPromises = (basket.items || [])
         .filter((item) => Boolean(item.slug))
         .map(async (item) => {
           const productId = (item.productId || "").toLowerCase().trim()
@@ -237,7 +271,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
         })
 
       const resolvedItems = await Promise.all(itemPromises)
-      set({ items: resolvedItems, isLoading: false })
+      set({ items: resolvedItems || [], isLoading: false })
     } catch (error) {
       console.error("Basket load failed:", error)
       set({ items: [], isLoading: false })
@@ -251,4 +285,79 @@ export const useCartStore = create<CartStore>((set, get) => ({
   },
 
   getItemPrice: (item: CartItem, currency: CurrencyType) => getItemPrice(item, currency),
-}))
+
+  rehydrate: () => {
+    // Manually rehydrate the store from localStorage
+    // This is needed because we set skipHydration: true to prevent hydration mismatch
+    useCartStore.persist.rehydrate()
+  },
+
+  syncGuestItemsToAuthenticatedBasket: async () => {
+    const { items } = get()
+    const { user } = useAuthStore.getState()
+    
+    // Only proceed if user is authenticated
+    if (!user?.id) {
+      console.log("[Cart] No authenticated user, skipping sync")
+      return
+    }
+    
+    // Clear guest ID from localStorage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("guestBasketId")
+    }
+    
+    // Clear local items
+    set({ items: [] })
+    
+    // Ensure items is an array
+    const itemsToSync = items || []
+    
+    if (itemsToSync.length === 0) {
+      console.log("[Cart] No local items to sync, clearing local state")
+      return
+    }
+    
+    try {
+      console.log("[Cart] Syncing guest items to authenticated user:", { userId: user.id, itemCount: itemsToSync.length })
+      
+      // Convert current local items to BasketItem format
+      const basketItems: BasketItem[] = itemsToSync.map((item) => ({
+        id: item.cartItemId,
+        productId: item.id,
+        productPriceId: item.productPriceId,
+        productName: item.name,
+        slug: item.slug,
+        price: item.priceUsed ?? item.price,
+        quantity: item.quantity,
+        imageUrl: item.imageUrl || "",
+        weightLabel: item.selectedWeightLabel || item.weightLabel || "Standard",
+        grams: item.grams || 0,
+        roastLevelId: item.roastLevelId || EMPTY_GUID,
+        roastLevelName: item.selectedRoast || item.roastLevelName || "Original",
+        grindTypeId: item.grindTypeId || EMPTY_GUID,
+        grindTypeName: item.selectedGrind || item.grindTypeName || "Whole Bean",
+      }))
+      
+      // Send guest items to authenticated user's basket
+      await basketService.updateBasket({
+        id: user.id,
+        items: basketItems,
+      })
+      
+      console.log("[Cart] Successfully synced guest items to authenticated user")
+    } catch (error) {
+      console.error("[Cart] Failed to sync guest items to authenticated basket:", error)
+      throw error
+    }
+  },
+    }),
+    {
+      name: "df-cart-storage", // LocalStorage key
+      skipHydration: true, // Prevent hydration mismatch in Next.js
+      partialize: (state) => ({
+        items: state.items, // Only persist cart items
+      }),
+    }
+  )
+)

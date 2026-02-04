@@ -1,57 +1,39 @@
 "use client"
 
-import { Gift, Zap } from "lucide-react"
+import type { MyRewards } from "@/lib/services/rewards"
+import { Gift } from "lucide-react"
 
-export default function Rewards() {
-  const pointsEarned = 1240
-  const pointsNeeded = 5000
-  const progress = (pointsEarned / pointsNeeded) * 100
+interface RewardsProps {
+  rewards: MyRewards
+}
+
+export default function Rewards({ rewards }: RewardsProps) {
+  // Debug
+  console.log("Rewards Data:", rewards)
+
+  // Get balance - handle null/undefined
+  const balance = rewards?.stats?.balance ?? 0
 
   return (
-    <div className="glass rounded-xl p-8">
-      <div className="flex items-center gap-3 mb-6">
-        <Gift className="text-accent" size={24} />
-        <h3 className="text-xl font-bold text-primary dark:text-secondary">DuneFlame Rewards</h3>
-      </div>
-
-      <div className="space-y-6">
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold text-muted-foreground">Points Progress</span>
-            <span className="text-xl font-bold text-accent">
-              {pointsEarned} / {pointsNeeded}
-            </span>
+    <div className="w-full">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-8 shadow-sm">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-lg">
+            <Gift className="text-orange-600 dark:text-orange-400" size={28} />
           </div>
-          <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-accent to-orange-400 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Reward Points</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">DuneFlame Loyalty</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-accent/10 rounded-lg p-4">
-            <p className="text-xs text-muted-foreground font-semibold mb-1">NEXT REWARD</p>
-            <p className="text-lg font-bold text-accent">${(50 * pointsNeeded) / 5000}</p>
-            <p className="text-xs text-muted-foreground mt-1">Free Coffee</p>
-          </div>
-          <div className="bg-accent/10 rounded-lg p-4">
-            <p className="text-xs text-muted-foreground font-semibold mb-1">LIFETIME EARNED</p>
-            <p className="text-lg font-bold text-accent">3,420</p>
-            <p className="text-xs text-muted-foreground mt-1">Total Points</p>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-smooth cursor-pointer">
-            <Zap size={18} className="text-accent" />
-            <span className="text-sm font-medium">Earn 2x points on next purchase</span>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-smooth cursor-pointer">
-            <Zap size={18} className="text-accent" />
-            <span className="text-sm font-medium">Birthday bonus (50 points)</span>
-          </div>
+        {/* Balance Display */}
+        <div className="text-center py-6">
+          <p className="text-5xl font-bold text-orange-600 dark:text-orange-400">
+            {balance.toFixed(2)}
+          </p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">Available Points</p>
         </div>
       </div>
     </div>

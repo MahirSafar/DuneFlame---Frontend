@@ -1,7 +1,7 @@
 import { apiFetch } from "../api-client";
 
 export interface BasketItem {
-  id?: string;              // Unique basket item id from backend (used for DELETE /basket/{itemId})
+  id?: string;              // Unique basket item id from backend (used for DELETE /basket/{id}/{itemId})
   productId: string;        // Backend uses 'productId', not 'id'
   productPriceId: string;   // Required for variant tracking
   productName: string;
@@ -25,17 +25,37 @@ export interface CustomerBasketDto {
   updatedAt?: string;
 }
 
+// Request payload for updating basket (includes ID for guest baskets)
+export interface UpdateBasketPayload {
+  id: string;               // Basket ID (user.id or guest_xxxxx)
+  items: BasketItem[];
+  currencyCode?: string;    // Optional currency for order calculation
+}
+
 export const basketService = {
   // Fetch basket from Redis backend
-  getBasket: () => apiFetch<CustomerBasketDto>("/basket"),
+  // URL: GET /api/v1/basket/{id} (where id is either user.id or guestBasketId)
+  getBasket: (id: string) => apiFetch<CustomerBasketDto>(`/basket/${id}`, { 
+    method: "GET",
+  }),
 
   // Update basket on backend (replaces entire basket)
-  updateBasket: (items: BasketItem[]) =>
-    apiFetch<CustomerBasketDto>("/basket", {
+  // URL: POST /api/v1/basket (ID in body, not in URL)
+  // Now accepts full basket object with ID to support guest baskets
+  updateBasket: (payload: UpdateBasketPayload | BasketItem[]) => {
+    // Support both old (array) and new (payload) formats for backward compatibility
+    const basketPayload = Array.isArray(payload)
+      ? {
+          id: "client-update",
+          items: payload,
+        }
+      : payload
+
+    return apiFetch<CustomerBasketDto>(`/basket`, {
       method: "POST",
       body: JSON.stringify({
-        id: "client-update",
-        items: items.map((item) => ({
+        id: basketPayload.id,
+        items: basketPayload.items.map((item) => ({
           id: item.id,
           productId: item.productId,
           productPriceId: item.productPriceId,
@@ -52,12 +72,22 @@ export const basketService = {
           grindTypeName: item.grindTypeName,
         })),
       }),
+    })
+  },
+
+  // Delete a single basket item by its unique itemId
+  // URL: DELETE /api/v1/basket/{basketId}/{itemId}
+  deleteBasketItem: (basketId: string, itemId: string) =>
+    apiFetch<void>(`/basket/${basketId}/${itemId}`, { method: "DELETE" }),
+
+  // Clear basket by sending empty items array
+  // URL: POST /api/v1/basket (ID in body, not in URL)
+  clearBasket: (basketId: string) =>
+    apiFetch<CustomerBasketDto>(`/basket`, {
+      method: "POST",
+      body: JSON.stringify({ 
+        id: basketId,
+        items: [] 
+      }),
     }),
-
-  // Delete a single basket item by its unique itemId (API: DELETE /basket/{itemId})
-  deleteBasketItem: (itemId: string) =>
-    apiFetch<void>(`/basket/${itemId}`, { method: "DELETE" }),
-
-  // Delete basket from backend
-  deleteBasket: () => apiFetch<void>("/basket", { method: "DELETE" }),
 };

@@ -58,8 +58,8 @@ export function middleware(request: NextRequest) {
 // Configure which paths this middleware runs on
 export const config = {
   matcher: [
-    // Skip all internal paths (_next) and static files (svg, png, jpg, etc.)
-    '/((?!_next|favicon.ico|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Skip all internal paths (_next), static files, favicon, and manifest.json
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],

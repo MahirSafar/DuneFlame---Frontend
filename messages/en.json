@@ -21,7 +21,7 @@
       "blog": "Blog",
       "contact": "Contact",
       "supportEmail": "info@duneflame.com",
-      "copyright": "© 2025 DuneFlame. All rights reserved.",
+      "copyright": "© 2025 Dune & Flame L.L.C. All rights reserved.",
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
       "followUs": "Follow Us"
@@ -198,7 +198,7 @@
   },
   "auth": {
     "login": {
-      "title": "Sign in to DuneFlame",
+      "title": "Sign in to Dune & Flame L.L.C",
       "subtitle": "Welcome back — please enter your credentials.",
       "email": "Email",
       "emailPlaceholder": "Enter your email",
@@ -216,7 +216,7 @@
     },
     "register": {
       "title": "Create your account",
-      "subtitle": "Join DuneFlame today",
+      "subtitle": "Join Dune & Flame L.L.C today",
       "firstName": "First Name",
       "lastName": "Last Name",
       "email": "Email",
@@ -271,23 +271,23 @@
   },
   "metadata": {
       "home": {
-        "title": "Home | DuneFlame - Premium Coffee Marketplace",
+        "title": "Dune & Flame L.L.C",
         "description": "Experience the perfect blend of warmth, aroma, and luxury. Premium coffee roasts from around the world."
       },
       "about": {
-        "title": "About | DuneFlame - Our Story",
+        "title": "Dune & Flame L.L.C",
         "description": "Learn about our passion for coffee and commitment to excellence."
       },
       "products": {
-        "title": "Products | DuneFlame - Our Coffee Collection",
+        "title": "Dune & Flame L.L.C",
         "description": "Explore our carefully curated selection of premium coffee beans."
       },
       "contact": {
-        "title": "Contact | DuneFlame - Get in Touch",
+        "title": "Dune & Flame L.L.C",
         "description": "Have questions? We'd love to hear from you. Contact us today."
       },
       "dashboard": {
-        "title": "Dashboard | DuneFlame - Your Account",
+        "title": "Dashboard | Dune & Flame L.L.C - Your Account",
         "description": "Manage your orders, profile, and preferences."
       }
     },

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useCurrency } from "@/hooks/use-currency";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,13 @@ import {
  */
 export function CurrencySwitcher() {
   const { currency, setCurrency, currencySymbol } = useCurrency();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   const handleCurrencyChange = (newCurrency: string) => {
     if (newCurrency === "USD" || newCurrency === "AED") {
@@ -53,6 +60,13 @@ export function CurrencySwitcher() {
  */
 export function CurrencyToggle() {
   const { currency, setCurrency, currencySymbol } = useCurrency();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   const toggleCurrency = () => {
     const newCurrency = currency === "USD" ? "AED" : "USD";

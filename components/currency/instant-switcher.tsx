@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useCurrency } from "@/hooks/use-currency";
 import { CurrencyType } from "@/lib/currency-context";
@@ -23,6 +23,13 @@ import { Button } from "@/components/ui/button";
  */
 export function InstantCurrencySwitcher() {
   const { currency, setCurrency } = useCurrency();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   const handleCurrencyChange = (newCurrency: CurrencyType) => {
     if (newCurrency !== currency) {
@@ -74,6 +81,13 @@ export function InstantCurrencySwitcher() {
  */
 export function InstantCurrencySwitcherCompact() {
   const { currency, setCurrency } = useCurrency();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   const handleCurrencyChange = (newCurrency: CurrencyType) => {
     if (newCurrency !== currency) {
