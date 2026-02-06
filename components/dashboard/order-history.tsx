@@ -14,38 +14,44 @@ const getStatusBadge = (status: string | number) => {
   if (s === "pending" || s === "0") {
     return {
       label: "Pending",
-      color: "bg-yellow-100 text-yellow-800 border border-yellow-200 dark:bg-yellow-900 dark:text-yellow-200",
+      color: "border rounded-full",
+      style: { backgroundColor: "#e2a56e", color: "white", borderColor: "#e2a56e" },
     }
   }
   if (s === "paid" || s === "1") {
     return {
       label: "Paid",
-      color: "bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900 dark:text-emerald-200",
+      color: "border rounded-full",
+      style: { backgroundColor: "#1f6f78", color: "white", borderColor: "#1f6f78" },
     }
   }
   if (s === "shipped" || s === "2") {
     return {
       label: "Shipped",
-      color: "bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900 dark:text-blue-200",
+      color: "border rounded-full",
+      style: { backgroundColor: "#2b1b13", color: "white", borderColor: "#2b1b13" },
     }
   }
   if (s === "delivered" || s === "3") {
     return {
       label: "Delivered",
-      color: "bg-green-100 text-green-800 border border-green-200 dark:bg-green-900 dark:text-green-200",
+      color: "border rounded-full",
+      style: { backgroundColor: "#3e4b3a", color: "white", borderColor: "#3e4b3a" },
     }
   }
   if (s === "cancelled" || s === "4") {
     return {
       label: "Cancelled",
-      color: "bg-red-100 text-red-800 border border-red-200 dark:bg-red-900 dark:text-red-200",
+      color: "border rounded-full",
+      style: { backgroundColor: "#a3291c", color: "white", borderColor: "#a3291c" },
     }
   }
 
   // Default: show actual status value
   return {
     label: String(status),
-    color: "bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-900 dark:text-gray-300",
+    color: "border rounded-full",
+    style: { backgroundColor: "#cccccc", color: "#333333", borderColor: "#cccccc" },
   }
 }
 
@@ -65,14 +71,20 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
 
         return (
           <Link key={order.id} href={`/dashboard/orders/${order.id}`}>
-            <div className="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-all hover:border-zinc-300 dark:hover:border-zinc-700 cursor-pointer">
+            <div className="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 hover:shadow-md transition-all hover:border-zinc-300 dark:hover:border-zinc-700 cursor-pointer" style={{ boxShadow: "0 8px 16px rgba(230, 211, 191, 0.5)" }}>
               {/* Status Badge - Top Right */}
-              <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold border ${statusInfo.color}`}>
+              <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold border ${statusInfo.color}`} style={statusInfo.style}>
                 {statusInfo.label}
               </div>
 
+              {/* Details Button - Bottom Right */}
+              <button className="absolute bottom-4 right-4 px-2 py-2 text-sm font-medium rounded-lg hover:opacity-70 transition-opacity flex items-center gap-1" style={{ color: '#2b1b13', backgroundColor: 'transparent' }}>
+                Details 
+                <span style={{ fontSize: '24px', color: '#2b1b13', lineHeight: '1' }}>&rsaquo;</span>
+              </button>
+              
               {/* Order Content */}
-              <div className="flex flex-col gap-3 pr-24">
+              <div className="flex flex-col gap-3">
                 {/* Order ID */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-zinc-500 dark:text-zinc-400">Order ID:</span>
@@ -84,18 +96,13 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                 {/* Price and Date */}
                 <div className="flex justify-between items-end">
                   <div>
-                    <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    <p className="font-bold" style={{ color: '#2b1b13', fontSize: '24px', fontFamily: '"DIN 2014", sans-serif' }}>
                       {order.currency || "USD"} {Number(order.totalAmount).toFixed(2)}
                     </p>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                       {new Date(order.createdAt).toLocaleDateString("en-US")} • {order.items?.length || 0} product{(order.items?.length || 0) !== 1 ? "s" : ""}
                     </p>
                   </div>
-
-                  {/* View Details Button */}
-                  <button className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
-                    View Details
-                  </button>
                 </div>
               </div>
             </div>

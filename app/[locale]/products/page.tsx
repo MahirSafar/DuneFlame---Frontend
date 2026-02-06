@@ -1,272 +1,258 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
-import { Search, ChevronDown } from "lucide-react"
-import Navbar from "@/components/layout/navbar"
-import Footer from "@/components/layout/footer"
-import Newsletter from "@/components/home/newsletter"
-import ProductCard from "@/components/products/product-card"
-import FilterSidebar, { type FilterState } from "@/components/products/filter-sidebar"
-import { getProducts, type ProductResponse } from "@/lib/services/products"
-import { useDebounce } from "@/hooks/use-debounce"
-import { Input } from "@/components/ui/input"
-import { useTranslations } from "next-intl"
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import Navbar from "@/components/layout/navbar";
+import Footer from "@/components/layout/footer";
+import Newsletter from "@/components/home/newsletter";
+import ProductCard from "@/components/products/product-card";
+import ShopFilters from "@/components/ShopFilters";
+import { getProducts, type ProductResponse, type PagedResult } from "@/lib/services/products";
+import { useShopFilters } from "@/hooks/useShopFilters";
+import { useCurrency } from "@/hooks/use-currency";
+import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 export default function ProductsPage() {
-  const t = useTranslations()
-  const searchParams = useSearchParams()
-  const urlSearch = searchParams?.get("search") || ""
+  const t = useTranslations();
+  const { currency } = useCurrency(); // Get current currency
   
-  const [filters, setFilters] = useState<FilterState>({
-    roastLevel: [],
-    originIds: [],
-    categoryIds: [],
-    priceRange: [0, 10000], // Wide range to prevent filtering on first load
-  })
-  const [searchQuery, setSearchQuery] = useState(urlSearch)
-  const debouncedSearch = useDebounce(searchQuery, 500)
-  const [sortBy, setSortBy] = useState("")
+  // 1. Hook-dan state və funksiyaları götürürük
+  const {
+    filters,
+    setSearch,
+    setCategoryId,
+    setMinPrice,
+    setMaxPrice,
+    toggleRoastLevel,
+    toggleOrigin,
+    setSortBy,
+    setPageNumber,
+    resetFilters,
+  } = useShopFilters();
 
-  const [products, setProducts] = useState<ProductResponse[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [minPrice, setMinPrice] = useState(0)
-  const [maxPrice, setMaxPrice] = useState(10000)
+  const [products, setProducts] = useState<ProductResponse[]>([]);
+  const [paginationData, setPaginationData] = useState<PagedResult<ProductResponse> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [minAvailablePrice, setMinAvailablePrice] = useState<number>(0);
+  const [maxAvailablePrice, setMaxAvailablePrice] = useState<number>(500);
 
-  // Update search query when URL changes
+  // 2. Filterlər hər dəyişəndə API-yə sorğu göndəririk
   useEffect(() => {
-    if (urlSearch) {
-      setSearchQuery(urlSearch)
-    }
-  }, [urlSearch])
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // CRITICAL: Pass filter state directly to getProducts
+        const result = await getProducts({
+          pageNumber: filters.pageNumber,
+          pageSize: filters.pageSize,
+          search: filters.search || undefined,
+          categoryId: filters.categoryId || undefined,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          roastLevelIds: filters.roastLevelIds && filters.roastLevelIds.length > 0 ? filters.roastLevelIds : undefined,
+          originIds: filters.originIds && filters.originIds.length > 0 ? filters.originIds : undefined,
+          sortBy: filters.sortBy || undefined,
+        });
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError(null)
+        // Backend PagedResult qaytarır, ona görə result.items götürürük
+        setProducts(result.items || []);
+        setPaginationData(result);
 
-    const params: any = {
-      pageNumber: 1,
-      pageSize: 100,
-    }
-
-    // Don't send search to API - we'll filter client-side for case-insensitivity
-    if (sortBy) params.sort = sortBy
-    
-    // Always send price range
-    params.minPrice = filters.priceRange[0]
-    params.maxPrice = filters.priceRange[1]
-
-    getProducts(params)
-      .then((res) => {
-        if (!cancelled) {
-          
-          // Calculate min and max prices from all items using availablePrices
-          if (res.items.length > 0) {
-            const allPrices = res.items.flatMap(p => 
+        // Calculate min/max prices from fetched products, filtered by current currency
+        if (result.items.length > 0) {
+          const allPrices = result.items.flatMap(p => 
+            p.availablePrices?.filter(ap => ap.currencyCode === currency)?.map(ap => ap.price) || []
+          );
+          if (allPrices.length > 0) {
+            const min = Math.floor(Math.min(...allPrices));
+            const max = Math.ceil(Math.max(...allPrices));
+            setMinAvailablePrice(min);
+            setMaxAvailablePrice(max);
+          } else {
+            // Fallback: try to get ALL prices regardless of currency
+            const allPricesFallback = result.items.flatMap(p => 
               p.availablePrices?.map(ap => ap.price) || []
-            )
-            if (allPrices.length > 0) {
-              const calculatedMin = Math.floor(Math.min(...allPrices))
-              const calculatedMax = Math.ceil(Math.max(...allPrices))
-              setMinPrice(calculatedMin)
-              setMaxPrice(calculatedMax)
-              
-              // DO NOT call setFilters here - it causes infinite loop!
-              // User can adjust the price range manually if needed
+            );
+            if (allPricesFallback.length > 0) {
+              const min = Math.floor(Math.min(...allPricesFallback));
+              const max = Math.ceil(Math.max(...allPricesFallback));
+              setMinAvailablePrice(min);
+              setMaxAvailablePrice(max);
             }
           }
-          
-          let filteredItems = res.items
- 
-          // Client-side case-insensitive search filtering
-          if (debouncedSearch) {
-            const searchLower = debouncedSearch.toLowerCase()
-            filteredItems = filteredItems.filter(p => 
-              p.name.toLowerCase().includes(searchLower)
-            )
-          }
-          
-          // Client-side filtering for multiple selections
-          if (filters.categoryIds.length > 0) {
-            const beforeCount = filteredItems.length;
-            filteredItems = filteredItems.filter(p => filters.categoryIds.includes(p.categoryId))
-          }
-          
-          if (filters.originIds.length > 0) {
-            const beforeCount = filteredItems.length;
-            filteredItems = filteredItems.filter(p => p.originId && filters.originIds.includes(p.originId))
-          }
-          
-          if (filters.roastLevel.length > 0) {
-            const beforeCount = filteredItems.length;
-            filteredItems = filteredItems.filter(p => 
-              p.roastLevelIds?.some(id => filters.roastLevel.includes(Number(id))) || false
-            )
-          }
-          
-          // Client-side price range filtering using availablePrices
-          const beforePriceFilter = filteredItems.length;
-          filteredItems = filteredItems.filter(p => {
-            const productPrices = p.availablePrices?.map(ap => ap.price) || []
-            const hasMatchingPrice = productPrices.some(price => 
-              price >= filters.priceRange[0] && price <= filters.priceRange[1]
-            )
-            if (!hasMatchingPrice && productPrices.length > 0) {
-            }
-            return hasMatchingPrice || productPrices.length === 0; // Keep products with no prices to avoid hiding them
-          })
-          
-          // Client-side sorting as fallback
-          if (sortBy) {
-            filteredItems = [...filteredItems].sort((a, b) => {
-              switch (sortBy) {
-                case 'price':
-                  const priceA = Math.min(...(a.availablePrices?.map(p => p.price) || [Infinity]))
-                  const priceB = Math.min(...(b.availablePrices?.map(p => p.price) || [Infinity]))
-                  return priceA - priceB
-                case 'price_desc':
-                  const priceDescA = Math.min(...(a.availablePrices?.map(p => p.price) || [0]))
-                  const priceDescB = Math.min(...(b.availablePrices?.map(p => p.price) || [0]))
-                  return priceDescB - priceDescA
-                case 'name':
-                  return a.name.localeCompare(b.name)
-                case 'name_desc':
-                  return b.name.localeCompare(a.name)
-                case 'createdAt_desc':
-                  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                default:
-                  return 0
-              }
-            })
-          }
-          
-          setProducts(filteredItems)
-          setTotalCount(filteredItems.length)
         }
-      })
-      .catch((e: any) => {
-        if (!cancelled) {
-          console.error("Failed to load products:", e)
-          setError(e?.message || "Failed to load products")
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+      } catch (err) {
+        console.error("❌ [SHOP PAGE] Failed to load products:", err);
+        setError((err as any)?.message || "Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => {
-      cancelled = true
-    }
-  }, [filters, debouncedSearch, sortBy])
+    fetchData();
+  }, [filters, currency]); // Dependency: filters state changes or currency changes
+
+  const handlePageChange = (newPageNumber: number) => {
+    setPageNumber(newPageNumber);
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <>
       <Navbar />
-      <div className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-[24px] font-bold text-primary dark:text-secondary uppercase">{t('products.title')}</h1>
-            <p className="text-muted-foreground mt-2">{t('home.categories.description')}</p>
+            <h1 className="uppercase mb-2" style={{ color: "#2b1b13", fontSize: "24px", fontWeight: 700 }}>
+              OUR PRODUCTS
+            </h1>
+            <p style={{ color: "#2b1b13" }}>
+              Discover our carefully curated selection
+            </p>
           </div>
 
-          {/* Search Bar */}
+          {/* SEARCH BAR - Full Width */}
           <div className="mb-8">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#2b1b13] z-10 pointer-events-none" size={20} />
-              <Input
-                type="text"
-                placeholder={t('common.actions.search')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 glass"
-                style={{ 
-                  '--ring': '#2b1b13',
-                  '--ring-color': 'rgba(43, 27, 19, 0.5)',
-                } as React.CSSProperties & { '--ring': string; '--ring-color': string }}
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={filters.search || ""}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2"
+              style={{ color: "#2b1b13" }}
+            />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Sidebar */}
-            <div className="lg:col-span-1">
-              <FilterSidebar onFilterChange={setFilters} minPrice={minPrice} maxPrice={maxPrice} />
-            </div>
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* LEFT SIDE: FILTERS */}
+            <ShopFilters
+              filters={filters}
+              onSearchChange={setSearch}
+              onCategoryChange={setCategoryId}
+              onMinPriceChange={setMinPrice}
+              onMaxPriceChange={setMaxPrice}
+              onRoastLevelToggle={toggleRoastLevel}
+              onOriginToggle={toggleOrigin}
+              onSortByChange={setSortBy}
+              onReset={resetFilters}
+              minAvailablePrice={minAvailablePrice}
+              maxAvailablePrice={maxAvailablePrice}
+              currency={currency}
+            />
 
-            {/* Products Grid */}
-            <div className="lg:col-span-3">
-              <div className="flex justify-between items-center mb-8">
+            {/* RIGHT SIDE: PRODUCTS */}
+            <div className="flex-1">
+              {/* Top Bar: Results Info + Sort */}
+              <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <p className="text-sm text-muted-foreground">
                   {loading ? (
-                    t('common.actions.loading')
+                    "Loading..."
+                  ) : products.length === 0 ? (
+                    "No products found"
                   ) : (
                     <>
                       Showing <span className="font-semibold">{products.length}</span> of{" "}
-                      <span className="font-semibold">{totalCount}</span> products
+                      <span className="font-semibold">{paginationData?.totalCount || 0}</span> products
                     </>
                   )}
                 </p>
-                <div className="relative">
-                  <select 
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none pl-4 pr-10 py-2.5 bg-card border border-border rounded-lg text-sm font-medium hover:bg-muted transition-smooth focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer min-w-[180px]"
-                  >
-                    <option value="">{t('products.sort.featured')}</option>
-                    <option value="price">{t('products.sort.priceLowHigh')}</option>
-                    <option value="price_desc">{t('products.sort.priceHighLow')}</option>
-                    <option value="name">{t('products.sort.nameAZ')}</option>
-                    <option value="name_desc">{t('products.sort.nameZA')}</option>
-                    <option value="createdAt_desc">{t('products.sort.newest')}</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground rtl:rotate-180" size={16} />
-                </div>
+
+                {/* Sort By Select */}
+                <select
+                  value={filters.sortBy || ""}
+                  onChange={(e) => setSortBy(e.target.value || undefined)}
+                  className="px-4 py-2.5 rounded-lg border-2 border-border bg-white text-foreground text-sm font-semibold hover:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all cursor-pointer uppercase"
+                  style={{ 
+                    color: "#2b1b13",
+                  }}
+                >
+                  <option value="" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>Sort By: Default</option>
+                  <option value="price-asc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>Price: Low to High</option>
+                  <option value="price-desc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>Price: High to Low</option>
+                  <option value="name-asc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>Name: A to Z</option>
+                  <option value="name-desc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>Name: Z to A</option>
+                </select>
               </div>
 
+              {/* Error State */}
+              {error && !loading && (
+                <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded">
+                  {error}
+                </div>
+              )}
+
+              {/* Loading State */}
               {loading && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="glass rounded-xl p-4 animate-pulse">
-                      <div className="aspect-square bg-muted rounded-lg mb-4"></div>
-                      <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="aspect-square bg-muted rounded-xl mb-4"></div>
+                      <div className="h-4 bg-muted rounded mb-2"></div>
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
                     </div>
                   ))}
                 </div>
               )}
-              
-              {error && !loading && (
-                <div className="glass rounded-xl p-12 text-center">
-                  <p className="text-destructive">{error}</p>
+
+              {/* Empty State */}
+              {!loading && products.length === 0 && !error && (
+                <div className="text-center py-12">
+                  <p className="text-lg text-muted-foreground mb-4">No products found</p>
+                  <Button onClick={resetFilters} variant="outline">
+                    Reset Filters
+                  </Button>
                 </div>
               )}
-              
-              {!loading && !error && products.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((p) => {
-                    try {
-                      return <ProductCard key={p.id} product={p} />
-                    } catch (err) {
-                      console.error(`[Shop] Failed to render product ${p.id}:`, err);
-                      return null;
-                    }
-                  })}
-                </div>
-              ) : !loading && !error ? (
-                <div className="glass rounded-xl p-12 text-center">
-                  <p className="text-muted-foreground text-lg mb-2">No products found</p>
-                  <p className="text-muted-foreground text-sm">Try adjusting your filters or check back later.</p>
-                </div>
-              ) : null}
+
+              {/* Products Grid */}
+              {!loading && products.length > 0 && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                    {products.map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {paginationData && paginationData.totalPages > 1 && (
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => handlePageChange(filters.pageNumber - 1)}
+                        disabled={filters.pageNumber === 1}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft size={18} />
+                        Previous
+                      </button>
+
+                      <span className="text-sm text-muted-foreground">
+                        Page {filters.pageNumber} of {paginationData.totalPages}
+                      </span>
+
+                      <button
+                        onClick={() => handlePageChange(filters.pageNumber + 1)}
+                        disabled={filters.pageNumber === paginationData.totalPages}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
-        <Newsletter />
-      </div>
+      </main>
+      <Newsletter />
       <Footer />
-    </main>
-  )
+    </>
+  );
 }

@@ -8,7 +8,7 @@
 
 export type CurrencyType = "USD" | "AED";
 
-export const DEFAULT_CURRENCY: CurrencyType = "USD";
+export const DEFAULT_CURRENCY: CurrencyType = "AED";
 export const CURRENCY_COOKIE_NAME = "df_currency";
 export const CURRENCY_STORAGE_KEY = "df_currency";
 

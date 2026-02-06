@@ -9,8 +9,7 @@ export default function CartPage() {
       <div className="flex-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-primary dark:text-secondary">Your Cart</h1>
-            <p className="text-muted-foreground mt-2">Review and manage your items</p>
+            <h1 className="font-bold uppercase" style={{ fontSize: '24px', color: '#2b1b13', fontFamily: '"DIN 2014", sans-serif' }}>Your Cart</h1>
           </div>
 
           <CartSummary />

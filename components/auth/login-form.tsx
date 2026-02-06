@@ -65,22 +65,18 @@ const onSubmit = async (vals: LoginValues) => {
             backdropFilter: 'blur(16px) saturate(180%)',
             WebkitBackdropFilter: 'blur(16px) saturate(180%)',
             boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)',
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-          }}
-        >
-          <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: '"Playfair Display", serif', letterSpacing: '0.04em', color: '#4B2E2B' }}>
-            Dune & Flame L.L.C
+            border: '1px solid rgba(255, 255, 255, 0.25)',}}>
+              
+          <h2 style={{ fontFamily: '"Bank Gothic", sans-serif', letterSpacing: '0.04em', color: '#a3291c !important', fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
+            DUNE & FLAME
           </h2>
-          <p className="text-sm text-muted-foreground mb-6" style={{ fontFamily: '"Playfair Display", serif', color: '#4B2E2B' }}>
-            {/* You can add a subtitle here if needed */}
-          </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">{t('auth.login.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 text-muted-foreground" size={18} />
-                <input {...register("email")} className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-card" />
+                <input {...register("email")} className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-[#1f6f78] focus:border-[#1f6f78]" />
               </div>
               {errors.email && <p className="text-destructive text-sm mt-1">{errors.email.message}</p>}
             </div>
@@ -89,7 +85,7 @@ const onSubmit = async (vals: LoginValues) => {
               <label className="block text-sm font-medium mb-1">{t('auth.login.password')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 text-muted-foreground" size={18} />
-                <input type="password" {...register("password")} className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-card" />
+                <input type="password" {...register("password")} className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-[#1f6f78] focus:border-[#1f6f78]" />
               </div>
               {errors.password && <p className="text-destructive text-sm mt-1">{errors.password.message}</p>}
               <div className="mt-2 text-right">

@@ -10,6 +10,8 @@ import { useCurrency } from "@/lib/currency-context"
 import { apiFetch, setTokens } from "@/lib/api-client"
 import { basketService } from "@/lib/services/basket"
 import { useAuthStore } from "@/lib/auth-store"
+import { getMyRewards } from "@/lib/services/rewards"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -148,6 +150,7 @@ function PaymentContent({
           className="flex-1"
           onClick={handlePayNow}
           disabled={isProcessing}
+          style={{ backgroundColor: '#1f6f78', color: '#fff' }}
         >
           {isProcessing ? (
             <span className="flex items-center gap-2">
@@ -244,12 +247,35 @@ export default function CheckoutForm() {
   const [isLoadingCountries, setIsLoadingCountries] = useState(false)
   const [isLoadingCities, setIsLoadingCities] = useState(false)
   const [shippingError, setShippingError] = useState<string | null>(null)
+  const [rewardBalance, setRewardBalance] = useState<number>(0)
+  const [usePoints, setUsePoints] = useState(false)
+  const [isLoadingRewards, setIsLoadingRewards] = useState(false)
 
   useEffect(() => {
     if (accessToken && refreshToken) {
       setTokens({ accessToken, refreshToken })
     }
   }, [accessToken, refreshToken])
+
+  // Fetch user's reward balance on component mount
+  useEffect(() => {
+    const fetchRewardBalance = async () => {
+      if (!user) return // Only fetch if user is logged in
+
+      setIsLoadingRewards(true)
+      try {
+        const rewards = await getMyRewards()
+        setRewardBalance(rewards.stats.balance)
+      } catch (error) {
+        console.error("Failed to fetch reward balance:", error)
+        setRewardBalance(0)
+      } finally {
+        setIsLoadingRewards(false)
+      }
+    }
+
+    fetchRewardBalance()
+  }, [user])
 
   // Pre-fill form with logged-in user data if available
   useEffect(() => {
@@ -409,88 +435,103 @@ export default function CheckoutForm() {
     setPaymentError(null)
 
     try {
-      let basketId: string | null = null
+      // STEP 0: Get current state from Zustand store
+      const storeState = useCartStore.getState()
+      const currentItems = storeState.items
+      
+      console.log("📦 STORE STATE AT CHECKOUT:", {
+        itemsCount: currentItems.length,
+        itemNames: currentItems.map(i => i.name),
+      })
 
-      try {
-        const basket = await basketService.getBasket()
-        basketId = basket?.id || null
-      } catch (basketError) {
-        console.warn("Unable to fetch basket before order creation", basketError)
-      }
-
-      if (!basketId && user?.id) {
+      // Determine consistent basketId for entire function
+      let basketId: string
+      if (user?.id) {
         basketId = user.id
-      }
-
-      // For guests: Create a guest basket and sync items to Redis
-      if (!basketId && !user) {
-        // Generate unique guest basket ID
+      } else {
+        // For guests, generate ONCE and reuse throughout
         basketId = "guest_" + Math.random().toString(36).substring(2, 11)
-        
-        // Get current items from Zustand store
-        const currentItems = items
-        
-        if (currentItems.length > 0) {
-          try {
-            // Format items according to BasketItem structure
-            const basketItems = currentItems.map((item) => ({
-              productId: item.id,
-              productPriceId: item.productPriceId,
-              productName: item.name,
-              slug: item.slug,
-              price: item.priceUsed ?? item.price,
-              quantity: item.quantity,
-              imageUrl: item.imageUrl || "",
-              weightLabel: item.selectedWeightLabel || item.weightLabel || "Standard",
-              grams: item.grams || 0,
-              roastLevelId: item.roastLevelId || "00000000-0000-0000-0000-000000000000",
-              roastLevelName: item.selectedRoast || item.roastLevelName || "Original",
-              grindTypeId: item.grindTypeId || "00000000-0000-0000-0000-000000000000",
-              grindTypeName: item.selectedGrind || item.grindTypeName || "Whole Bean",
-            }))
-            
-            // Send guest basket to Redis with the generated ID
-            await basketService.updateBasket({
-              id: basketId,
-              items: basketItems,
-              currencyCode: currency.toUpperCase(),
-            })
-            console.log("✅ Guest basket synced to Redis with ID:", basketId)
-          } catch (syncError) {
-            console.warn("Failed to sync guest basket to Redis:", syncError)
-            // Continue anyway - backend might still create order
-          }
-        }
       }
 
-      // STEP 1: Create the pending order FIRST with currency
+      console.log("🔑 BASKET ID DETERMINED:", basketId)
+
+      // STEP 1: FORCE SYNC - Sync current store items to Backend (Redis) BEFORE order creation
+      if (currentItems.length > 0) {
+        try {
+          const basketItems = currentItems.map((item) => ({
+            productId: item.id,
+            productPriceId: item.productPriceId,
+            productName: item.name,
+            slug: item.slug,
+            price: item.priceUsed ?? item.price,
+            quantity: item.quantity,
+            imageUrl: item.imageUrl || "",
+            weightLabel: item.selectedWeightLabel || item.weightLabel || "Standard",
+            grams: item.grams || 0,
+            roastLevelId: item.roastLevelId || "00000000-0000-0000-0000-000000000000",
+            roastLevelName: item.selectedRoast || item.roastLevelName || "Original",
+            grindTypeId: item.grindTypeId || "00000000-0000-0000-0000-000000000000",
+            grindTypeName: item.selectedGrind || item.grindTypeName || "Whole Bean",
+          }))
+
+          console.log("🔄 FORCE SYNCING TO REDIS:", {
+            basketId: basketId,
+            itemCount: basketItems.length,
+            items: basketItems,
+          })
+
+          // Force sync to Backend
+          await basketService.updateBasket({
+            id: basketId,
+            items: basketItems,
+            currencyCode: currency.toUpperCase(),
+          })
+
+          console.log("✅ BASKET FORCE SYNCED TO REDIS:", basketId)
+        } catch (syncError) {
+          console.error("❌ CRITICAL: Failed to sync basket to Redis:", syncError)
+          throw new Error("Failed to sync basket. Please try again.")
+        }
+      } else {
+        console.warn("⚠️ EMPTY BASKET: No items to sync")
+        throw new Error("Your basket is empty. Please add items before checkout.")
+      }
+
+      // STEP 2: Create order with same consistent basketId
+      console.log("📋 PAYLOAD CHECK (BEFORE ORDER):", {
+        basketId: basketId,
+        itemsCount: currentItems.length,
+        currency: currency.toUpperCase(),
+        shippingAddress: shippingAddress,
+      })
+
       const orderResponse = await apiFetch<{ id: string; clientSecret?: string }>("/orders", {
         method: "POST",
         body: JSON.stringify({
-          basketId,
+          basketId: basketId,  // SAME ID as updateBasket
           shippingAddress,
-          currency: currency.toUpperCase(),  // CRITICAL: Include currency for Stripe amount calculation
-          languageCode: locale, // "en", "ar" (next-intl returns clean locale)
+          currency: currency.toUpperCase(),
+          usePoints: usePoints,
+          languageCode: locale,
         }),
+      })
+
+      console.log("✅ ORDER CREATED:", {
+        orderId: orderResponse?.id,
+        basketIdUsed: basketId,
       })
 
       setOrderId(orderResponse?.id || null)
 
-
-      // STEP 2: Get payment intent (either from order response or separate call)
+      // STEP 3: Get payment intent
       let clientSecretValue: string | undefined
 
-      // If backend returns clientSecret with order, use it
       if (orderResponse?.clientSecret) {
         clientSecretValue = orderResponse.clientSecret
       } else {
-        // Otherwise, create payment intent separately
-        const url = `/payments/${basketId}`
-
-        const paymentResponse = await apiFetch<{ clientSecret: string }>(url, {
+        const paymentResponse = await apiFetch<{ clientSecret: string }>(`/payments/${basketId}`, {
           method: "POST",
         })
-
         clientSecretValue = paymentResponse?.clientSecret
       }
 
@@ -502,7 +543,7 @@ export default function CheckoutForm() {
       setIsPaymentModalOpen(true)
       setSuccessMessage("Order created successfully. Please complete payment.")
     } catch (error) {
-      console.error("Failed to initialize checkout", error)
+      console.error("❌ CHECKOUT ERROR:", error)
       const message = error instanceof Error ? error.message : "Unable to start checkout process"
       setPaymentError(message)
       setClientSecret(null)
@@ -528,7 +569,11 @@ export default function CheckoutForm() {
     String(r.currency).toUpperCase() === currency.toUpperCase()
   )
   const shipping = rateObj?.cost ?? 0
-  const orderTotal = subtotal + shipping
+  const subtotalWithShipping = subtotal + shipping
+  
+  // Calculate reward discount
+  const rewardDiscount = usePoints ? Math.min(rewardBalance, subtotalWithShipping) : 0
+  const orderTotal = subtotalWithShipping - rewardDiscount
 
   // Debug log
   console.log("Selected Country Rates:", selectedCountry?.shippingRates, "App Currency:", currency)
@@ -558,13 +603,13 @@ export default function CheckoutForm() {
 
                 {/* Guest Checkout - Show guest info fields if not logged in */}
                 {!user && (
-                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-4">Guest Checkout - Please enter your information</h3>
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Guest Checkout - Please enter your information</h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label htmlFor="firstName" className="text-sm font-medium">
-                          First Name <span className="text-destructive">*</span>
+                          First Name
                         </label>
                         <Input
                           id="firstName"
@@ -573,14 +618,14 @@ export default function CheckoutForm() {
                           value={shippingAddress.firstName || ""}
                           onChange={(e) => handleInputChange("firstName", e.target.value)}
                           aria-invalid={!!errors.firstName}
-                          className={errors.firstName ? "border-destructive" : ""}
+                          className={`${errors.firstName ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
                         />
                         {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
                       </div>
 
                       <div className="space-y-2">
                         <label htmlFor="lastName" className="text-sm font-medium">
-                          Last Name <span className="text-destructive">*</span>
+                          Last Name
                         </label>
                         <Input
                           id="lastName"
@@ -589,14 +634,14 @@ export default function CheckoutForm() {
                           value={shippingAddress.lastName || ""}
                           onChange={(e) => handleInputChange("lastName", e.target.value)}
                           aria-invalid={!!errors.lastName}
-                          className={errors.lastName ? "border-destructive" : ""}
+                          className={`${errors.lastName ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
                         />
                         {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
                       </div>
 
                       <div className="space-y-2">
                         <label htmlFor="email" className="text-sm font-medium">
-                          Email <span className="text-destructive">*</span>
+                          Email
                         </label>
                         <Input
                           id="email"
@@ -605,14 +650,14 @@ export default function CheckoutForm() {
                           value={shippingAddress.email || ""}
                           onChange={(e) => handleInputChange("email", e.target.value)}
                           aria-invalid={!!errors.email}
-                          className={errors.email ? "border-destructive" : ""}
+                          className={`${errors.email ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
                         />
                         {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                       </div>
 
                       <div className="space-y-2">
                         <label htmlFor="phoneNumber" className="text-sm font-medium">
-                          Phone Number <span className="text-destructive">*</span>
+                          Phone Number
                         </label>
                         <Input
                           id="phoneNumber"
@@ -621,7 +666,7 @@ export default function CheckoutForm() {
                           value={shippingAddress.phoneNumber || ""}
                           onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                           aria-invalid={!!errors.phoneNumber}
-                          className={errors.phoneNumber ? "border-destructive" : ""}
+                          className={`${errors.phoneNumber ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
                         />
                         {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber}</p>}
                       </div>
@@ -631,7 +676,7 @@ export default function CheckoutForm() {
 
                 <div className="space-y-2">
                   <label htmlFor="street" className="text-sm font-medium">
-                    Street Address <span className="text-destructive">*</span>
+                    Street Address
                   </label>
                   <Input
                     id="street"
@@ -640,14 +685,14 @@ export default function CheckoutForm() {
                     value={shippingAddress.street}
                     onChange={(e) => handleInputChange("street", e.target.value)}
                     aria-invalid={!!errors.street}
-                    className={errors.street ? "border-destructive" : ""}
+                    className={`${errors.street ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
                   />
                   {errors.street && <p className="text-sm text-destructive">{errors.street}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <label htmlFor="state" className="text-sm font-medium">
-                    State / Region <span className="text-destructive">*</span>
+                    State / Region
                   </label>
                   <Input
                     id="state"
@@ -656,7 +701,7 @@ export default function CheckoutForm() {
                     value={shippingAddress.state}
                     onChange={(e) => handleInputChange("state", e.target.value)}
                     aria-invalid={!!errors.state}
-                    className={errors.state ? "border-destructive" : ""}
+                    className={`${errors.state ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
                   />
                   {errors.state && <p className="text-sm text-destructive">{errors.state}</p>}
                 </div>
@@ -664,7 +709,7 @@ export default function CheckoutForm() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="postalCode" className="text-sm font-medium">
-                      Postal Code <span className="text-destructive">*</span>
+                      Postal Code
                     </label>
                     <Input
                       id="postalCode"
@@ -673,14 +718,14 @@ export default function CheckoutForm() {
                       value={shippingAddress.postalCode}
                       onChange={(e) => handleInputChange("postalCode", e.target.value)}
                       aria-invalid={!!errors.postalCode}
-                      className={errors.postalCode ? "border-destructive" : ""}
+                      className={`${errors.postalCode ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
                     />
                     {errors.postalCode && <p className="text-sm text-destructive">{errors.postalCode}</p>}
                   </div>
 
                   <div className="space-y-2">
                     <label htmlFor="country" className="text-sm font-medium">
-                      Country <span className="text-destructive">*</span>
+                      Country
                     </label>
                     <Select
                       value={selectedCountryId}
@@ -712,7 +757,7 @@ export default function CheckoutForm() {
 
                 <div className="space-y-2">
                   <label htmlFor="city" className="text-sm font-medium">
-                    City <span className="text-destructive">*</span>
+                    City
                   </label>
                   <Select
                     value={shippingAddress.city}
@@ -746,7 +791,7 @@ export default function CheckoutForm() {
               type="submit"
               size="lg"
               className="w-full text-lg font-semibold"
-              style={{ backgroundColor: 'rgb(56, 109, 118)', color: '#fff' }}
+              style={{ backgroundColor: '#2b1b13', color: '#fff' }}
               disabled={isInitializingPayment}
             >
               {isInitializingPayment ? "Preparing Payment..." : "Proceed to Payment"}
@@ -830,10 +875,58 @@ export default function CheckoutForm() {
                 {/* Divider */}
                 <div className="border-t border-border" />
 
+                {/* Subtotal with Shipping */}
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium">Subtotal</span>
+                  <FormattedPrice amount={subtotalWithShipping} />
+                </div>
+
+                {/* Reward Points Toggle */}
+                {user && rewardBalance > 0 && (
+                  <div className="space-y-2 py-3 border-t border-border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="usePoints"
+                          checked={usePoints}
+                          onCheckedChange={(checked) => setUsePoints(checked === true)}
+                          disabled={isLoadingRewards}
+                        />
+                        <label
+                          htmlFor="usePoints"
+                          className="text-sm font-medium cursor-pointer flex-1"
+                        >
+                          Use {rewardBalance.toFixed(2)} points
+                        </label>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground ml-7">
+                      You have {rewardBalance.toFixed(2)} points available
+                    </p>
+                  </div>
+                )}
+
+                {usePoints && rewardDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
+                    <span>Reward Discount</span>
+                    <span>-<FormattedPrice amount={rewardDiscount} /></span>
+                  </div>
+                )}
+
+                {/* Divider */}
+                <div className="border-t border-border" />
+
                 {/* Total */}
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-accent"><FormattedPrice amount={orderTotal} /></span>
+                  <div className="text-right">
+                    {usePoints && rewardDiscount > 0 && (
+                      <div className="line-through text-muted-foreground text-sm mb-1">
+                        <FormattedPrice amount={subtotalWithShipping} />
+                      </div>
+                    )}
+                    <span className="text-accent"><FormattedPrice amount={orderTotal} /></span>
+                  </div>
                 </div>
               </div>
             </CardContent>

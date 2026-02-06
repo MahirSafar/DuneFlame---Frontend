@@ -25,7 +25,7 @@ export default function AboutPage() {
       <div className="flex-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-16">
-            <h1 className="text-5xl font-bold text-primary dark:text-secondary mb-6">Our Story</h1>
+            <h1 className="font-bold text-primary dark:text-secondary mb-6 uppercase" style={{ fontSize: '24px' }}>OUR STORY</h1>
             <p className="text-xl text-muted-foreground leading-relaxed">
               DuneFlame was born from a passion for exceptional coffee and a love of craftsmanship. In 2018, our founder
               traveled across the world's most renowned coffee-producing regions, connecting with farmers and roasters
@@ -35,7 +35,7 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
             <div className="glass rounded-2xl p-8">
-              <h3 className="text-2xl font-bold text-primary dark:text-secondary mb-4">Our Mission</h3>
+              <h3 className="font-bold text-primary dark:text-secondary mb-4 uppercase" style={{ fontSize: '24px' }}>OUR MISSION</h3>
               <p className="text-muted-foreground leading-relaxed">
                 To bring the world's finest single-origin coffees directly to your cup, celebrating the unique terroir
                 and craftsmanship of each origin while supporting sustainable farming practices.
@@ -43,7 +43,7 @@ export default function AboutPage() {
             </div>
 
             <div className="glass rounded-2xl p-8">
-              <h3 className="text-2xl font-bold text-primary dark:text-secondary mb-4">Our Values</h3>
+              <h3 className="font-bold text-primary dark:text-secondary mb-4 uppercase" style={{ fontSize: '24px' }}>OUR VALUES</h3>
               <ul className="space-y-3 text-muted-foreground">
                 <li>✓ Sustainability and Fair Trade practices</li>
                 <li>✓ Direct relationships with coffee farmers</li>
@@ -54,7 +54,7 @@ export default function AboutPage() {
           </div>
 
           <div className="glass rounded-2xl p-8 mb-16">
-            <h3 className="text-2xl font-bold text-primary dark:text-secondary mb-6">Sustainability</h3>
+            <h3 className="font-bold text-primary dark:text-secondary mb-6 uppercase" style={{ fontSize: '24px' }}>SUSTAINABILITY</h3>
             <p className="text-muted-foreground leading-relaxed mb-4">
               We're committed to environmental responsibility. All our packaging is compostable, and 5% of every
               purchase goes toward reforestation projects in coffee-producing regions. We work exclusively with farms

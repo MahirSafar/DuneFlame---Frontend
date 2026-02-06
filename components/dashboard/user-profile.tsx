@@ -37,26 +37,28 @@ export default function UserProfile({ profile }: UserProfileProps) {
 
   return (
     <div className="w-full space-y-4">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 md:p-6" style={{ boxShadow: "0 8px 16px rgba(230, 211, 191, 0.5)" }}>
         {/* Avatar with Initial */}
-        <div className="flex items-start gap-4 mb-4">
-          <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-orange-500 flex items-center justify-center text-2xl font-bold text-white">
+        <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-4 mb-4">
+          <div className="flex-shrink-0 w-12 md:w-16 h-12 md:h-16 rounded-full flex items-center justify-center text-xl md:text-2xl font-bold text-white" style={{
+            background: 'linear-gradient(0deg, hsla(6, 71%, 47%, 1) 0%, hsla(28, 67%, 66%, 1) 85%, hsla(33, 80%, 75%, 1) 100%)',
+          }}>
             {initial}
           </div>
 
           {/* User Info Section */}
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+          <div className="flex-1 text-center md:text-left">
+            <h2 className="text-lg md:text-xl font-bold text-zinc-900 dark:text-zinc-100">
               {displayName}
             </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            <p className="text-xs md:text-sm text-zinc-500 dark:text-zinc-400 mt-1 break-all">
               {email}
             </p>
 
             {/* Location Badge */}
             {city && (
-              <div className="mt-3">
-                <span className="inline-block px-3 py-1 bg-zinc-100 dark:bg-zinc-800 text-xs font-medium rounded-full text-zinc-700 dark:text-zinc-300">
+              <div className="mt-3 flex justify-center md:justify-start">
+                <span className="inline-block px-2 md:px-3 py-1 bg-zinc-100 dark:bg-zinc-800 text-xs font-medium rounded-full text-zinc-700 dark:text-zinc-300">
                   📍 Location: {city}
                   {country && `, ${country}`}
                 </span>
@@ -69,7 +71,7 @@ export default function UserProfile({ profile }: UserProfileProps) {
         {(address || phone) && (
           <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
             {address && (
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 break-words">
                 📮 Address: {address}
               </p>
             )}

@@ -3,13 +3,14 @@
 import { useEffect } from "react";
 import { useLocale } from "next-intl";
 import { setAxiosLocale } from "@/lib/axios";
-import { setApiClientLocale } from "@/lib/api-client";
+import { setApiClientLocale, setApiClientCurrency } from "@/lib/api-client";
+import { useCurrency } from "@/hooks/use-currency";
 
 /**
  * LocaleHeaderInit Component
  * 
- * Initializes and updates the Accept-Language header for all API requests
- * whenever the locale changes. This component should be placed in the root layout
+ * Initializes and updates the Accept-Language header and X-Currency header for all API requests
+ * whenever the locale or currency changes. This component should be placed in the root layout
  * or a high-level layout component that wraps your entire application.
  * 
  * Usage in your layout:
@@ -28,6 +29,7 @@ import { setApiClientLocale } from "@/lib/api-client";
  */
 export function LocaleHeaderInit() {
   const locale = useLocale();
+  const { currency } = useCurrency();
 
   useEffect(() => {
     // Update both axios and apiFetch instances with current locale
@@ -38,6 +40,13 @@ export function LocaleHeaderInit() {
     console.debug(`[LocaleHeaderInit] Updated API locale headers to: ${locale}`);
   }, [locale]);
 
+  useEffect(() => {
+    // Update apiFetch with current currency
+    setApiClientCurrency(currency);
+
+    // Log for debugging
+    console.debug(`[LocaleHeaderInit] Updated API currency header to: ${currency}`);
+  }, [currency]);
   // This component doesn't render anything
   return null;
 }

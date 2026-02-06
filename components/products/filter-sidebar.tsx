@@ -14,7 +14,6 @@ interface FilterSidebarProps {
 export interface FilterState {
   roastLevel: number[]
   originIds: string[]
-  categoryIds: string[]
   priceRange: [number, number]
 }
 
@@ -31,13 +30,11 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
   const [filters, setFilters] = useState<FilterState>({
     roastLevel: [],
     originIds: [],
-    categoryIds: [],
     priceRange: [minPrice, maxPrice],
   })
   const [expandedSections, setExpandedSections] = useState({
     roast: false,
     origin: false,
-    category: false,
     price: false,
   })
   const [categories, setCategories] = useState<Category[]>([])
@@ -54,7 +51,6 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
       onFilterChange({
         roastLevel: [],
         originIds: [],
-        categoryIds: [],
         priceRange: [minPrice, maxPrice],
       })
     }
@@ -90,16 +86,6 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
     onFilterChange(newFilters)
   }
 
-  const handleCategoryChange = (categoryId: string) => {
-    const newCategoryIds = filters.categoryIds.includes(categoryId)
-      ? filters.categoryIds.filter((c) => c !== categoryId)
-      : [...filters.categoryIds, categoryId]
-
-    const newFilters = { ...filters, categoryIds: newCategoryIds }
-    setFilters(newFilters)
-    onFilterChange(newFilters)
-  }
-
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
       const isCurrentlyExpanded = prev[section as keyof typeof prev]
@@ -107,7 +93,6 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
       return {
         roast: false,
         origin: false,
-        category: false,
         price: false,
         [section]: !isCurrentlyExpanded,
       }
@@ -131,38 +116,6 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
 
   return (
     <aside className="glass rounded-xl p-6 h-fit sticky top-24">
-      {/* Categories */}
-      <div className="mb-6">
-        <button
-          onClick={() => toggleSection("category")}
-          className="w-full flex justify-between items-center mb-4 text-sm font-semibold transition-smooth uppercase"
-          style={{ color: '#4B2E2B' }}
-        >
-          {t('products.filters.category')}
-          <ChevronDown size={18} className={`transition-transform rtl:rotate-180 ${expandedSections.category ? "" : "-rotate-90"}`} />
-        </button>
-
-        {expandedSections.category && (
-          <div className="space-y-3">
-            {categories.map((category) => (
-              <label key={category.id} className="flex items-center gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={filters.categoryIds.includes(category.id)}
-                  onChange={() => handleCategoryChange(category.id)}
-                  className="rounded border-border accent-accent"
-                />
-                <span className="text-sm" style={{ color: '#4B2E2B' }}>
-                  {category.name}
-                </span>
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="h-px bg-border mb-6" />
-
       {/* Roast Level */}
       <div className="mb-6">
         <button

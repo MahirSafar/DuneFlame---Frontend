@@ -37,48 +37,48 @@ export default function CartSummary() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
+    <div className="space-y-4 md:space-y-6">
+      <div className="space-y-3 md:space-y-4">
         {items.map((item, index) => (
           <Link
             key={`${item.variantKey || item.id}-${index}`}
             href={`/product/${item.slug || item.id}`}
-            className="glass rounded-xl p-4 flex items-center justify-between group hover:shadow-lg transition-smooth"
+            className="glass rounded-xl p-3 md:p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4 group hover:shadow-lg transition-smooth"
           >
-            <div className="flex items-center gap-4 flex-1">
+            <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
               {item.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={getImageUrl(item.imageUrl) || ""}
                   alt={item.name}
-                  className="w-20 h-20 object-cover rounded-lg"
+                  className="w-16 md:w-20 h-16 md:h-20 object-cover rounded-lg flex-shrink-0"
                 />
               ) : (
-                <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg flex items-center justify-center text-2xl">
+                <div className="w-16 md:w-20 h-16 md:h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg flex items-center justify-center text-xl md:text-2xl flex-shrink-0">
                   ☕
                 </div>
               )}
-              <div className="flex flex-col">
-                <h3 className="font-semibold text-primary group-hover:text-accent transition-smooth">
+              <div className="flex flex-col min-w-0 flex-1">
+                <h3 className="font-semibold text-primary group-hover:text-accent transition-smooth text-sm md:text-base truncate">
                   {item.name}
                 </h3>
                 {/* Display the dynamic price in current currency */}
-                <FormattedPrice amount={getItemPrice(item, currency)} className="text-sm font-medium text-accent" />
+                <FormattedPrice amount={getItemPrice(item, currency)} className="text-xs md:text-sm font-medium text-accent" />
                 
                 {/* Selected Attributes Display - FORCED */}
-                <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-2">
+                <div className="text-xs text-muted-foreground mt-1 md:mt-2 flex flex-wrap gap-1 md:gap-2">
                   {item.selectedWeightLabel && (
-                    <span className="bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                    <span className="bg-gray-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-gray-200 text-xs">
                       {t('common.weight')}: {item.selectedWeightLabel}
                     </span>
                   )}
                   {item.selectedRoast && (
-                    <span className="bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                    <span className="bg-gray-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-gray-200 text-xs">
                       {t('common.roast')}: {item.selectedRoast}
                     </span>
                   )}
                   {item.selectedGrind && (
-                    <span className="bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                    <span className="bg-gray-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-gray-200 text-xs">
                       {t('common.grind')}: {item.selectedGrind}
                     </span>
                   )}
@@ -86,30 +86,30 @@ export default function CartSummary() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4" onClick={(e) => e.preventDefault()}>
-              <div className="flex items-center border border-border rounded-lg">
+            <div className="flex items-center gap-2 md:gap-4 md:ml-auto" onClick={(e) => e.preventDefault()}>
+              <div className="flex items-center border border-border rounded-lg text-sm">
                 <button
                   onClick={(e) => {
                     e.preventDefault()
                     updateQuantity(item.variantKey || item.id, Math.max(1, item.quantity - 1), isAuthenticated)
                   }}
-                  className="p-1 hover:bg-accent/10 transition-smooth"
+                  className="p-1 md:p-1.5 hover:bg-accent/10 transition-smooth"
                 >
                   −
                 </button>
-                <span className="px-3 font-semibold">{item.quantity}</span>
+                <span className="px-2 md:px-3 font-semibold text-xs md:text-base">{item.quantity}</span>
                 <button
                   onClick={(e) => {
                     e.preventDefault()
                     updateQuantity(item.variantKey || item.id, item.quantity + 1, isAuthenticated)
                   }}
-                  className="p-1 hover:bg-accent/10 transition-smooth"
+                  className="p-1 md:p-1.5 hover:bg-accent/10 transition-smooth"
                 >
                   +
                 </button>
               </div>
 
-              <span className="w-20 text-right font-semibold text-primary">
+              <span className="w-16 md:w-20 text-right font-semibold text-primary text-sm md:text-base">
                 <FormattedPrice amount={getItemPrice(item, currency) * item.quantity} />
               </span>
 
@@ -121,42 +121,37 @@ export default function CartSummary() {
                   const idToRemove = item.cartItemId || item.variantKey || item.id
                   removeItem(idToRemove, isAuthenticated)
                 }}
-                className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-smooth"
+                className="p-1.5 md:p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-smooth"
               >
-                <Trash2 size={18} />
+                <Trash2 size={16} className="md:w-[18px] md:h-[18px]" />
               </button>
             </div>
           </Link>
         ))}
       </div>
 
-      <div className="glass rounded-xl p-6 space-y-4">
-        <div className="flex justify-between text-muted-foreground">
-          <span>{t('cart.subtotal')}</span>
-          <FormattedPrice amount={total(currency)} />
-        </div>
-        <div className="flex justify-between text-muted-foreground">
-          <span>{t('cart.shipping')}</span>
-          <span>Free</span>
-        </div>
-        <div className="border-t border-border pt-4 flex justify-between font-bold text-primary text-lg">
+      <div className="glass rounded-xl p-3 md:p-6 space-y-3 md:space-y-4">
+        <div className="border-border pt-3 md:pt-4 flex flex-col md:flex-row md:justify-end md:gap-4 gap-2 font-bold text-sm md:text-lg" style={{ color: '#2b1b13' }}>
           <span>{t('cart.total')}</span>
           <FormattedPrice amount={total(currency)} />
         </div>
 
-        <Link
-          href="/checkout"
-          className="w-full px-6 py-3 bg-accent hover:bg-accent/90 text-accent-foreground font-bold rounded-lg transition-smooth flex items-center justify-center glow-accent"
-        >
-          {t('cart.checkout')}
-        </Link>
+        <div className="flex flex-col md:flex-row gap-2 md:gap-4">
+          <Link
+            href="/products"
+            className="flex-1 px-3 md:px-6 py-2 md:py-3 border border-border hover:bg-muted rounded-lg transition-smooth text-center font-semibold text-xs md:text-base"
+          >
+            {t('cart.continueShoppping')}
+          </Link>
 
-        <Link
-          href="/products"
-          className="w-full px-6 py-3 border border-border hover:bg-muted rounded-lg transition-smooth text-center font-semibold"
-        >
-          {t('cart.continueShoppping')}
-        </Link>
+          <Link
+            href="/checkout"
+            className="flex-1 px-3 md:px-6 py-2 md:py-3 text-accent-foreground font-bold rounded-lg transition-smooth flex items-center justify-center text-xs md:text-base"
+            style={{ backgroundColor: '#2b1b13' }}
+          >
+            {t('cart.checkout')}
+          </Link>
+        </div>
       </div>
     </div>
   )

@@ -10,6 +10,8 @@ import { getOrderById } from '@/lib/services/orders'
 
 const STEPS = ['Pending', 'Paid', 'Shipped', 'Delivered']
 
+const TEAL_COLOR = '#1F6F78'
+
 export default function OrderDetailsPage() {
   const params = useParams()
   const [order, setOrder] = useState<any>(null)
@@ -115,17 +117,21 @@ export default function OrderDetailsPage() {
               <div className="text-right">
                 <p className="text-sm text-zinc-500 mb-2">Status</p>
                 <span
-                  className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold ${
-                    order.status === 'Pending'
-                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                      : order.status === 'Paid'
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                        : order.status === 'Shipped'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                          : order.status === 'Delivered'
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                  }`}
+                  className="inline-block px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                  style={{
+                    backgroundColor:
+                      order.status === 'Pending'
+                        ? '#e2a56e'
+                        : order.status === 'Paid'
+                          ? '#1f6f78'
+                          : order.status === 'Shipped'
+                            ? '#2b1b13'
+                            : order.status === 'Delivered'
+                              ? '#3e4b3a'
+                              : order.status === 'Cancelled'
+                                ? '#a3291c'
+                                : '#cccccc',
+                  }}
                 >
                   {order.status}
                 </span>
@@ -147,8 +153,11 @@ export default function OrderDetailsPage() {
               <div className="relative">
                 <div className="absolute top-5 left-0 w-full h-1 bg-zinc-200 dark:bg-zinc-800 -z-0 rounded-full"></div>
                 <div
-                  className="absolute top-5 left-0 h-1 bg-green-500 -z-0 transition-all duration-500 rounded-full"
-                  style={{ width: `${statusIndex >= 0 ? (statusIndex / (STEPS.length - 1)) * 100 : 0}%` }}
+                  className="absolute top-5 left-0 h-1 -z-0 transition-all duration-500 rounded-full"
+                  style={{
+                    backgroundColor: TEAL_COLOR,
+                    width: `${statusIndex >= 0 ? (statusIndex / (STEPS.length - 1)) * 100 : 0}%`,
+                  }}
                 ></div>
 
                 <div className="relative z-10 flex justify-between w-full">
@@ -158,18 +167,20 @@ export default function OrderDetailsPage() {
                     return (
                       <div key={step} className="flex flex-col items-center">
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-300 ${
-                            isCompleted
-                              ? 'bg-green-500 border-green-500 text-white'
-                              : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-400'
-                          }`}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-300 text-white`}
+                          style={{
+                            backgroundColor: isCompleted ? TEAL_COLOR : '#ffffff',
+                            borderColor: isCompleted ? TEAL_COLOR : '#e5e7eb',
+                            color: isCompleted ? '#ffffff' : '#a3a3a3',
+                          }}
                         >
                           {isCompleted ? <CheckCircle size={18} /> : <div className="w-2 h-2 rounded-full bg-zinc-300" />}
                         </div>
                         <span
-                          className={`mt-3 text-sm font-medium ${
-                            isCurrent ? 'text-green-600' : isCompleted ? 'text-zinc-900 dark:text-zinc-200' : 'text-zinc-400'
-                          }`}
+                          className="mt-3 text-sm font-medium"
+                          style={{
+                            color: isCurrent ? TEAL_COLOR : isCompleted ? '#1f2937' : '#a3a3a3',
+                          }}
                         >
                           {step}
                         </span>
@@ -187,7 +198,7 @@ export default function OrderDetailsPage() {
             <div className="md:col-span-2 space-y-6">
               <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <Package size={20} className="text-orange-500" />
+                  <Package size={20} style={{ color: '#1f6f78' }} />
                   Products
                 </h3>
                 <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -207,7 +218,7 @@ export default function OrderDetailsPage() {
                 </div>
                 <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
                   <span className="font-medium text-zinc-500">Total</span>
-                  <span className="text-xl font-bold text-orange-600">
+                  <span className="text-xl font-bold" style={{ color: '#2b1b13' }}>
                     {order.totalAmount} {order.currency}
                   </span>
                 </div>
@@ -219,7 +230,7 @@ export default function OrderDetailsPage() {
               {/* Address Card */}
               <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <MapPin size={20} className="text-blue-500" />
+                  <MapPin size={20} style={{ color: '#1f6f78' }} />
                   Shipping Address
                 </h3>
                 <p className="font-medium text-zinc-900 dark:text-zinc-100">{order.customerName}</p>
@@ -233,7 +244,7 @@ export default function OrderDetailsPage() {
               {/* Payment Info */}
               <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <CreditCard size={20} className="text-green-500" />
+                  <CreditCard size={20} style={{ color: '#1f6f78' }} />
                   Payment
                 </h3>
                 <div className="space-y-3">
@@ -243,7 +254,7 @@ export default function OrderDetailsPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-500">Status:</span>
-                    <span className="font-medium text-green-600">{order.status}</span>
+                    <span className="font-medium" style={{ color: '#2b1b13' }}>{order.status}</span>
                   </div>
                   {order.paymentTransactionId && (
                     <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800">

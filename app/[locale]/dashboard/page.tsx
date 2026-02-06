@@ -54,7 +54,6 @@ export default function DashboardPage() {
         <div className="flex-1">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-primary dark:text-secondary">My Dashboard</h1>
               <p className="text-muted-foreground mt-2">Loading your data...</p>
             </div>
             <div className="flex items-center justify-center h-64">
@@ -77,7 +76,6 @@ export default function DashboardPage() {
         <div className="flex-1">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-primary dark:text-secondary">My Dashboard</h1>
             </div>
             <div className="glass rounded-xl p-8 border border-destructive/50">
               <p className="text-destructive font-semibold">{error}</p>
@@ -94,10 +92,7 @@ export default function DashboardPage() {
       <Navbar />
       <div className="flex-1">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-primary dark:text-secondary">My Dashboard</h1>
-            <p className="text-muted-foreground mt-2">Manage your account, orders, and rewards</p>
-          </div>
+       
 
           <div className="space-y-12">
             {profile && <UserProfile profile={profile} />}

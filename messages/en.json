@@ -23,7 +23,7 @@
       "supportEmail": "info@duneflame.com",
       "copyright": "© 2025 Dune & Flame L.L.C. All rights reserved.",
       "privacy": "Privacy Policy",
-      "terms": "Terms of Service",
+      "terms": "Terms and Conditions",
       "followUs": "Follow Us"
     },
     "actions": {
@@ -106,16 +106,34 @@
     "title": "Our Products",
     "filters": {
       "title": "Filters",
+      "search": "Search",
+      "searchPlaceholder": "Search by name...",
       "roastLevel": "Roast Level",
       "origin": "Origin",
       "category": "Category",
+      "allCategories": "All Categories",
       "priceRange": "Price Range",
+      "availableRange": "Available Range",
+      "minPrice": "Min Price",
+      "maxPrice": "Max Price",
+      "sortBy": "Sort By",
+      "reset": "Reset",
+      "resetFilters": "Reset Filters",
       "clearAll": "Clear All",
       "light": "Light",
       "lightMedium": "Light-Medium",
       "medium": "Medium",
       "mediumDark": "Medium-Dark",
-      "dark": "Dark"
+      "dark": "Dark",
+      "sortDefault": "Default",
+      "priceLowToHigh": "Price: Low to High",
+      "priceHighToLow": "Price: High to Low",
+      "nameAtoZ": "Name: A-Z",
+      "nameZtoA": "Name: Z-A",
+      "newestFirst": "Newest First",
+      "oldestFirst": "Oldest First",
+      "highestStock": "Highest Stock",
+      "lowestStock": "Lowest Stock"
     },
     "sort": {
       "title": "Sort by",
@@ -301,4 +319,23 @@
       "text": "Loading...",
       "skeleton": "Loading content..."
     }
+  },
+  "pages": {
+    "shop": {
+      "title": "Shop",
+      "description": "Discover our premium collection of specialty coffee from around the world.",
+      "loading": "Loading products...",
+      "noProducts": "No products found",
+      "noResultsTitle": "No Products Found",
+      "noResultsDescription": "Try adjusting your filters or search terms to find what you're looking for.",
+      "resetFilters": "Reset Filters",
+      "showing": "Showing",
+      "of": "of",
+      "products": "products"
+    }
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next"
+  }
 }

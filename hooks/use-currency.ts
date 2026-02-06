@@ -5,6 +5,7 @@ import { CurrencyType } from "@/lib/currency-utils";
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import instance from "@/lib/axios";
+import { setApiClientCurrency } from "@/lib/api-client";
 
 /**
  * Custom hook for currency management
@@ -15,7 +16,7 @@ import instance from "@/lib/axios";
  * When setCurrency is called, it will:
  * 1. Update the currency context
  * 2. Persist to localStorage and cookies
- * 3. Update the X-Currency header for future requests via axios instance
+ * 3. Update the X-Currency header for future requests via axios instance AND apiFetch
  * 4. Refresh Server Components to fetch new data with updated currency
  */
 export function useCurrency() {
@@ -32,6 +33,10 @@ export function useCurrency() {
       if (instance.defaults.headers.common) {
         instance.defaults.headers.common["X-Currency"] = newCurrency;
       }
+
+      // Update apiFetch currency for all future requests
+      // This ensures apiFetch (fetch-based) requests also send the currency header
+      setApiClientCurrency(newCurrency);
 
       // Refresh server components to fetch data with new currency
       // This ensures Server Components receive updated data based on new currency

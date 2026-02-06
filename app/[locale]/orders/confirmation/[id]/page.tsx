@@ -142,6 +142,18 @@ export default function OrderConfirmationPage() {
     )
   }
 
+  const getStatusColor = (status: string) => {
+    const statusLower = status.toLowerCase()
+    const colorMap: { [key: string]: string } = {
+      pending: '#e2a56e',
+      paid: '#1f6f78',
+      shipped: '#2b1b13',
+      delivered: '#3e4b3a',
+      cancelled: '#a3291c',
+    }
+    return colorMap[statusLower] || '#e2a56e'
+  }
+
   const { shippingAddress } = order
 
   return (
@@ -166,9 +178,9 @@ export default function OrderConfirmationPage() {
         </Card>
 
         {/* Order Details */}
-        <Card>
+        <Card style={{ backgroundColor: 'transparent', color: '#2b1b13' }}>
           <CardHeader>
-            <CardTitle className="text-2xl">Order Details</CardTitle>
+            <CardTitle className="text-2xl" style={{ color: '#2b1b13' }}>Order Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -188,13 +200,13 @@ export default function OrderConfirmationPage() {
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Status</p>
-                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold text-white" style={{ backgroundColor: getStatusColor(order.status) }}>
                   {order.status}
                 </div>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Total Amount</p>
-                <p className="font-bold text-2xl text-accent">
+                <p className="font-bold text-2xl" style={{ color: '#2b1b13' }}>
                   <FormattedPrice amount={order.totalAmount} />
                 </p>
               </div>
@@ -233,9 +245,9 @@ export default function OrderConfirmationPage() {
         </Card>
 
         {/* Email Confirmation Alert */}
-        <Alert className="border-blue-500/50 bg-blue-500/5">
-          <AlertCircle className="h-4 w-4 text-blue-500" />
-          <AlertDescription className="text-blue-700 dark:text-blue-300">
+        <Alert className="border-[#1f6f78]/50" style={{ backgroundColor: 'rgba(31, 111, 120, 0.1)' }}>
+          <AlertCircle className="h-4 w-4" style={{ color: '#1f6f78' }} />
+          <AlertDescription style={{ color: '#1f6f78' }}>
             A confirmation email has been sent to your registered email address with order details and
             tracking information.
           </AlertDescription>
@@ -244,9 +256,10 @@ export default function OrderConfirmationPage() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
-            onClick={() => router.push("/profile/orders")}
-            className="flex-1 text-lg py-6"
+            onClick={() => router.push("/dashboard")}
+            className="flex-1 text-lg py-6 text-white"
             size="lg"
+            style={{ backgroundColor: '#2b1b13' }}
           >
             View All Orders
             <ArrowRight className="ml-2 h-5 w-5" />

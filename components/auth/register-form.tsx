@@ -52,7 +52,7 @@ export default function RegisterForm() {
   return (
     <div className="glass rounded-2xl p-8 max-w-md w-full register-form">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-primary dark:text-secondary">{t('auth.register.title')}</h1>
+        <h1 className="font-bold" style={{ color: '#2b1b13', fontSize: '24px', textTransform: 'uppercase' }}>{t('auth.register.title')}</h1>
         <p className="text-muted-foreground mt-2">{t('auth.register.subtitle')}</p>
       </div>
 

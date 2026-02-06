@@ -106,16 +106,34 @@
     "title": "منتجاتنا",
     "filters": {
       "title": "التصفية",
+      "search": "بحث",
+      "searchPlaceholder": "ابحث حسب الاسم...",
       "roastLevel": "مستوى التحميص",
       "origin": "المنشأ",
       "category": "الفئة",
+      "allCategories": "جميع الفئات",
       "priceRange": "نطاق السعر",
+      "availableRange": "النطاق المتاح",
+      "minPrice": "الحد الأدنى للسعر",
+      "maxPrice": "الحد الأقصى للسعر",
+      "sortBy": "ترتيب حسب",
+      "reset": "إعادة تعيين",
+      "resetFilters": "إعادة تعيين المرشحات",
       "clearAll": "مسح الكل",
       "light": "خفيف",
       "lightMedium": "خفيف-متوسط",
       "medium": "متوسط",
       "mediumDark": "متوسط-غامق",
-      "dark": "غامق"
+      "dark": "غامق",
+      "sortDefault": "الترتيب الافتراضي",
+      "priceLowToHigh": "السعر: من الأقل للأعلى",
+      "priceHighToLow": "السعر: من الأعلى للأقل",
+      "nameAtoZ": "الاسم: أ-ي",
+      "nameZtoA": "الاسم: ي-أ",
+      "newestFirst": "الأحدث أولاً",
+      "oldestFirst": "الأقدم أولاً",
+      "highestStock": "أعلى مخزون",
+      "lowestStock": "أقل مخزون"
     },
     "sort": {
       "title": "الترتيب حسب",
@@ -296,4 +314,23 @@
       "text": "جاري التحميل...",
       "skeleton": "جاري تحميل المحتوى..."
     }
+  },
+  "pages": {
+    "shop": {
+      "title": "المتجر",
+      "description": "اكتشف مجموعتنا المميزة من القهوة المتخصصة من جميع أنحاء العالم.",
+      "loading": "جاري تحميل المنتجات...",
+      "noProducts": "لم يتم العثور على منتجات",
+      "noResultsTitle": "لم يتم العثور على منتجات",
+      "noResultsDescription": "حاول تعديل المرشحات أو شروط البحث للعثور على ما تبحث عنه.",
+      "resetFilters": "إعادة تعيين المرشحات",
+      "showing": "عرض",
+      "of": "من",
+      "products": "منتجات"
+    }
+  },
+  "pagination": {
+    "previous": "السابق",
+    "next": "التالي"
+  }
 }

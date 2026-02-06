@@ -12,6 +12,7 @@ let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let isHandlingTokenExpiry = false;
 let currentLocale: string = "en";
+let currentCurrency: string = "AED";
 
 export function getAccessToken(): string | null {
   return accessToken;
@@ -24,6 +25,10 @@ export function getRefreshToken(): string | null {
 export function setTokens(tokens: { accessToken: string; refreshToken: string } | null) {
   accessToken = tokens?.accessToken ?? null;
   refreshToken = tokens?.refreshToken ?? null;
+}
+
+export function setApiClientCurrency(currency: string) {
+  currentCurrency = currency;
 }
 
 function clearAuthAndRedirect() {
@@ -109,6 +114,10 @@ export async function apiFetch<T>(path: string, init: RequestInit & { method?: H
   // Add locale header for language-specific responses
   if (currentLocale) {
     headers["Accept-Language"] = currentLocale;
+  }
+  // Add currency header for currency-specific responses
+  if (currentCurrency) {
+    headers["X-Currency"] = currentCurrency;
   }
 
   const doFetch = async () =>
