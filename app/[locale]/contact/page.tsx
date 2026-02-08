@@ -2,12 +2,17 @@
 
 import type React from "react"
 import { useState } from "react"
+import { useTranslations } from "next-intl"
+import { useLocale } from "next-intl"
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
 import Newsletter from "@/components/home/newsletter"
 import { Mail, Phone, MapPin, Send } from "lucide-react"
 
 export default function ContactPage() {
+  const t = useTranslations("pages.contact")
+  const locale = useLocale()
+  const isArabic = locale === "ar"
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", subject: "", message: "" })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -26,39 +31,39 @@ export default function ContactPage() {
       <div className="flex-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center mb-16">
-            <h1 className="font-bold text-primary dark:text-secondary mb-4 uppercase" style={{ fontSize: '32px' }}>CONTACT INFORMATION</h1>
+            <h1 className="font-bold text-primary dark:text-secondary mb-4 uppercase" style={{ fontSize: '32px' }}>{t("pageTitle")}</h1>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             <div className="glass rounded-xl p-8 text-center">
               <Mail className="w-8 h-8 text-accent mx-auto mb-4" />
-              <h3 className="font-bold mb-2" style={{ color: '#2b1b13' }}>Email</h3>
+              <h3 className="font-bold mb-2" style={{ color: '#2b1b13' }}>{t("emailLabel")}</h3>
               <a href="mailto:hello@duneflame.com" className="hover:underline" style={{ color: '#2b1b13' }}>
                 info@duneflame.com
               </a>
             </div>
             <div className="glass rounded-xl p-8 text-center">
               <Phone className="w-8 h-8 text-accent mx-auto mb-4" />
-              <h3 className="font-bold mb-2" style={{ color: '#2b1b13' }}>Phone</h3>
+              <h3 className="font-bold mb-2" style={{ color: '#2b1b13' }}>{t("phoneLabel")}</h3>
               <a href="tel:+9715251450202" className="hover:underline" style={{ color: '#2b1b13' }}>
-                +971 52 145 0202
+                {t("phone")}
               </a>
             </div>
             <div className="glass rounded-xl p-8 text-center">
               <MapPin className="w-8 h-8 text-accent mx-auto mb-4" />
-              <h3 className="font-bold mb-2" style={{ color: '#2b1b13' }}>Location</h3>
-              <p style={{ color: '#2b1b13' }}>Abu Dhabi, UAE</p>
+              <h3 className="font-bold mb-2" style={{ color: '#2b1b13' }}>{t("locationLabel")}</h3>
+              <p style={{ color: '#2b1b13' }}>{t("location")}</p>
             </div>
           </div>
 
           <div className="glass rounded-2xl p-8">
-            <h2 className="font-bold text-primary dark:text-secondary mb-6 uppercase" style={{ fontSize: '24px' }}>Contact Form</h2>
+            <h2 className="font-bold text-primary dark:text-secondary mb-6 uppercase" style={{ fontSize: '24px' }}>{t("formTitle")}</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <input
                   type="text"
                   name="name"
-                  placeholder="Your Name"
+                  placeholder={t("namePlaceholder")}
                   value={formData.name}
                   onChange={handleChange}
                   className="px-4 py-3 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
@@ -67,7 +72,7 @@ export default function ContactPage() {
                 <input
                   type="email"
                   name="email"
-                  placeholder="Your Email"
+                  placeholder={t("emailPlaceholder")}
                   value={formData.email}
                   onChange={handleChange}
                   className="px-4 py-3 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
@@ -78,9 +83,10 @@ export default function ContactPage() {
               <input
                 type="tel"
                 name="phone"
-                placeholder="Your Phone Number"
+                placeholder={t("phonePlaceholder")}
                 value={formData.phone}
                 onChange={handleChange}
+                dir={isArabic ? "rtl" : "ltr"}
                 className="w-full px-4 py-3 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
                 required
               />
@@ -88,7 +94,7 @@ export default function ContactPage() {
               <input
                 type="text"
                 name="subject"
-                placeholder="Subject"
+                placeholder={t("subjectPlaceholder")}
                 value={formData.subject}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
@@ -97,7 +103,7 @@ export default function ContactPage() {
 
               <textarea
                 name="message"
-                placeholder="Your Message"
+                placeholder={t("messagePlaceholder")}
                 value={formData.message}
                 onChange={handleChange}
                 rows={6}
@@ -111,7 +117,7 @@ export default function ContactPage() {
                 style={{ backgroundColor: '#2b1b13' }}
               >
                 <Send size={20} />
-                Send Message
+                {t("sendButton")}
               </button>
             </form>
           </div>

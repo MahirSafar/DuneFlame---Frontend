@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, Star } from "lucide-react";
+import { ShoppingCart, Star, Zap } from "lucide-react";
 import type { ProductResponse } from "@/lib/services/products";
 import { useAddToCart } from "@/hooks/use-add-to-cart";
 import { useCurrency } from "@/lib/currency-context";
 import { getAvailableWeights, resolvePrice, type ProductWithPricing } from "@/lib/currency-utils";
 import { FormattedPrice } from "@/components/currency/formatted-price";
 import { EMPTY_GUID } from "@/lib/cart-store";
+import { handleBuyNow, getProductCode } from "@/lib/services/payments";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProductDetailApi({ product }: { product: ProductResponse }) {
   const [quantity, setQuantity] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const { addToCart } = useAddToCart();
   const { currency } = useCurrency();
+  const { toast } = useToast();
   
   // Get default weight
   const availableWeights = getAvailableWeights(product);
@@ -32,6 +36,22 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
       roastLevelId: EMPTY_GUID,
       grindTypeId: EMPTY_GUID,
     });
+  };
+
+  const handleBuyNowClick = async () => {
+    try {
+      setIsLoading(true);
+      const productCode = getProductCode(product.name);
+      await handleBuyNow(productCode, quantity);
+    } catch (error) {
+      console.error("Buy Now error:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to process purchase",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -97,11 +117,20 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
 
           <button
             onClick={handleAddToCart}
-            disabled={product.stockInKg <= 0}
+            disabled={product.stockInKg <= 0 || isLoading}
             className="w-full px-6 py-3 bg-accent hover:bg-accent/90 disabled:opacity-70 text-accent-foreground font-bold rounded-lg transition-smooth flex items-center justify-center gap-2 glow-accent"
           >
             <ShoppingCart size={20} />
             Add to Cart
+          </button>
+
+          <button
+            onClick={handleBuyNowClick}
+            disabled={product.stockInKg <= 0 || isLoading}
+            className="w-full px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-70 text-primary-foreground font-bold rounded-lg transition-smooth flex items-center justify-center gap-2"
+          >
+            <Zap size={20} />
+            {isLoading ? "Processing..." : "Buy Now"}
           </button>
         </div>
       </div>

@@ -53,6 +53,7 @@ const rubberBandStyles = `
 
 import { useEffect, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
+import { useLocale } from "next-intl";
 import { getCategories, getRoastLevels, getOrigins, type Category, type Origin, type RoastLevel } from "@/lib/services/products";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
@@ -90,6 +91,8 @@ export default function ShopFilters({
   currency = "AED" as CurrencyType,
 }: ShopFiltersProps) {
   const t = useTranslations();
+  const locale = useLocale();
+  const isArabic = locale === "ar";
   const currencySymbol = getCurrencySymbol(currency);
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -325,8 +328,8 @@ export default function ShopFilters({
   return (
     <>
       <style>{rubberBandStyles}</style>
-      <aside className="glass rounded-xl p-6 h-fit lg:sticky lg:top-24 w-full lg:w-80">
-        <div className="flex items-center justify-between mb-6">
+      <aside className="glass rounded-xl p-6 h-fit lg:sticky lg:top-24 w-full lg:w-80" dir={isArabic ? "rtl" : "ltr"}>
+        <div className={`flex items-center justify-between mb-6 ${isArabic ? "flex-row-reverse" : ""}`}>
           <h2 className="text-lg font-bold uppercase" style={{ color: "#2b1b13" }}>
             {t("products.filters.title")}
           </h2>
@@ -503,7 +506,7 @@ export default function ShopFilters({
           className="w-full flex justify-between items-center mb-3 text-sm font-semibold transition-smooth uppercase"
           style={{ color: "#2b1b13" }}
         >
-          Price Range
+          {t("products.filters.priceRange")}
           <ChevronDown
             size={18}
             className={`transition-transform rtl:rotate-180 ${

@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
-import { useLocale } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { MapPin, Package, AlertCircle, Loader2 } from "lucide-react"
 import { useCartStore, getItemPrice } from "@/lib/cart-store"
 import { useCurrency } from "@/lib/currency-context"
-import { apiFetch, setTokens } from "@/lib/api-client"
+import { apiFetch, setTokens, setApiClientLocale } from "@/lib/api-client"
 import { basketService } from "@/lib/services/basket"
+import { getProduct } from "@/lib/services/products"
 import { useAuthStore } from "@/lib/auth-store"
 import { getMyRewards } from "@/lib/services/rewards"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -69,17 +70,55 @@ function PaymentContent({
   orderId,
   isProcessing,
   setIsProcessing,
+  orderTotal,
+  t,
 }: {
   onClose: () => void
   orderId: string | null
   isProcessing: boolean
   setIsProcessing: (val: boolean) => void
+  orderTotal: number
+  t: any
 }) {
   const stripe = useStripe()
   const elements = useElements()
   const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [isPaymentElementReady, setIsPaymentElementReady] = useState(false)
+
+  // Check if this is a zero-amount order
+  const isZeroAmount = orderTotal <= 0
 
   const handlePayNow = async () => {
+    // For zero-amount orders, finalize without Stripe
+    if (isZeroAmount) {
+      setIsProcessing(true)
+      setPaymentError(null)
+
+      try {
+        if (!orderId) {
+          throw new Error("Order ID is missing")
+        }
+
+        console.log("✅ ZERO AMOUNT ORDER - Finalizing without Stripe payment")
+        
+        // Clear cart
+        useCartStore.getState().clearCart()
+        
+        // Redirect to confirmation page
+        if (typeof window !== "undefined") {
+          window.location.href = `/orders/confirmation/${orderId}`
+        } else {
+          throw new Error("Cannot redirect: window object not available")
+        }
+      } catch (error) {
+        console.error("Zero-amount order finalization error:", error)
+        setPaymentError(error instanceof Error ? error.message : "Failed to finalize order")
+        setIsProcessing(false)
+      }
+      return
+    }
+
+    // For paid orders, use Stripe
     if (!stripe || !elements) {
       setPaymentError("Payment system is not ready. Please refresh the page.")
       return
@@ -89,6 +128,25 @@ function PaymentContent({
     setPaymentError(null)
 
     try {
+      if (typeof window === "undefined") {
+        throw new Error("Payment system is not available in this environment")
+      }
+
+      // CHECK 1: Verify PaymentElement is actually mounted
+      const paymentElement = elements.getElement(PaymentElement)
+      if (!paymentElement) {
+        console.error("❌ Payment Element not found/mounted. Aborting confirmPayment.")
+        throw new Error("Payment Element is not mounted. Please refresh the page and try again.")
+      }
+
+      // CHECK 2: Verify PaymentElement is ready before proceeding
+      if (!isPaymentElementReady) {
+        console.error("❌ Payment Element is not ready yet. User clicked too fast.")
+        throw new Error("Payment system is still loading. Please wait a moment and try again.")
+      }
+
+      console.log("✅ Payment Element verified as mounted and ready. Proceeding with confirmPayment.")
+
       const result = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -114,7 +172,14 @@ function PaymentContent({
         const confirmationPath = orderId
           ? `/orders/confirmation/${orderId}`
           : "/profile/orders"
-        window.location.href = confirmationPath
+        
+        // Safely redirect using window.location
+        if (typeof window !== "undefined") {
+          window.location.href = confirmationPath
+        } else {
+          console.warn("Cannot redirect: window object not available")
+          setPaymentError("Payment succeeded but redirection failed. Please refresh the page.")
+        }
       } else {
         const status = result.paymentIntent?.status || "unknown"
         if (status === "processing") {
@@ -135,34 +200,54 @@ function PaymentContent({
 
   return (
     <div className="space-y-4 w-full">
-      <div className="w-full overflow-x-hidden">
-        <PaymentElement />
-      </div>
+      {/* Only render PaymentElement for paid orders */}
+      {!isZeroAmount && (
+        <div className="w-full overflow-x-hidden">
+          <PaymentElement
+            options={{
+              layout: 'tabs',
+            }}
+            onReady={() => {
+              console.log("✅ PaymentElement is now ready")
+              setIsPaymentElementReady(true)
+            }}
+          />
+        </div>
+      )}
+
       {paymentError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{paymentError}</AlertDescription>
         </Alert>
       )}
+
       <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
         <Button
           type="button"
           className="flex-1"
           onClick={handlePayNow}
-          disabled={isProcessing}
+          disabled={isProcessing || (!isZeroAmount && !isPaymentElementReady)}
           style={{ backgroundColor: '#1f6f78', color: '#fff' }}
         >
           {isProcessing ? (
             <span className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Processing...
+              {isZeroAmount ? t("processing") : t("processing")}
             </span>
+          ) : !isZeroAmount && !isPaymentElementReady ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading...
+            </span>
+          ) : isZeroAmount ? (
+            "Complete Free Order"
           ) : (
-            "Pay Now"
+            t("payNow")
           )}
         </Button>
         <Button type="button" variant="outline" onClick={onClose} disabled={isProcessing} className="sm:flex-none">
-          Cancel
+          {t("cancel")}
         </Button>
       </div>
     </div>
@@ -174,41 +259,100 @@ function StripePaymentModal({
   onClose,
   clientSecret,
   orderId,
+  orderTotal,
+  currency,
+  t,
 }: {
   open: boolean
   onClose: () => void
   clientSecret: string | null
   orderId: string | null
+  orderTotal: number
+  currency: string
+  t: any
 }) {
   const [isProcessing, setIsProcessing] = useState(false)
+
+  // Check if this is a zero-amount order
+  const isZeroAmount = orderTotal <= 0
+
+  // Log client secret whenever modal opens or clientSecret changes
+  useEffect(() => {
+    if (open && clientSecret) {
+      console.log("📋 STRIPE PAYMENT MODAL OPENED - Client Secret Debug:", {
+        clientSecret: clientSecret,
+        type: typeof clientSecret,
+        clientSecretExists: !!clientSecret,
+        clientSecretLength: clientSecret.length,
+        clientSecretPrefix: clientSecret.substring(0, 30) + "...",
+        isValidFormat: clientSecret.includes("_secret_"),
+        noManipulation: clientSecret === clientSecret.trim() && !clientSecret.includes('\\n') && !clientSecret.includes('\\t'),
+        orderTotal,
+        isZeroAmount,
+        orderId,
+        timestamp: new Date().toISOString(),
+      })
+    }
+  }, [open, clientSecret, orderTotal])
 
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!isProcessing && !val) onClose() }}>
       <DialogContent className="w-[95vw] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Complete your payment</DialogTitle>
+          <DialogTitle>
+            {isZeroAmount ? "Complete Your Order" : t("completePayment")}
+          </DialogTitle>
           <DialogDescription>
-            Your order is created. Please pay to finalize it. Closing without paying keeps it unpaid.
+            {isZeroAmount 
+              ? "Your order will be finalized with the reward points discount applied."
+              : t("paymentInfo")}
           </DialogDescription>
         </DialogHeader>
 
-        {clientSecret && stripePromise ? (
-          <Elements
-            stripe={stripePromise}
-            options={{
-              clientSecret,
-              appearance: { theme: "stripe" },
-            }}
-          >
-            <PaymentContent
-              onClose={onClose}
-              orderId={orderId}
-              isProcessing={isProcessing}
-              setIsProcessing={setIsProcessing}
-            />
-          </Elements>
+        {isZeroAmount ? (
+          // Zero-amount order - no Stripe elements needed
+          <PaymentContent
+            onClose={onClose}
+            orderId={orderId}
+            isProcessing={isProcessing}
+            setIsProcessing={setIsProcessing}
+            orderTotal={orderTotal}
+            t={t}
+          />
+        ) : clientSecret && stripePromise ? (
+          // Paid order - use Stripe Elements
+          <>
+            {console.log("✅ RENDERING ELEMENTS PROVIDER WITH RAW CLIENT SECRET:", {
+              clientSecret: clientSecret,
+              type: typeof clientSecret,
+              clientSecretExists: !!clientSecret,
+              clientSecretLength: clientSecret.length,
+              clientSecretPrefix: clientSecret.substring(0, 30) + "...",
+              isValidFormat: clientSecret.includes("_secret_"),
+              noManipulation: clientSecret === clientSecret.trim() && !clientSecret.includes('\\n'),
+              timestamp: new Date().toISOString(),
+            })}
+            <Elements
+              stripe={stripePromise}
+              options={{
+                clientSecret: clientSecret,
+                appearance: { theme: "stripe" as const },
+              }}
+            >
+              <PaymentContent
+                onClose={onClose}
+                orderId={orderId}
+                isProcessing={isProcessing}
+                setIsProcessing={setIsProcessing}
+                orderTotal={orderTotal}
+                t={t}
+              />
+            </Elements>
+          </>
         ) : (
-          <p className="text-sm text-muted-foreground">Preparing payment...</p>
+          <p className="text-sm text-muted-foreground">
+            {!clientSecret ? "No payment method available - Please go back and try again." : "Preparing payment..."}
+          </p>
         )}
       </DialogContent>
     </Dialog>
@@ -221,6 +365,8 @@ export default function CheckoutForm() {
   const { currency } = useCurrency()
   const { user, accessToken, refreshToken } = useAuthStore()
   const locale = useLocale()
+  const t = useTranslations("checkout")
+  const isArabic = locale === "ar"
 
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     street: "",
@@ -266,7 +412,13 @@ export default function CheckoutForm() {
       try {
         const rewards = await getMyRewards()
         setRewardBalance(rewards.stats.balance)
-      } catch (error) {
+      } catch (error: any) {
+        // Silently handle session expired errors (expected after token expiry)
+        if (error?.message === "Session expired") {
+          console.debug("Skipping reward fetch - session expired");
+          setRewardBalance(0)
+          return
+        }
         console.error("Failed to fetch reward balance:", error)
         setRewardBalance(0)
       } finally {
@@ -288,6 +440,30 @@ export default function CheckoutForm() {
       }))
     }
   }, [user])
+
+  // Ensure locale is set in API client before fetching products
+  useEffect(() => {
+    console.log(`[CheckoutForm] Setting API locale to: ${locale}`)
+    setApiClientLocale(locale)
+  }, [locale])
+
+  // Refresh product names when locale changes
+  useEffect(() => {
+    const refreshProductNames = async () => {
+      const currentItems = useCartStore.getState().items
+      
+      if (currentItems.length === 0) {
+        console.log('[CheckoutForm] No items to display')
+        return
+      }
+
+      // Note: Product translation disabled due to endpoint availability issues
+      // Using product names from cart store data
+      console.log('[CheckoutForm] Using product names from cart store')
+    }
+
+    refreshProductNames()
+  }, [locale])
 
   const handleInputChange = (field: keyof ShippingAddress, value: string) => {
     setShippingAddress((prev) => ({ ...prev, [field]: value }))
@@ -318,11 +494,11 @@ export default function CheckoutForm() {
     } catch (error) {
       console.error("Failed to load cities", error)
       setCities([])
-      setShippingError("Unable to load cities. Please try again.")
+      setShippingError(t("unableToLoadCities"))
     } finally {
       setIsLoadingCities(false)
     }
-  }, [])
+  }, [t])
 
   const fetchCountries = useCallback(async () => {
     setIsLoadingCountries(true)
@@ -346,11 +522,11 @@ export default function CheckoutForm() {
     } catch (error) {
       console.error("Failed to load countries", error)
       setCountries([])
-      setShippingError("Unable to load shipping countries. Please try again.")
+      setShippingError(t("unableToLoadCountries"))
     } finally {
       setIsLoadingCountries(false)
     }
-  }, [currency, selectedCountryId])
+  }, [currency, selectedCountryId, t])
 
   useEffect(() => {
     fetchCountries()
@@ -397,33 +573,33 @@ export default function CheckoutForm() {
     // Validate guest info if not logged in
     if (!user) {
       if (!shippingAddress.firstName?.trim()) {
-        newErrors.firstName = "First name is required"
+        newErrors.firstName = t("validationMessages.firstNameRequired")
       }
       if (!shippingAddress.lastName?.trim()) {
-        newErrors.lastName = "Last name is required"
+        newErrors.lastName = t("validationMessages.lastNameRequired")
       }
       if (!shippingAddress.email?.trim()) {
-        newErrors.email = "Email is required"
+        newErrors.email = t("validationMessages.emailRequired")
       }
       if (!shippingAddress.phoneNumber?.trim()) {
-        newErrors.phoneNumber = "Phone number is required"
+        newErrors.phoneNumber = t("validationMessages.phoneRequired")
       }
     }
 
     if (!shippingAddress.street.trim()) {
-      newErrors.street = "Street address is required"
+      newErrors.street = t("validationMessages.streetAddressRequired")
     }
     if (!shippingAddress.city.trim()) {
-      newErrors.city = "City is required"
+      newErrors.city = t("validationMessages.cityRequired")
     }
     if (!shippingAddress.state.trim()) {
-      newErrors.state = "State is required"
+      newErrors.state = t("validationMessages.stateRequired")
     }
     if (!shippingAddress.postalCode.trim()) {
-      newErrors.postalCode = "Postal code is required"
+      newErrors.postalCode = t("validationMessages.postalCodeRequired")
     }
     if (!shippingAddress.country.trim()) {
-      newErrors.country = "Country is required"
+      newErrors.country = t("validationMessages.countryRequired")
     }
 
     setErrors(newErrors)
@@ -438,19 +614,90 @@ export default function CheckoutForm() {
       // STEP 0: Get current state from Zustand store
       const storeState = useCartStore.getState()
       const currentItems = storeState.items
+      const authState = useAuthStore.getState()
+      
+      // CRITICAL CLEANUP: Clear any old guest basket ID when authenticated user proceeds to checkout
+      if (authState.accessToken && typeof window !== "undefined") {
+        localStorage.removeItem("df_guest_basket_id");
+        console.log("[Checkout] ✅ Cleared any old guest basket ID - authenticated user proceeding");
+      }
       
       console.log("📦 STORE STATE AT CHECKOUT:", {
         itemsCount: currentItems.length,
         itemNames: currentItems.map(i => i.name),
+        hasAccessToken: !!authState.accessToken,
+        hasUser: !!authState.user,
       })
 
       // Determine consistent basketId for entire function
       let basketId: string
-      if (user?.id) {
-        basketId = user.id
+      
+      // v17 KEY FIX: Check for accessToken ONLY (not user?.id) - indicates authenticated state
+      // user object may be null during hydration/page reload even with valid token
+      const isAuthenticated = !!authState.accessToken
+      
+      if (isAuthenticated) {
+        // FOR AUTHENTICATED USERS: NEVER use guest_ ID - ALWAYS fetch UUID from backend
+        console.log("🔐 AUTHENTICATED USER DETECTED - Fetching UUID basket ID...");
+        
+        // v16 CRITICAL: Retry logic with backend sync wait
+        let userBasketId: string | null = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        // Keep retrying until we get a valid UUID (not guest_)
+        while (retryCount < maxRetries && !userBasketId) {
+          retryCount++;
+          
+          if (retryCount > 1) {
+            console.log(`⏱️ RETRY ${retryCount}/${maxRetries}: Waiting 2 seconds for backend sync...`);
+            setPaymentError("Finalizing your secure basket...");
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+          
+          const candidateId = await authState.fetchAndStoreBasketId();
+          
+          if (candidateId && !candidateId.startsWith("guest_")) {
+            // Valid UUID received
+            userBasketId = candidateId;
+            console.log(`✅ RETRY ${retryCount}: Got valid UUID:`, userBasketId);
+          } else if (candidateId?.startsWith("guest_")) {
+            console.warn(`⚠️ RETRY ${retryCount}: Backend still syncing (got guest_ ID):`, candidateId);
+          } else {
+            console.warn(`⚠️ RETRY ${retryCount}: Backend returned null, will retry...`);
+          }
+        }
+        
+        // After 3 retries, if still no UUID, redirect to cart
+        if (!userBasketId) {
+          console.error("❌ CRITICAL: Failed to get valid basketId after 3 retries. Redirecting to cart...");
+          setPaymentError("Your basket is being prepared. Please refresh your cart and try again.");
+          setIsInitializingPayment(false);
+          
+          // Redirect to cart page
+          setTimeout(() => {
+            if (typeof window !== "undefined") {
+              window.location.href = "/cart";
+            }
+          }, 2000);
+          return;
+        }
+        
+        basketId = userBasketId;
+        
+        // Validate basketId is UUID format (final sanity check)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(basketId)) {
+          console.error("❌ INVALID BASKET ID FORMAT:", basketId);
+          throw new Error("Invalid basket ID. Please go back to your cart and try again.");
+        }
+        
+        console.log("🔑 Using authenticated user basketId (UUID):", basketId);
+        setPaymentError(null);  // Clear "Finalizing..." message
       } else {
         // For guests, generate ONCE and reuse throughout
-        basketId = "guest_" + Math.random().toString(36).substring(2, 11)
+        basketId = "guest_" + Math.random().toString(36).substring(2, 11);
+        console.log("👤 GUEST MODE - Generated guest basketId:", basketId);
       }
 
       console.log("🔑 BASKET ID DETERMINED:", basketId)
@@ -490,26 +737,96 @@ export default function CheckoutForm() {
           console.log("✅ BASKET FORCE SYNCED TO REDIS:", basketId)
         } catch (syncError) {
           console.error("❌ CRITICAL: Failed to sync basket to Redis:", syncError)
-          throw new Error("Failed to sync basket. Please try again.")
+          throw new Error(t("failedSyncBasket"))
         }
       } else {
         console.warn("⚠️ EMPTY BASKET: No items to sync")
-        throw new Error("Your basket is empty. Please add items before checkout.")
+        throw new Error(t("emptyBasket"))
       }
 
-      // STEP 2: Create order with same consistent basketId
+      // STEP 2: RE-VALIDATE basketId 1 second before payment (ensure latest UUID for authenticated)
+      console.log("⏱️ VALIDATION PAUSE: Waiting 1 second before order creation...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // For authenticated users, force-refresh basketId one more time
+      if (isAuthenticated) {
+        console.log("🔄 RE-FETCHING basketId for authenticated user (final check)...");
+        const freshBasketId = await authState.fetchAndStoreBasketId();
+        
+        if (freshBasketId && !freshBasketId.startsWith("guest_")) {
+          basketId = freshBasketId;
+          console.log("✅ Up-to-date basketId retrieved:", basketId);
+        } else {
+          console.warn("⚠️ Could not fetch fresh basketId, using previously validated one:", basketId);
+        }
+      }
+
+      // STEP 3: Create order with same consistent basketId
       console.log("📋 PAYLOAD CHECK (BEFORE ORDER):", {
         basketId: basketId,
         itemsCount: currentItems.length,
         currency: currency.toUpperCase(),
         shippingAddress: shippingAddress,
+        isAuthenticated: isAuthenticated,
       })
+
+      // v17: AGGRESSIVE - Force populate user data in checkout payload
+      // Get FRESH user data directly from Zustand store
+      const freshAuthState = useAuthStore.getState();
+      const freshUser = freshAuthState.user;
+      
+      console.log("[Checkout Debug] AUTH STATE USER (Closure):", authState.user);
+      console.log("[Checkout Debug] AUTH STATE USER (Fresh from Zustand):", freshUser);
+      console.log("[Checkout Debug] Is Authenticated:", isAuthenticated);
+      console.log("[Checkout Debug] Access Token exists:", !!authState.accessToken);
+
+      const finalShippingAddress = { ...shippingAddress };
+
+      // AGGRESSIVE: Use FRESH user data from Zustand, not closure value
+      // Account for nested user object structure
+      if (isAuthenticated && freshUser) {
+        // Extract data safely from nested structure (backend may return nested user object)
+        const userObj = (freshUser as any)?.user || freshUser;
+        const extractedFirstName = userObj?.firstName || freshUser?.firstName || "";
+        const extractedLastName = userObj?.lastName || freshUser?.lastName || "";
+        const extractedEmail = userObj?.email || freshUser?.email || "";
+
+        console.log("[Checkout] 🔴 AGGRESSIVE POPULATION - Using fresh user data:", {
+          firstName: extractedFirstName,
+          lastName: extractedLastName,
+          email: extractedEmail,
+        });
+
+        // Fill missing required fields (or OVERRIDE if empty)
+        if (!finalShippingAddress.firstName?.trim()) {
+          finalShippingAddress.firstName = extractedFirstName;
+          console.log("[Checkout] 📝 Set firstName:", finalShippingAddress.firstName);
+        }
+        if (!finalShippingAddress.lastName?.trim()) {
+          finalShippingAddress.lastName = extractedLastName;
+          console.log("[Checkout] 📝 Set lastName:", finalShippingAddress.lastName);
+        }
+        if (!finalShippingAddress.email?.trim()) {
+          finalShippingAddress.email = extractedEmail;
+          console.log("[Checkout] 📝 Set email:", finalShippingAddress.email);
+        }
+
+        // Ensure phoneNumber is never empty for the API
+        if (!finalShippingAddress.phoneNumber?.trim()) {
+          finalShippingAddress.phoneNumber = "00000000";
+          console.log("[Checkout] 📝 Set default phoneNumber:", finalShippingAddress.phoneNumber);
+        }
+      } else {
+        console.warn("[Checkout] ⚠️ NOT populating user data - isAuthenticated:", isAuthenticated, "freshUser:", freshUser);
+      }
+
+      console.log("[Checkout] 🎯 FINAL PAYLOAD - ShippingAddress:", finalShippingAddress);
 
       const orderResponse = await apiFetch<{ id: string; clientSecret?: string }>("/orders", {
         method: "POST",
         body: JSON.stringify({
-          basketId: basketId,  // SAME ID as updateBasket
-          shippingAddress,
+          basketId: basketId,
+          shippingAddress: finalShippingAddress,
           currency: currency.toUpperCase(),
           usePoints: usePoints,
           languageCode: locale,
@@ -519,29 +836,127 @@ export default function CheckoutForm() {
       console.log("✅ ORDER CREATED:", {
         orderId: orderResponse?.id,
         basketIdUsed: basketId,
+        payloadShippingAddress: finalShippingAddress,
       })
 
       setOrderId(orderResponse?.id || null)
 
-      // STEP 3: Get payment intent
+      // STEP 3: Check if payment is zero (rewards cover everything)
+      // Calculate order total to determine if Stripe is needed
+      const subtotal = total(currency)
+      const selectedCountry = countries.find((country) => country.id === selectedCountryId)
+      const rateObj = selectedCountry?.shippingRates.find((r) =>
+        String(r.currency).toUpperCase() === currency.toUpperCase()
+      )
+      
+      let shipping = rateObj?.cost ?? 0
+      const isUAE = selectedCountry?.code === "AE"
+      const freeShippingThreshold = currency === "USD" ? 55 : 200
+      const qualifiesForFreeShipping = subtotal >= freeShippingThreshold && isUAE
+      
+      if (qualifiesForFreeShipping) {
+        shipping = 0
+      }
+      
+      const subtotalWithShipping = subtotal + shipping
+      const rewardDiscount = usePoints ? Math.min(rewardBalance, subtotalWithShipping) : 0
+      const calculatedOrderTotal = subtotalWithShipping - rewardDiscount
+      const isZeroPayment = calculatedOrderTotal <= 0
+
+      console.log("💰 PAYMENT CHECK:", {
+        subtotal,
+        shipping,
+        subtotalWithShipping,
+        rewardDiscount,
+        calculatedOrderTotal,
+        isZeroPayment,
+      })
+
+      // If order total is 0 (rewards cover everything), skip Stripe and redirect
+      if (isZeroPayment) {
+        console.log("🎉 ZERO PAYMENT ORDER - Skipping Stripe, redirecting to confirmation")
+        useCartStore.getState().clearCart()
+        setSuccessMessage(t("orderCreatedSuccess"))
+        
+        // Redirect directly to confirmation page
+        if (typeof window !== "undefined") {
+          window.location.href = `/orders/confirmation/${orderResponse?.id || ""}`
+        }
+        setIsInitializingPayment(false)
+        return
+      }
+
+      // STEP 4: Get payment intent for non-zero payments
       let clientSecretValue: string | undefined
+
+      console.log("🔍 FETCHING CLIENT SECRET...")
 
       if (orderResponse?.clientSecret) {
         clientSecretValue = orderResponse.clientSecret
+        console.log("✅ CLIENT SECRET FROM ORDER RESPONSE (RAW STRING):", {
+          clientSecret: clientSecretValue,
+          type: typeof clientSecretValue,
+          clientSecretExists: !!clientSecretValue,
+          clientSecretLength: clientSecretValue?.length,
+          clientSecretPrefix: clientSecretValue?.substring(0, 20) + "...",
+          isValidFormat: clientSecretValue?.includes("_secret_"),
+          timestamp: new Date().toISOString(),
+        })
       } else {
+        console.warn("⚠️ No clientSecret in orderResponse, fetching from /payments endpoint...")
         const paymentResponse = await apiFetch<{ clientSecret: string }>(`/payments/${basketId}`, {
           method: "POST",
         })
         clientSecretValue = paymentResponse?.clientSecret
+        console.log("✅ CLIENT SECRET FROM PAYMENTS ENDPOINT (RAW STRING):", {
+          clientSecret: clientSecretValue,
+          type: typeof clientSecretValue,
+          clientSecretExists: !!clientSecretValue,
+          clientSecretLength: clientSecretValue?.length,
+          clientSecretPrefix: clientSecretValue?.substring(0, 20) + "...",
+          isValidFormat: clientSecretValue?.includes("_secret_"),
+          timestamp: new Date().toISOString(),
+        })
       }
 
       if (!clientSecretValue) {
         throw new Error("Missing client secret from payment intent")
       }
 
+      // Verify it's a raw string, not JSON or other format
+      if (typeof clientSecretValue !== "string") {
+        console.error("❌ CLIENT SECRET IS NOT A STRING:", {
+          type: typeof clientSecretValue,
+          value: clientSecretValue,
+        })
+        throw new Error("Client secret must be a raw string")
+      }
+
+      if (!clientSecretValue.includes("_secret_")) {
+        console.error("❌ INVALID CLIENT SECRET FORMAT:", {
+          clientSecret: clientSecretValue,
+          type: typeof clientSecretValue,
+          length: clientSecretValue.length,
+        })
+        throw new Error("Invalid client secret format received from backend")
+      }
+
+      // NO string manipulation - passing raw string directly
+      console.log("🎯 FINAL CLIENT SECRET (NO MANIPULATION - RAW STRING):", {
+        clientSecret: clientSecretValue,
+        type: typeof clientSecretValue,
+        clientSecretExists: !!clientSecretValue,
+        clientSecretLength: clientSecretValue.length,
+        firstChars: clientSecretValue.substring(0, 30) + "...",
+        orderId: orderResponse?.id,
+        basketId: basketId,
+        timestamp: new Date().toISOString(),
+      })
+
+      // Set the raw clientSecret directly without any manipulation
       setClientSecret(clientSecretValue)
       setIsPaymentModalOpen(true)
-      setSuccessMessage("Order created successfully. Please complete payment.")
+      setSuccessMessage(t("orderCreatedSuccess"))
     } catch (error) {
       console.error("❌ CHECKOUT ERROR:", error)
       const message = error instanceof Error ? error.message : "Unable to start checkout process"
@@ -568,7 +983,18 @@ export default function CheckoutForm() {
   const rateObj = selectedCountry?.shippingRates.find((r) =>
     String(r.currency).toUpperCase() === currency.toUpperCase()
   )
-  const shipping = rateObj?.cost ?? 0
+  
+  // FREE SHIPPING CAMPAIGN LOGIC
+  // IF subtotal >= $200 USD (or 734 AED) AND country is UAE (AE), THEN shipping = 0
+  let shipping = rateObj?.cost ?? 0
+  const isUAE = selectedCountry?.code === "AE"
+  const freeShippingThreshold = currency === "USD" ? 55 : 200 // 734 AED ≈ 200 USD at 3.67 rate
+  const qualifiesForFreeShipping = subtotal >= freeShippingThreshold && isUAE
+  
+  if (qualifiesForFreeShipping) {
+    shipping = 0
+  }
+  
   const subtotalWithShipping = subtotal + shipping
   
   // Calculate reward discount
@@ -576,7 +1002,19 @@ export default function CheckoutForm() {
   const orderTotal = subtotalWithShipping - rewardDiscount
 
   // Debug log
-  console.log("Selected Country Rates:", selectedCountry?.shippingRates, "App Currency:", currency)
+  console.log("📦 Checkout Pricing:", {
+    subtotal,
+    selectedCountry: selectedCountry?.name,
+    countryCode: selectedCountry?.code,
+    isUAE,
+    freeShippingThreshold,
+    qualifiesForFreeShipping,
+    shipping,
+    subtotalWithShipping,
+    rewardDiscount,
+    orderTotal,
+    currency,
+  })
 
   return (
     <>
@@ -588,7 +1026,7 @@ export default function CheckoutForm() {
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <MapPin className="text-accent h-6 w-6" />
-                  <CardTitle className="text-2xl" style={{ color: '#4B2E2B' }}>Shipping Address</CardTitle>
+                  <CardTitle className="text-2xl" style={{ color: '#4B2E2B' }}>{t("shippingAddress")}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -604,12 +1042,12 @@ export default function CheckoutForm() {
                 {/* Guest Checkout - Show guest info fields if not logged in */}
                 {!user && (
                   <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Guest Checkout - Please enter your information</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">{t("guestCheckout")}</h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label htmlFor="firstName" className="text-sm font-medium">
-                          First Name
+                          {t("firstName")}
                         </label>
                         <Input
                           id="firstName"
@@ -625,7 +1063,7 @@ export default function CheckoutForm() {
 
                       <div className="space-y-2">
                         <label htmlFor="lastName" className="text-sm font-medium">
-                          Last Name
+                          {t("lastName")}
                         </label>
                         <Input
                           id="lastName"
@@ -641,7 +1079,7 @@ export default function CheckoutForm() {
 
                       <div className="space-y-2">
                         <label htmlFor="email" className="text-sm font-medium">
-                          Email
+                          {t("email")}
                         </label>
                         <Input
                           id="email"
@@ -657,7 +1095,7 @@ export default function CheckoutForm() {
 
                       <div className="space-y-2">
                         <label htmlFor="phoneNumber" className="text-sm font-medium">
-                          Phone Number
+                          {t("phone")}
                         </label>
                         <Input
                           id="phoneNumber"
@@ -676,7 +1114,7 @@ export default function CheckoutForm() {
 
                 <div className="space-y-2">
                   <label htmlFor="street" className="text-sm font-medium">
-                    Street Address
+                    {t("streetAddress")}
                   </label>
                   <Input
                     id="street"
@@ -692,7 +1130,7 @@ export default function CheckoutForm() {
 
                 <div className="space-y-2">
                   <label htmlFor="state" className="text-sm font-medium">
-                    State / Region
+                    {t("stateRegion")}
                   </label>
                   <Input
                     id="state"
@@ -709,7 +1147,7 @@ export default function CheckoutForm() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="postalCode" className="text-sm font-medium">
-                      Postal Code
+                      {t("postalCode")}
                     </label>
                     <Input
                       id="postalCode"
@@ -725,7 +1163,7 @@ export default function CheckoutForm() {
 
                   <div className="space-y-2">
                     <label htmlFor="country" className="text-sm font-medium">
-                      Country
+                      {t("country")}
                     </label>
                     <Select
                       value={selectedCountryId}
@@ -738,7 +1176,7 @@ export default function CheckoutForm() {
                         aria-invalid={!!errors.country}
                         aria-busy={isLoadingCountries}
                       >
-                        <SelectValue placeholder="Select country" />
+                        <SelectValue placeholder={t("selectCountry")} />
                       </SelectTrigger>
                       <SelectContent>
                         {countries.map((country) => (
@@ -757,7 +1195,7 @@ export default function CheckoutForm() {
 
                 <div className="space-y-2">
                   <label htmlFor="city" className="text-sm font-medium">
-                    City
+                    {t("city")}
                   </label>
                   <Select
                     value={shippingAddress.city}
@@ -771,7 +1209,7 @@ export default function CheckoutForm() {
                       aria-busy={isLoadingCities}
                     >
                       <SelectValue
-                        placeholder={selectedCountryId ? "Select city" : "Select country first"}
+                        placeholder={selectedCountryId ? t("selectCity") : t("selectCountryFirst")}
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -794,7 +1232,7 @@ export default function CheckoutForm() {
               style={{ backgroundColor: '#2b1b13', color: '#fff' }}
               disabled={isInitializingPayment}
             >
-              {isInitializingPayment ? "Preparing Payment..." : "Proceed to Payment"}
+              {isInitializingPayment ? t("preparingPayment") : t("proceedToPayment")}
             </Button>
           </form>
 
@@ -814,7 +1252,7 @@ export default function CheckoutForm() {
             <CardHeader>
               <div className="flex items-center gap-3">
                 <Package className="text-accent h-6 w-6" />
-                <CardTitle className="text-2xl" style={{ color: '#4B2E2B' }}>Order Summary</CardTitle>
+                <CardTitle className="text-2xl" style={{ color: '#4B2E2B' }}>{t("summary")}</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -825,7 +1263,7 @@ export default function CheckoutForm() {
                     key={
                       item.variantKey || `${item.id}-${item.productPriceId}-${item.roastLevelId}-${item.grindTypeId}`
                     }
-                    className="flex gap-4"
+                    className={`flex gap-4 ${isArabic ? "flex-row-reverse" : ""}`}
                   >
                     <div className="w-20 h-20 rounded-md overflow-hidden bg-muted shrink-0">
                       {item.imageUrl ? (
@@ -841,10 +1279,10 @@ export default function CheckoutForm() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0" style={{ textAlign: isArabic ? "right" : "left" }}>
                       <h3 className="font-medium text-sm truncate">{item.name}</h3>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Qty: {item.quantity}
+                        {t("quantity")}: {item.quantity}
                       </p>
                       <p className="text-sm font-semibold mt-1">
                         <FormattedPrice amount={getItemPrice(item, currency) * item.quantity} />
@@ -860,24 +1298,42 @@ export default function CheckoutForm() {
               {/* Price Breakdown */}
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <FormattedPrice amount={subtotal} />
-                </div>
-                <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    Shipping {shippingAddress.country && `(${shippingAddress.country})`}
+                    {t("shipping")} {shippingAddress.country && `(${shippingAddress.country})`}
                   </span>
-                  <span className="font-medium">
-                    {selectedCountryId ? <FormattedPrice amount={shipping} /> : "Select country"}
+                  <span className={`font-medium ${qualifiesForFreeShipping ? 'text-accent' : ''}`}>
+                    {selectedCountryId ? (
+                      qualifiesForFreeShipping ? (
+                        <span className="flex items-center gap-2 justify-end">
+                          <span className="line-through text-muted-foreground text-xs">
+                            <FormattedPrice amount={rateObj?.cost ?? 0} />
+                          </span>
+                          <span className="font-bold" style={{ color: '#1f6f78' }}>FREE 🎉</span>
+                        </span>
+                      ) : (
+                        <FormattedPrice amount={shipping} />
+                      )
+                    ) : (
+                      t("selectCountry")
+                    )}
                   </span>
                 </div>
+
+                {/* Free Shipping Info Banner */}
+                {qualifiesForFreeShipping && (
+                  <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(31, 111, 120, 0.1)', borderColor: '#1f6f78' }}>
+                    <p className="text-sm font-medium" style={{ color: '#1f6f78' }}>
+                      {t("freeShippingMessage")}
+                    </p>
+                  </div>
+                )}
 
                 {/* Divider */}
                 <div className="border-t border-border" />
 
                 {/* Subtotal with Shipping */}
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium">Subtotal</span>
+                  <span className="font-medium">{t("subtotal")}</span>
                   <FormattedPrice amount={subtotalWithShipping} />
                 </div>
 
@@ -896,19 +1352,19 @@ export default function CheckoutForm() {
                           htmlFor="usePoints"
                           className="text-sm font-medium cursor-pointer flex-1"
                         >
-                          Use {rewardBalance.toFixed(2)} points
+                          {t("usePoints", { points: rewardBalance.toFixed(2) })}
                         </label>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground ml-7">
-                      You have {rewardBalance.toFixed(2)} points available
+                      {t("pointsAvailable", { points: rewardBalance.toFixed(2) })}
                     </p>
                   </div>
                 )}
 
                 {usePoints && rewardDiscount > 0 && (
                   <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
-                    <span>Reward Discount</span>
+                    <span>{t("rewardDiscount")}</span>
                     <span>-<FormattedPrice amount={rewardDiscount} /></span>
                   </div>
                 )}
@@ -918,7 +1374,7 @@ export default function CheckoutForm() {
 
                 {/* Total */}
                 <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
+                  <span>{t("orderTotal")}</span>
                   <div className="text-right">
                     {usePoints && rewardDiscount > 0 && (
                       <div className="line-through text-muted-foreground text-sm mb-1">
@@ -938,6 +1394,9 @@ export default function CheckoutForm() {
         onClose={() => setIsPaymentModalOpen(false)}
         clientSecret={clientSecret}
         orderId={orderId}
+        orderTotal={orderTotal}
+        currency={currency}
+        t={t}
       />
     </>
   )

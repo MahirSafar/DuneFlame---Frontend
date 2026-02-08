@@ -114,7 +114,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </Link>
 
         <div className="flex items-center justify-between px-4 pb-4 pt-2">
-          <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Signature pick</span>
+          <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('products.card.signaturePick')}</span>
         </div>
 
         {/* Quick View Button - At bottom of card */}
@@ -124,7 +124,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           style={{ backgroundColor: "#2b1b13", color: "white" }}
         >
           <Eye size={16} />
-          QUICK VIEW
+          {t('products.card.quickView')}
         </button>
 
         <ProductVariantModal product={product} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />

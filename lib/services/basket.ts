@@ -39,6 +39,15 @@ export const basketService = {
     method: "GET",
   }),
 
+  // Fetch authenticated user's basket using token
+  // URL: GET /api/v1/basket/me (requires Bearer token)
+  getBasketMe: (token: string) => apiFetch<CustomerBasketDto>(`/basket/me`, { 
+    method: "GET",
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  }),
+
   // Update basket on backend (replaces entire basket)
   // URL: POST /api/v1/basket (ID in body, not in URL)
   // Now accepts full basket object with ID to support guest baskets

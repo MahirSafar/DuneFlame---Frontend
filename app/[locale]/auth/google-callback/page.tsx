@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { setTokens } from "@/lib/api-client";
 import { setAxiosAuthToken } from "@/lib/axios";
 import { useAuthStore } from "@/lib/auth-store";
+import { useCartStore } from "@/lib/cart-store";
 
 export default function GoogleCallbackPage() {
   const searchParams = useSearchParams();
@@ -30,6 +31,10 @@ export default function GoogleCallbackPage() {
         localStorage.setItem("df_tokens", JSON.stringify({ accessToken, refreshToken }));
       }
 
+      // STEP 0: Immediately fetch basketId with the token (no need to wait for state)
+      const fetchAndStoreBasketId = useAuthStore.getState().fetchAndStoreBasketId;
+      fetchAndStoreBasketId(accessToken); // Fire and forget - use provided token to fetch basket
+
       // If backend returned user info, try to parse and set in store
       if (userParam) {
         try {
@@ -43,9 +48,32 @@ export default function GoogleCallbackPage() {
         useAuthStore.setState({ accessToken, refreshToken });
       }
 
-      toast.success("Successfully logged in with Google");
-      // redirect to home / dashboard
-      setTimeout(() => router.replace("/"), 700);
+      // STEP 1: Sync guest cart items to authenticated user's basket
+      (async () => {
+        try {
+          // STEP 2: Sync guest cart items to authenticated user's basket
+          try {
+            const { syncGuestItemsToAuthenticatedBasket } = useCartStore.getState();
+            await syncGuestItemsToAuthenticatedBasket();
+            
+            // After syncing, reload the basket from server
+            const { loadBasket } = useCartStore.getState();
+            await loadBasket();
+            console.log("[GoogleCallback] ✅ Cart synced after Google login");
+          } catch (cartError) {
+            console.error("[GoogleCallback] Failed to sync cart after Google login:", cartError);
+            // Don't break - login was successful
+          }
+
+          toast.success("Successfully logged in with Google");
+          // Redirect to home after a short delay
+          setTimeout(() => router.replace("/"), 700);
+        } catch (error) {
+          console.error("[GoogleCallback] Error during post-login setup:", error);
+          toast.success("Successfully logged in with Google");
+          setTimeout(() => router.replace("/"), 700);
+        }
+      })();
     } catch (e) {
       toast.error("Failed to process Google login");
       router.replace("/auth/login");

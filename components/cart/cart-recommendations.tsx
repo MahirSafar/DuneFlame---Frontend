@@ -2,50 +2,60 @@
 
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
-import type { PagedResult, ProductResponse } from "@/lib/services/products"
+import { useCartStore } from "@/lib/cart-store"
+import type { ProductResponse } from "@/lib/services/products"
 import { getProducts } from "@/lib/services/products"
-import ProductCard from "./product-card"
+import ProductCard from "@/components/products/product-card"
 import { useTranslations } from "next-intl"
 
-interface RelatedProductsProps {
-  categoryId: string
-  currentProductId: string
-}
-
-export default function RelatedProducts({ categoryId, currentProductId }: RelatedProductsProps) {
+export default function CartRecommendations() {
+  const cartItems = useCartStore((state) => state.items)
   const [products, setProducts] = useState<ProductResponse[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const t = useTranslations('products')
 
   useEffect(() => {
-    const fetchRelatedProducts = async () => {
+    const fetchRecommendations = async () => {
       try {
         setLoading(true)
         setError(null)
 
+        // Get first category from cart items, or use popular category
+        let categoryId = ""
+        if (cartItems.length > 0) {
+          // For now, fetch popular products - ideally you'd get category from cart items
+          categoryId = "popular"
+        } else {
+          return // Don't show if cart is empty
+        }
+
+        // Fetch products (you can customize the filters)
         const response = await getProducts({
-          categoryId,
           pageSize: 8,
           pageNumber: 1,
+          // Optionally add filters based on cart items
         })
 
-        // Filter out the current product and limit to 4 items
-        const filtered = (response.items || []).filter((product) => product.id !== currentProductId).slice(0, 4)
+        // Filter out items already in cart and limit to 4 items
+        const cartItemIds = new Set(cartItems.map((item) => item.id))
+        const filtered = (response.items || [])
+          .filter((product) => !cartItemIds.has(product.id))
+          .slice(0, 4)
 
         setProducts(filtered)
       } catch (err) {
-        console.error("Failed to fetch related products:", err)
-        setError("Could not load related products")
+        console.error("Failed to fetch recommendations:", err)
+        setError("Could not load recommendations")
       } finally {
         setLoading(false)
       }
     }
 
-    if (categoryId) {
-      fetchRelatedProducts()
+    if (cartItems.length > 0) {
+      fetchRecommendations()
     }
-  }, [categoryId, currentProductId])
+  }, [cartItems])
 
   if (loading) {
     return (
@@ -73,11 +83,13 @@ export default function RelatedProducts({ categoryId, currentProductId }: Relate
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       viewport={{ once: true, margin: "-100px" }}
-      className="space-y-6 border-t border-white/10 pt-12"
+      className="space-y-6 border-t border-white/10 pt-12 mt-12"
     >
       <div className="space-y-2">
-        <h2 className="font-heading text-[24px] font-bold text-primary dark:text-secondary uppercase">{t('youMayAlsoLike')}</h2>
-        <p className="text-muted-foreground">{t('relatedRecommendations')}</p>
+        <h2 className="font-heading text-[24px] font-bold text-primary dark:text-secondary uppercase">
+          {t('youMayAlsoLike')}
+        </h2>
+        <p className="text-muted-foreground">{t('recommendations')}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">

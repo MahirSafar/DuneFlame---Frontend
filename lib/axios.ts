@@ -37,6 +37,8 @@ instance.interceptors.request.use(
       config.headers["Accept-Language"] = currentLocale;
     }
 
+    console.log(`🌐 [AXIOS] ${config.method?.toUpperCase()} ${config.url} -> Accept-Language=${config.headers?.["Accept-Language"]}, X-Currency=${config.headers?.["X-Currency"]}`);
+
     return config;
   },
   (error) => {

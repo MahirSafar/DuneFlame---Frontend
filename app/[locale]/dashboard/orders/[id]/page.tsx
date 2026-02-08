@@ -3,20 +3,47 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
 import Navbar from '@/components/layout/navbar'
 import Footer from '@/components/layout/footer'
 import { ArrowLeft, MapPin, Package, CreditCard, CheckCircle, Loader2, XCircle } from 'lucide-react'
 import { getOrderById } from '@/lib/services/orders'
-
-const STEPS = ['Pending', 'Paid', 'Shipped', 'Delivered']
+import { useAuthStore } from '@/lib/auth-store'
+import { setTokens } from '@/lib/api-client'
+import { setApiClientLocale } from '@/lib/api-client'
 
 const TEAL_COLOR = '#1F6F78'
 
 export default function OrderDetailsPage() {
   const params = useParams()
+  const locale = useLocale()
+  const isArabic = locale === 'ar'
+  const t = useTranslations('dashboard')
+  
+  const STEPS = [
+    t('orderSteps.pending'),
+    t('orderSteps.paid'),
+    t('orderSteps.shipped'),
+    t('orderSteps.delivered'),
+  ]
+  const STEPS_ENUM = ['Pending', 'Paid', 'Shipped', 'Delivered']
+  const { user, accessToken, refreshToken } = useAuthStore()
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Set tokens from auth store
+  useEffect(() => {
+    if (accessToken && refreshToken) {
+      setTokens({ accessToken, refreshToken })
+    }
+  }, [accessToken, refreshToken])
+
+  // Ensure locale is set in API client before any requests
+  useEffect(() => {
+    console.log(`[Dashboard Orders] Setting API locale to: ${locale}`)
+    setApiClientLocale(locale)
+  }, [locale])
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -45,9 +72,52 @@ export default function OrderDetailsPage() {
     }
   }, [params.id])
 
+  // Refresh product names when order loads or locale changes
+  useEffect(() => {
+    const refreshProductNames = async () => {
+      if (!order || !order.items || order.items.length === 0) {
+        console.log('[Dashboard Orders] No items to refresh')
+        return
+      }
+
+      try {
+        // Ensure locale is set right before fetching
+        console.log(`[Dashboard Orders] Pre-refresh: Setting API locale to: ${locale}`)
+        setApiClientLocale(locale)
+        
+        // Small delay to ensure header is set
+        await new Promise(resolve => setTimeout(resolve, 50))
+        
+        console.log(`[Dashboard Orders] Refreshing product names for locale: ${locale}`)
+        
+        // Try to refetch each product, but don't fail if unavailable
+        // Many orders may have products that are no longer public/available
+        const updatedItems = order.items.map((item: any) => {
+          // For now, just ensure the product name exists from the order data
+          // Product translation endpoint issues will be handled separately
+          return item
+        })
+
+        // Note: Product translation disabled until endpoint is properly configured
+        // Original product names from order data are being used
+        console.log('[Dashboard Orders] Using product names from order data:', updatedItems.map(i => ({ 
+          id: i.id, 
+          productId: i.productId, 
+          productName: i.productName 
+        })))
+      } catch (error) {
+        console.error('Failed to refresh product names:', error)
+        // Silently fail - order data will show original product names
+      }
+    }
+
+    refreshProductNames()
+  }, [order?.id, locale])
+
+
   if (loading) {
     return (
-      <main className="min-h-screen flex flex-col bg-white dark:bg-zinc-950">
+      <main className="min-h-screen flex flex-col bg-white dark:bg-zinc-950" dir={isArabic ? "rtl" : "ltr"}>
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -62,19 +132,19 @@ export default function OrderDetailsPage() {
 
   if (error || !order) {
     return (
-      <main className="min-h-screen flex flex-col bg-white dark:bg-zinc-950">
+      <main className="min-h-screen flex flex-col bg-white dark:bg-zinc-950" dir={isArabic ? "rtl" : "ltr"}>
         <Navbar />
         <div className="flex-1">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <Link
               href="/dashboard"
-              className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-4"
+              className={`inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-4 ${isArabic ? "flex-row-reverse" : ""}`}
             >
-              <ArrowLeft size={16} className="mr-2" />
+              <ArrowLeft size={16} className={isArabic ? "ml-2" : "mr-2"} />
               Back to Dashboard
             </Link>
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
-              <p className="text-red-700 dark:text-red-300 font-semibold">{error || 'Order not found'}</p>
+              <p className="text-red-700 dark:text-red-300 font-semibold" style={{ textAlign: isArabic ? "right" : "left" }}>{error || 'Order not found'}</p>
             </div>
           </div>
         </div>
@@ -84,11 +154,11 @@ export default function OrderDetailsPage() {
   }
 
   // Status-u string-dən indeksinə çevirək
-  const statusIndex = STEPS.indexOf(order.status)
+  const statusIndex = STEPS_ENUM.indexOf(order.status)
   const isCancelled = order.status === 'Cancelled'
 
   return (
-    <main className="min-h-screen flex flex-col bg-white dark:bg-zinc-950">
+    <main className="min-h-screen flex flex-col bg-white dark:bg-zinc-950" dir={isArabic ? "rtl" : "ltr"}>
       <Navbar />
       <div className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -96,16 +166,16 @@ export default function OrderDetailsPage() {
           <div className="mb-8">
             <Link
               href="/dashboard"
-              className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-4"
+              className={`inline-flex items-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-4 ${isArabic ? "flex-row-reverse" : ""}`}
             >
-              <ArrowLeft size={16} className="mr-2" />
-              Back to Dashboard
+              <ArrowLeft size={16} className={isArabic ? "ml-2" : "mr-2"} />
+              {t('backToDashboard')}
             </Link>
-            <div className="flex justify-between items-start">
-              <div>
+            <div className={`flex items-start gap-8 ${isArabic ? "flex-row-reverse text-right" : "justify-between"}`}>
+              <div style={{ textAlign: isArabic ? "right" : "left" }}>
                 <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Order #{order.id.slice(0, 8)}</h1>
                 <p className="text-zinc-500 mt-1">
-                  Created: {new Date(order.createdAt).toLocaleDateString('en-US', {
+                  {t('created')}: {new Date(order.createdAt).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -114,8 +184,8 @@ export default function OrderDetailsPage() {
                   })}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-zinc-500 mb-2">Status</p>
+              <div style={{ textAlign: isArabic ? "left" : "right" }}>
+                <p className="text-sm text-zinc-500 mb-2">{t('status')}</p>
                 <span
                   className="inline-block px-4 py-2 rounded-lg text-sm font-semibold text-white"
                   style={{
@@ -133,41 +203,46 @@ export default function OrderDetailsPage() {
                                 : '#cccccc',
                   }}
                 >
-                  {order.status}
+                  {t(`orderStatus.${order.status.toLowerCase()}`)}
                 </span>
               </div>
             </div>
           </div>
 
           {/* Tracking Bar */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-8 mb-8 shadow-sm">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-8 mb-8 shadow-sm overflow-visible">
             {isCancelled ? (
-              <div className="flex items-center justify-center gap-3 text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+              <div className={`flex items-center justify-center gap-3 text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg ${isArabic ? "flex-row-reverse" : ""}`}>
                 <XCircle size={32} />
-                <div>
-                  <h3 className="font-bold text-lg">Order Cancelled</h3>
-                  <p className="text-sm opacity-80">This order has been cancelled.</p>
+                <div style={{ textAlign: isArabic ? "right" : "left" }}>
+                  <h3 className="font-bold text-lg">{t('orderTracking.orderCancelled')}</h3>
+                  <p className="text-sm opacity-80">{t('orderTracking.orderCancelledDesc')}</p>
                 </div>
               </div>
             ) : (
-              <div className="relative">
-                <div className="absolute top-5 left-0 w-full h-1 bg-zinc-200 dark:bg-zinc-800 -z-0 rounded-full"></div>
+              <div className="relative py-12 px-2">
+                {/* Background line */}
+                <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full"></div>
+                
+                {/* Progress line */}
                 <div
-                  className="absolute top-5 left-0 h-1 -z-0 transition-all duration-500 rounded-full"
+                  className="absolute top-1/2 -translate-y-1/2 h-1 transition-all duration-500 rounded-full"
                   style={{
                     backgroundColor: TEAL_COLOR,
+                    [isArabic ? "right" : "left"]: 0,
                     width: `${statusIndex >= 0 ? (statusIndex / (STEPS.length - 1)) * 100 : 0}%`,
                   }}
                 ></div>
 
-                <div className="relative z-10 flex justify-between w-full">
+                {/* Steps */}
+                <div className={`relative z-10 flex ${isArabic ? "flex-row-reverse" : ""} justify-between w-full`}>
                   {STEPS.map((step, index) => {
                     const isCompleted = index <= statusIndex
                     const isCurrent = index === statusIndex
                     return (
                       <div key={step} className="flex flex-col items-center">
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-300 text-white`}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-300 text-white bg-white dark:bg-zinc-900 relative z-20`}
                           style={{
                             backgroundColor: isCompleted ? TEAL_COLOR : '#ffffff',
                             borderColor: isCompleted ? TEAL_COLOR : '#e5e7eb',
@@ -177,9 +252,11 @@ export default function OrderDetailsPage() {
                           {isCompleted ? <CheckCircle size={18} /> : <div className="w-2 h-2 rounded-full bg-zinc-300" />}
                         </div>
                         <span
-                          className="mt-3 text-sm font-medium"
+                          className="mt-3 text-sm font-medium text-center"
                           style={{
                             color: isCurrent ? TEAL_COLOR : isCompleted ? '#1f2937' : '#a3a3a3',
+                            maxWidth: '80px',
+                            wordWrap: 'break-word',
                           }}
                         >
                           {step}
@@ -199,26 +276,26 @@ export default function OrderDetailsPage() {
               <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                   <Package size={20} style={{ color: '#1f6f78' }} />
-                  Products
+                  {order.items?.length === 1 ? t('products') : t('productsPlural')}
                 </h3>
                 <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   {order.items?.map((item: any) => (
-                    <div key={item.id} className="py-4 flex justify-between items-center first:pt-0 last:pb-0">
-                      <div>
+                    <div key={item.id} className={`py-4 flex items-start gap-4 first:pt-0 last:pb-0 ${isArabic ? "flex-row-reverse" : ""}`}>
+                      <div style={{ textAlign: isArabic ? "right" : "left", flex: 1 }}>
                         <p className="font-semibold text-zinc-900 dark:text-zinc-100">{item.productName}</p>
                         <p className="text-sm text-zinc-500">
                           {item.quantity} qty × {item.unitPrice} {order.currency}
                         </p>
                       </div>
-                      <p className="font-bold text-zinc-900 dark:text-zinc-100">
+                      <p className="font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
                         {(item.quantity * item.unitPrice).toFixed(2)} {order.currency}
                       </p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
-                  <span className="font-medium text-zinc-500">Total</span>
-                  <span className="text-xl font-bold" style={{ color: '#2b1b13' }}>
+                <div className={`mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-4 ${isArabic ? "flex-row-reverse" : ""}`}>
+                  <span className="font-medium text-zinc-500" style={{ textAlign: isArabic ? "right" : "left" }}>{t('total')}</span>
+                  <span className="text-xl font-bold" style={{ color: '#2b1b13', marginLeft: isArabic ? "auto" : "0", marginRight: isArabic ? "0" : "auto" }}>
                     {order.totalAmount} {order.currency}
                   </span>
                 </div>
@@ -231,13 +308,15 @@ export default function OrderDetailsPage() {
               <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                   <MapPin size={20} style={{ color: '#1f6f78' }} />
-                  Shipping Address
+                  {t('shippingAddress')}
                 </h3>
-                <p className="font-medium text-zinc-900 dark:text-zinc-100">{order.customerName}</p>
-                <p className="text-sm text-zinc-500 mt-1 leading-relaxed">{order.shippingAddress}</p>
-                <div className="mt-4 text-xs text-zinc-400 space-y-1">
-                  <p>{order.customerEmail}</p>
-                  <p>{order.customerPhone}</p>
+                <div style={{ textAlign: isArabic ? "right" : "left" }}>
+                  <p className="font-medium text-zinc-900 dark:text-zinc-100">{order.customerName}</p>
+                  <p className="text-sm text-zinc-500 mt-1 leading-relaxed">{order.shippingAddress}</p>
+                  <div className="mt-4 text-xs text-zinc-400 space-y-1">
+                    <p>{order.customerEmail}</p>
+                    <p>{order.customerPhone}</p>
+                  </div>
                 </div>
               </div>
 
@@ -245,20 +324,20 @@ export default function OrderDetailsPage() {
               <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                   <CreditCard size={20} style={{ color: '#1f6f78' }} />
-                  Payment
+                  {t('payment')}
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Method:</span>
-                    <span className="font-medium text-zinc-900 dark:text-zinc-100">Stripe / Card</span>
+                  <div className={`flex items-center gap-4 text-sm ${isArabic ? "flex-row-reverse" : ""}`}>
+                    <span className="text-zinc-500">{t('method')}</span>
+                    <span className="font-medium text-zinc-900 dark:text-zinc-100" style={{ marginLeft: isArabic ? "auto" : "0", marginRight: isArabic ? "0" : "auto" }}>Stripe / Card</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Status:</span>
-                    <span className="font-medium" style={{ color: '#2b1b13' }}>{order.status}</span>
+                  <div className={`flex items-center gap-4 text-sm ${isArabic ? "flex-row-reverse" : ""}`}>
+                    <span className="text-zinc-500">{t('status')}:</span>
+                    <span className="font-medium" style={{ color: '#2b1b13', marginLeft: isArabic ? "auto" : "0", marginRight: isArabic ? "0" : "auto" }}>{order.status}</span>
                   </div>
                   {order.paymentTransactionId && (
-                    <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                      <p className="text-xs text-zinc-500 mb-1">Transaction ID:</p>
+                    <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800" style={{ textAlign: isArabic ? "right" : "left" }}>
+                      <p className="text-xs text-zinc-500 mb-1">{t('transactionId')}</p>
                       <p className="text-xs font-mono text-zinc-700 dark:text-zinc-300 break-all">
                         {order.paymentTransactionId}
                       </p>

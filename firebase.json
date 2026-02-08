@@ -5,19 +5,24 @@
     "rewrites": [
       {
         "source": "/api/v1/**",
-        "run": { "serviceId": "duneflame-frontend", "region": "me-central1" }
+        "run": { 
+          "serviceId": "dune-flame-backend", 
+          "region": "me-central1" 
+        }
       },
       {
-        "source": "/en/api/v1/**",
-        "run": { "serviceId": "duneflame-frontend", "region": "me-central1" }
-      },
-      {
-        "source": "/ar/api/v1/**",
-        "run": { "serviceId": "duneflame-frontend", "region": "me-central1" }
+        "source": "/health",
+        "run": { 
+          "serviceId": "dune-flame-backend", 
+          "region": "me-central1" 
+        }
       },
       {
         "source": "**",
-        "run": { "serviceId": "duneflame-frontend", "region": "me-central1" }
+        "run": { 
+          "serviceId": "duneflame-frontend", 
+          "region": "me-central1" 
+        }
       }
     ]
   }

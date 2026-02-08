@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLocale } from "next-intl";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
 import Newsletter from "@/components/home/newsletter";
@@ -14,7 +15,10 @@ import { Button } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
 
 export default function ProductsPage() {
-  const t = useTranslations();
+  const t = useTranslations("products");
+  const paginationT = useTranslations("pagination");
+  const locale = useLocale();
+  const isArabic = locale === "ar";
   const { currency } = useCurrency(); // Get current currency
   
   // 1. Hook-dan state və funksiyaları götürürük
@@ -105,15 +109,15 @@ export default function ProductsPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen bg-background" dir={isArabic ? "rtl" : "ltr"}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="uppercase mb-2" style={{ color: "#2b1b13", fontSize: "24px", fontWeight: 700 }}>
-              OUR PRODUCTS
+            <h1 className="uppercase mb-2" style={{ color: "#2b1b13", fontSize: "24px", fontWeight: 700, textAlign: isArabic ? "right" : "left" }}>
+              {t("pageTitle")}
             </h1>
-            <p style={{ color: "#2b1b13" }}>
-              Discover our carefully curated selection
+            <p style={{ color: "#2b1b13", textAlign: isArabic ? "right" : "left" }}>
+              {t("description")}
             </p>
           </div>
 
@@ -121,15 +125,15 @@ export default function ProductsPage() {
           <div className="mb-8">
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder={t("searchPlaceholder")}
               value={filters.search || ""}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2"
-              style={{ color: "#2b1b13" }}
+              style={{ color: "#2b1b13", direction: isArabic ? "rtl" : "ltr", textAlign: isArabic ? "right" : "left" }}
             />
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className={`flex flex-col ${isArabic ? "lg:flex-row-reverse" : "lg:flex-row"} gap-8`}>
             {/* LEFT SIDE: FILTERS */}
             <ShopFilters
               filters={filters}
@@ -149,16 +153,16 @@ export default function ProductsPage() {
             {/* RIGHT SIDE: PRODUCTS */}
             <div className="flex-1">
               {/* Top Bar: Results Info + Sort */}
-              <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <p className="text-sm text-muted-foreground">
+              <div className={`mb-6 flex flex-col sm:flex-row items-start sm:items-center ${isArabic ? "sm:flex-row-reverse" : ""} justify-between gap-4`}>
+                <p className="text-sm text-muted-foreground" style={{ textAlign: isArabic ? "right" : "left" }}>
                   {loading ? (
-                    "Loading..."
+                    t("loading")
                   ) : products.length === 0 ? (
-                    "No products found"
+                    t("noProducts")
                   ) : (
                     <>
-                      Showing <span className="font-semibold">{products.length}</span> of{" "}
-                      <span className="font-semibold">{paginationData?.totalCount || 0}</span> products
+                      {t("showing")} <span className="font-semibold">{products.length}</span> {t("of")}{" "}
+                      <span className="font-semibold">{paginationData?.totalCount || 0}</span> {t("products")}
                     </>
                   )}
                 </p>
@@ -170,13 +174,14 @@ export default function ProductsPage() {
                   className="px-4 py-2.5 rounded-lg border-2 border-border bg-white text-foreground text-sm font-semibold hover:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all cursor-pointer uppercase"
                   style={{ 
                     color: "#2b1b13",
+                    direction: isArabic ? "rtl" : "ltr",
                   }}
                 >
-                  <option value="" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>Sort By: Default</option>
-                  <option value="price-asc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>Price: Low to High</option>
-                  <option value="price-desc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>Price: High to Low</option>
-                  <option value="name-asc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>Name: A to Z</option>
-                  <option value="name-desc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>Name: Z to A</option>
+                  <option value="" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>{t("sortByDefault")}</option>
+                  <option value="price-asc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>{t("filters.priceLowToHigh")}</option>
+                  <option value="price-desc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>{t("filters.priceHighToLow")}</option>
+                  <option value="name-asc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>{t("filters.nameAtoZ")}</option>
+                  <option value="name-desc" style={{ color: "#2b1b13", backgroundColor: "white", padding: "8px" }}>{t("filters.nameZtoA")}</option>
                 </select>
               </div>
 
@@ -203,9 +208,9 @@ export default function ProductsPage() {
               {/* Empty State */}
               {!loading && products.length === 0 && !error && (
                 <div className="text-center py-12">
-                  <p className="text-lg text-muted-foreground mb-4">No products found</p>
+                  <p className="text-lg text-muted-foreground mb-4">{paginationT("noProductsFound")}</p>
                   <Button onClick={resetFilters} variant="outline">
-                    Reset Filters
+                    {paginationT("resetFilters")}
                   </Button>
                 </div>
               )}
@@ -221,27 +226,27 @@ export default function ProductsPage() {
 
                   {/* Pagination */}
                   {paginationData && paginationData.totalPages > 1 && (
-                    <div className="flex items-center justify-between">
+                    <div className={`flex items-center justify-between ${isArabic ? "flex-row-reverse" : ""}`}>
                       <button
                         onClick={() => handlePageChange(filters.pageNumber - 1)}
                         disabled={filters.pageNumber === 1}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed ${isArabic ? "flex-row-reverse" : ""}`}
                       >
-                        <ChevronLeft size={18} />
-                        Previous
+                        {isArabic ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                        {paginationT("previous")}
                       </button>
 
                       <span className="text-sm text-muted-foreground">
-                        Page {filters.pageNumber} of {paginationData.totalPages}
+                        {paginationT("page")} {filters.pageNumber} {paginationT("of")} {paginationData.totalPages}
                       </span>
 
                       <button
                         onClick={() => handlePageChange(filters.pageNumber + 1)}
                         disabled={filters.pageNumber === paginationData.totalPages}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed ${isArabic ? "flex-row-reverse" : ""}`}
                       >
-                        Next
-                        <ChevronRight size={18} />
+                        {paginationT("next")}
+                        {isArabic ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
                       </button>
                     </div>
                   )}

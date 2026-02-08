@@ -74,12 +74,13 @@ export const getItemPrice = (item: CartItem, currency: CurrencyType): number => 
 
 const syncWithBackend = async (items: CartItem[]) => {
   try {
-    const { user } = useAuthStore.getState()
+    const { user, userBasketId } = useAuthStore.getState()
     
-    // Determine basketId
+    // Determine basketId - prefer userBasketId from authentication (set after Google login)
     let basketId: string | undefined = undefined
     if (user?.id) {
-      basketId = user.id
+      basketId = userBasketId || user.id;
+      console.log("[Cart] Using basketId:", { basketId, userBasketId, userId: user.id });
     } else {
       const storedGuestId = typeof window !== "undefined" ? localStorage.getItem("guestBasketId") : null
       basketId = storedGuestId ?? undefined
@@ -196,10 +197,10 @@ export const useCartStore = create<CartStore>()(
   loadBasket: async () => {
     set({ isLoading: true })
     try {
-      const { user } = useAuthStore.getState()
+      const { user, userBasketId } = useAuthStore.getState()
       
-      // Use user ID if authenticated, otherwise generate a guest ID
-      let basketId = user?.id
+      // Use stored userBasketId if available (set after Google login), otherwise fall back to user ID
+      let basketId = userBasketId || user?.id
       const isAuthenticated = !!user?.id
       
       if (!basketId) {
@@ -213,7 +214,7 @@ export const useCartStore = create<CartStore>()(
         }
       }
       
-      console.log("[Cart] Loading basket for:", { basketId, isAuthenticated, userId: user?.id })
+      console.log("[Cart] Loading basket for:", { basketId, isAuthenticated, userId: user?.id, userBasketId: userBasketId })
       
       // Call getBasket with basketId in URL
       const basket = await basketService.getBasket(basketId)
@@ -294,7 +295,7 @@ export const useCartStore = create<CartStore>()(
 
   syncGuestItemsToAuthenticatedBasket: async () => {
     const { items } = get()
-    const { user } = useAuthStore.getState()
+    const { user, userBasketId } = useAuthStore.getState()
     
     // Only proceed if user is authenticated
     if (!user?.id) {
@@ -319,7 +320,9 @@ export const useCartStore = create<CartStore>()(
     }
     
     try {
-      console.log("[Cart] Syncing guest items to authenticated user:", { userId: user.id, itemCount: itemsToSync.length })
+      // Use stored userBasketId if available (set after Google login), otherwise use user.id
+      const basketId = userBasketId || user.id;
+      console.log("[Cart] Syncing guest items to authenticated user:", { userId: user.id, basketId, itemCount: itemsToSync.length })
       
       // Convert current local items to BasketItem format
       const basketItems: BasketItem[] = itemsToSync.map((item) => ({
@@ -341,7 +344,7 @@ export const useCartStore = create<CartStore>()(
       
       // Send guest items to authenticated user's basket
       await basketService.updateBasket({
-        id: user.id,
+        id: basketId,
         items: basketItems,
       })
       

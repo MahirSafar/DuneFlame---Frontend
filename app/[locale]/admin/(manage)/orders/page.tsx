@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Separator } from "@/components/ui/separator"
+import { useLocale } from "next-intl"
 import {
   Order,
   OrderStatus,
@@ -200,6 +201,8 @@ function getNextStatuses(currentStatus: OrderStatus | string): OrderStatus[] {
 }
 
 export default function OrdersPage() {
+  const locale = useLocale()
+  const isArabic = locale === "ar"
   const [data, setData] = useState<PagedResult<Order> | null>(null)
   const [loading, setLoading] = useState(true)
   const [pageNumber, setPageNumber] = useState(1)
@@ -540,9 +543,11 @@ export default function OrdersPage() {
                                 {order.items.map((item, itemIndex) => (
                                   <div
                                     key={`${order.id}-item-${itemIndex}`}
-                                    className="flex justify-between items-start p-3 bg-muted/50 rounded text-sm border-l-4 border-muted-foreground/50"
+                                    className={`flex justify-between items-start p-3 bg-muted/50 rounded text-sm ${
+                                      isArabic ? "border-r-4 flex-row-reverse" : "border-l-4"
+                                    } border-muted-foreground/50`}
                                   >
-                                    <div className="flex-1">
+                                    <div className="flex-1" style={{ textAlign: isArabic ? "right" : "left" }}>
                                       <p className="font-medium">
                                         {item.productName}
                                       </p>
@@ -550,7 +555,7 @@ export default function OrdersPage() {
                                         Qty: {item.quantity} × {currency.format(item.unitPrice)}
                                       </p>
                                     </div>
-                                    <p className="font-semibold text-right ml-4">
+                                    <p className={`font-semibold ${isArabic ? "text-left mr-4" : "text-right ml-4"}`}>
                                       {currency.format(
                                         item.unitPrice * item.quantity
                                       )}

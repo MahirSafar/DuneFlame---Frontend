@@ -1,12 +1,12 @@
 import type React from "react"
 import type { Metadata } from "next"
+import Script from "next/script"
 import { Urbanist, Inter, Noto_Sans_Arabic } from "next/font/google"
 import "./globals.css"
 import { notFound } from "next/navigation"
 import { locales, type Locale } from "@/i18n/request"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages } from "next-intl/server"
-import { Analytics } from "@vercel/analytics/next"
 import AuthInit from "@/components/auth/auth-init"
 import CartInit from "@/components/cart/cart-init"
 import AuthProvider from "@/components/auth/auth-provider"
@@ -14,6 +14,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { CurrencyProvider } from "@/lib/currency-context"
 import { ToasterWrapper } from "@/components/toaster-wrapper"
 import { LocaleHeaderInit } from "@/components/locale-header-init"
+import PaymentScriptInit from "@/components/payment-script-init"
+import GoogleSDKScript from "@/components/GoogleSDKScript"
 import { cookies } from "next/headers"
 import type { CurrencyType } from "@/lib/currency-utils"
 
@@ -112,6 +114,17 @@ export default async function LocaleLayout({
       className={isArabic ? notoSansArabic.variable : ""}
     >
       <head>
+        {/* External Payment & Auth Scripts - Load before interactive */}
+        {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && (
+          <Script
+            src="https://js.stripe.com/v3/"
+            strategy="beforeInteractive"
+            crossOrigin="anonymous"
+          />
+        )}
+        
+        <GoogleSDKScript />
+
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
         <link rel="shortcut icon" href="/logo.svg" />
@@ -135,8 +148,8 @@ export default async function LocaleLayout({
                 <LocaleHeaderInit />
                 <AuthInit />
                 <CartInit />
+                <PaymentScriptInit />
                 {children}
-                <Analytics />
                 <ToasterWrapper />
               </AuthProvider>
             </CurrencyProvider>

@@ -3,15 +3,17 @@
 import Link from "next/link"
 import { Trash2 } from "lucide-react"
 import { useEffect } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { useCartStore } from "@/lib/cart-store"
 import { useCurrency } from "@/lib/currency-context"
 import { getImageUrl } from "@/lib/utils"
 import { useAuthStore } from "@/lib/auth-store"
+import { setApiClientLocale } from "@/lib/api-client"
 import { FormattedPrice } from "@/components/currency/formatted-price"
-import { useTranslations } from "next-intl"
 
 export default function CartSummary() {
   const t = useTranslations()
+  const locale = useLocale()
   const { accessToken } = useAuthStore()
   const { currency } = useCurrency()
   const { items, removeItem, updateQuantity, total, getItemPrice } = useCartStore()
@@ -21,6 +23,28 @@ export default function CartSummary() {
   useEffect(() => {
     // This dependency ensures all price calculations update when currency changes
   }, [currency])
+
+  // Ensure locale is set in API client before fetching products
+  useEffect(() => {
+    console.log(`[CartSummary] Setting API locale to: ${locale}`)
+    setApiClientLocale(locale)
+  }, [locale])
+
+  // Refresh product names when locale changes
+  useEffect(() => {
+    const refreshProductNames = async () => {
+      if (items.length === 0) {
+        console.log('[CartSummary] No items to display')
+        return
+      }
+
+      // Note: Product translation disabled due to endpoint availability issues
+      // Using product names from cart store data
+      console.log('[CartSummary] Using product names from cart store')
+    }
+
+    refreshProductNames()
+  }, [locale])
 
   if (items.length === 0) {
     return (

@@ -2,6 +2,7 @@
 
 import type { Metadata } from "next"
 import { useEffect, useState } from "react"
+import { useTranslations, useLocale } from "next-intl"
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
 import UserProfile from "@/components/dashboard/user-profile"
@@ -15,6 +16,9 @@ import type { MyRewards } from "@/lib/services/rewards"
 import type { UserProfile as UserProfileType } from "@/lib/services/user"
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard")
+  const locale = useLocale()
+  const isArabic = locale === "ar"
   const [profile, setProfile] = useState<UserProfileType | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [rewards, setRewards] = useState<MyRewards | null>(null)
@@ -38,7 +42,7 @@ export default function DashboardPage() {
         setRewards(rewardsData)
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err)
-        setError("Failed to load dashboard data. Please try again.")
+        setError(t("errorLoading"))
       } finally {
         setLoading(false)
       }
@@ -54,12 +58,12 @@ export default function DashboardPage() {
         <div className="flex-1">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="mb-8">
-              <p className="text-muted-foreground mt-2">Loading your data...</p>
+              <p className="text-muted-foreground mt-2">{t("loadingData")}</p>
             </div>
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading your dashboard...</p>
+                <p className="text-muted-foreground">{t("loading")}</p>
               </div>
             </div>
           </div>
@@ -88,7 +92,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className="min-h-screen flex flex-col" dir={isArabic ? "rtl" : "ltr"}>
       <Navbar />
       <div className="flex-1">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

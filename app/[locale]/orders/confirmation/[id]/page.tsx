@@ -2,48 +2,52 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
 import confetti from "canvas-confetti"
 import { CheckCircle, Loader2, AlertCircle, ArrowRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FormattedPrice } from "@/components/currency/formatted-price"
-import { apiFetch } from "@/lib/api-client"
+import { apiFetch, setApiClientLocale } from "@/lib/api-client"
 import { useCurrency } from "@/lib/currency-context"
 
 interface OrderItem {
   id: string
   productId: string
   productName: string
-  price: number
+  unitPrice: number
   quantity: number
-  imageUrl?: string
 }
 
 interface ShippingAddress {
-  street: string
-  city: string
-  state: string
-  postalCode: string
-  country: string
+  street?: string
+  city?: string
+  state?: string
+  postalCode?: string
+  country?: string
 }
 
 interface OrderResponse {
   id: string
-  customerId: string
-  orderDate: string
+  customerId?: string
+  createdAt?: string
+  orderDate?: string
   status: string
   totalAmount: number
-  currency: string
-  shippingAddress: ShippingAddress
+  currency?: string
+  shippingAddress?: ShippingAddress | string
   items: OrderItem[]
 }
 
 export default function OrderConfirmationPage() {
   const params = useParams()
   const router = useRouter()
+  const locale = useLocale()
+  const t = useTranslations("orders.confirmation")
   const { currency } = useCurrency()
   const orderId = params.id as string
+  const isArabic = locale === "ar"
 
   const [order, setOrder] = useState<OrderResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -59,8 +63,24 @@ export default function OrderConfirmationPage() {
 
       try {
         const data = await apiFetch<OrderResponse>(`/orders/${orderId}`)
+        console.log("📦 [ORDER CONFIRMATION] Order data received:", {
+          id: data?.id,
+          hasOrderDate: !!data?.orderDate,
+          orderDate: data?.orderDate,
+          hasShippingAddress: !!data?.shippingAddress,
+          shippingAddress: data?.shippingAddress,
+          hasItems: !!data?.items,
+          itemsCount: data?.items?.length,
+          items: data?.items,
+          totalAmount: data?.totalAmount,
+          status: data?.status,
+        })
         setOrder(data)
         setIsLoading(false)
+
+        // Ensure locale is set for product translation
+        console.log(`[OrderConfirmation] Setting API locale to: ${locale}`)
+        setApiClientLocale(locale)
 
         // Trigger confetti celebration
         const duration = 3000
@@ -90,7 +110,7 @@ export default function OrderConfirmationPage() {
           })
         }, 250)
       } catch (err) {
-        console.error("Failed to fetch order:", err)
+        console.error("❌ [ORDER CONFIRMATION] Failed to fetch order:", err)
         setError(err instanceof Error ? err.message : "Failed to load order details")
         setIsLoading(false)
       }
@@ -99,6 +119,22 @@ export default function OrderConfirmationPage() {
     fetchOrder()
   }, [orderId])
 
+  // Refetch product names when order loads or locale changes to show translated product names
+  useEffect(() => {
+    const refreshProductNames = async () => {
+      if (!order || !order.items || order.items.length === 0) {
+        console.log('[OrderConfirmation] No items to display')
+        return
+      }
+
+      // Note: Product translation disabled due to endpoint availability issues
+      // Using product names from stored order data
+      console.log('[OrderConfirmation] Using product names from order data')
+    }
+
+    refreshProductNames()
+  }, [order?.id, locale])
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-16 max-w-3xl">
@@ -106,7 +142,7 @@ export default function OrderConfirmationPage() {
           <CardContent className="py-16">
             <div className="flex flex-col items-center justify-center space-y-4">
               <Loader2 className="h-12 w-12 animate-spin text-accent" />
-              <p className="text-lg text-muted-foreground">Loading your order details...</p>
+              <p className="text-lg text-muted-foreground">{t("loadingDetails")}</p>
             </div>
           </CardContent>
         </Card>
@@ -122,17 +158,17 @@ export default function OrderConfirmationPage() {
             <div className="flex flex-col items-center justify-center space-y-6">
               <AlertCircle className="h-16 w-16 text-destructive" />
               <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold">Order Not Found</h1>
+                <h1 className="text-2xl font-bold">{t("orderNotFound")}</h1>
                 <p className="text-muted-foreground">
-                  {error || "We couldn't find the order you're looking for."}
+                  {error || t("orderNotFoundDesc")}
                 </p>
               </div>
               <div className="flex gap-4">
                 <Button onClick={() => router.push("/profile/orders")} variant="outline">
-                  View Your Orders
+                  {t("viewYourOrders")}
                 </Button>
                 <Button onClick={() => router.push("/contact")} variant="default">
-                  Contact Support
+                  {t("contactSupport")}
                 </Button>
               </div>
             </div>
@@ -154,8 +190,6 @@ export default function OrderConfirmationPage() {
     return colorMap[statusLower] || '#e2a56e'
   }
 
-  const { shippingAddress } = order
-
   return (
     <div className="container mx-auto px-4 py-16 max-w-3xl">
       <div className="space-y-8">
@@ -168,9 +202,9 @@ export default function OrderConfirmationPage() {
                 <div className="absolute inset-0 h-24 w-24 bg-oasis-teal/20 rounded-full blur-xl animate-pulse" />
               </div>
               <div className="space-y-2">
-                <h1 className="text-4xl font-bold text-oasis-teal">Thank You for Your Order!</h1>
+                <h1 className="text-4xl font-bold text-oasis-teal">{t("title")}</h1>
                 <p className="text-lg text-muted-foreground">
-                  Your order has been successfully placed and is being processed.
+                  {t("subtitle")}
                 </p>
               </div>
             </div>
@@ -180,32 +214,36 @@ export default function OrderConfirmationPage() {
         {/* Order Details */}
         <Card style={{ backgroundColor: 'transparent', color: '#2b1b13' }}>
           <CardHeader>
-            <CardTitle className="text-2xl" style={{ color: '#2b1b13' }}>Order Details</CardTitle>
+            <CardTitle className="text-2xl" style={{ color: '#2b1b13' }}>{t("orderDetails")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Order ID</p>
+                <p className="text-sm text-muted-foreground">{t("orderId")}</p>
                 <p className="font-mono font-semibold text-lg">{order.id}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Order Date</p>
+                <p className="text-sm text-muted-foreground">{t("orderDate")}</p>
                 <p className="font-semibold text-lg">
-                  {new Date(order.orderDate).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                  {order.createdAt || order.orderDate ? (
+                    new Date(order.createdAt || order.orderDate || "").toLocaleDateString(isArabic ? "ar-SA" : "en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })
+                  ) : (
+                    <span className="text-red-500">{t("dateNotAvailable")}</span>
+                  )}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Status</p>
+                <p className="text-sm text-muted-foreground">{t("status")}</p>
                 <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold text-white" style={{ backgroundColor: getStatusColor(order.status) }}>
-                  {order.status}
+                  {t(`statuses.${order.status.toLowerCase()}`)}
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Total Amount</p>
+                <p className="text-sm text-muted-foreground">{t("totalAmount")}</p>
                 <p className="font-bold text-2xl" style={{ color: '#2b1b13' }}>
                   <FormattedPrice amount={order.totalAmount} />
                 </p>
@@ -213,31 +251,76 @@ export default function OrderConfirmationPage() {
             </div>
 
             <div className="border-t border-border pt-6">
-              <h3 className="font-semibold text-lg mb-3">Shipping Address</h3>
+              <h3 className="font-semibold text-lg mb-3">{t("shippingAddress")}</h3>
               <div className="text-muted-foreground space-y-1">
-                <p>{shippingAddress.street}</p>
-                <p>
-                  {shippingAddress.city}, {shippingAddress.state} {shippingAddress.postalCode}
-                </p>
-                <p>{shippingAddress.country}</p>
+                {typeof order.shippingAddress === "string" ? (
+                  // If shippingAddress is a string
+                  <>
+                    {order.shippingAddress && order.shippingAddress.trim() ? (
+                      <p>{order.shippingAddress}</p>
+                    ) : (
+                      <p className="text-sm text-red-500">{t("shippingAddressNotAvailable")}</p>
+                    )}
+                  </>
+                ) : (
+                  // If shippingAddress is an object
+                  <>
+                    {order.shippingAddress?.street && <p>{order.shippingAddress.street}</p>}
+                    {(order.shippingAddress?.city ||
+                      order.shippingAddress?.state ||
+                      order.shippingAddress?.postalCode) && (
+                      <p>
+                        {[
+                          order.shippingAddress?.city,
+                          order.shippingAddress?.state,
+                          order.shippingAddress?.postalCode,
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+                    )}
+                    {order.shippingAddress?.country && <p>{order.shippingAddress.country}</p>}
+                    {!order.shippingAddress?.street &&
+                      !order.shippingAddress?.city &&
+                      !order.shippingAddress?.country && (
+                        <p className="text-sm text-red-500">{t("shippingAddressNotAvailable")}</p>
+                      )}
+                  </>
+                )}
               </div>
             </div>
 
             {order.items && order.items.length > 0 && (
               <div className="border-t border-border pt-6">
-                <h3 className="font-semibold text-lg mb-4">Order Items</h3>
+                <h3 className="font-semibold text-lg mb-4">{t("orderItems")}</h3>
                 <div className="space-y-4">
-                  {order.items.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{item.productName}</p>
-                        <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
+                  {order.items.map((item) => {
+                    const itemPrice = item.unitPrice || item.price || 0
+                    const itemQuantity = item.quantity || 1
+                    const totalPrice = itemPrice * itemQuantity
+
+                    console.log(`📦 [ORDER ITEM] ${item.productName}:`, {
+                      unitPrice: item.unitPrice,
+                      quantity: itemQuantity,
+                      total: totalPrice,
+                    })
+
+                    return (
+                      <div key={item.id} className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{item.productName}</p>
+                          <p className="text-sm text-muted-foreground">{t("quantity")}: {itemQuantity}</p>
+                        </div>
+                        <p className="font-semibold">
+                          {totalPrice > 0 ? (
+                            <FormattedPrice amount={totalPrice} />
+                          ) : (
+                            <span className="text-red-500">Price unavailable</span>
+                          )}
+                        </p>
                       </div>
-                      <p className="font-semibold">
-                        <FormattedPrice amount={item.price * item.quantity} />
-                      </p>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -248,8 +331,7 @@ export default function OrderConfirmationPage() {
         <Alert className="border-[#1f6f78]/50" style={{ backgroundColor: 'rgba(31, 111, 120, 0.1)' }}>
           <AlertCircle className="h-4 w-4" style={{ color: '#1f6f78' }} />
           <AlertDescription style={{ color: '#1f6f78' }}>
-            A confirmation email has been sent to your registered email address with order details and
-            tracking information.
+            {t("confirmationEmail")}
           </AlertDescription>
         </Alert>
 
@@ -261,7 +343,7 @@ export default function OrderConfirmationPage() {
             size="lg"
             style={{ backgroundColor: '#2b1b13' }}
           >
-            View All Orders
+            {t("viewAllOrders")}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
           <Button
@@ -270,7 +352,7 @@ export default function OrderConfirmationPage() {
             className="flex-1 text-lg py-6"
             size="lg"
           >
-            Continue Shopping
+            {t("continueShopping")}
           </Button>
         </div>
       </div>

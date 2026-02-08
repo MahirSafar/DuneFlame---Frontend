@@ -11,7 +11,11 @@
       "login": "Login",
       "register": "Register",
       "logout": "Logout",
-      "profile": "Profile"
+      "profile": "Profile",
+      "ourCoffee": "OUR COFFEE",
+      "wholesale": "WHOLESALE",
+      "aboutUs": "ABOUT US",
+      "searchPlaceholder": "Search for coffee, products..."
     },
     "footer": {
       "company": "Company",
@@ -24,7 +28,16 @@
       "copyright": "© 2025 Dune & Flame L.L.C. All rights reserved.",
       "privacy": "Privacy Policy",
       "terms": "Terms and Conditions",
-      "followUs": "Follow Us"
+      "followUs": "Follow Us",
+      "duneFlame": "Dune & Flame",
+      "ourCoffee": "Our Coffee",
+      "wholesale": "Wholesale",
+      "help": "Help",
+      "policies": "Policies",
+      "cancellationRefund": "Cancellation and Refund",
+      "shippingPolicy": "Shipping Policy",
+      "cancellationTerms": "Cancellation and Refund Terms",
+      "freeShippingBanner": "🚚 Free Shipping on Orders Over 200 AED in UAE! 🌿"
     },
     "actions": {
       "viewDetails": "View details",
@@ -104,6 +117,16 @@
   },
   "products": {
     "title": "Our Products",
+    "pageTitle": "OUR PRODUCTS",
+    "description": "Discover our carefully curated selection",
+    "searchPlaceholder": "Search products...",
+    "loading": "Loading...",
+    "noProducts": "No products found",
+    "showing": "Showing",
+    "of": "of",
+    "products": "products",
+    "sortByLabel": "Sort By",
+    "sortByDefault": "Sort By: Default",
     "filters": {
       "title": "Filters",
       "search": "Search",
@@ -146,8 +169,13 @@
     },
     "card": {
       "roast": "Roast",
-      "signature": "Signature"
+      "signature": "Signature",
+      "signaturePick": "Signature pick",
+      "quickView": "QUICK VIEW"
     },
+    "recommendations": "Explore more products to complete your order",
+    "relatedRecommendations": "Explore more from this collection",
+    "youMayAlsoLike": "YOU MAY ALSO LIKE",
     "detail": {
       "description": "Description",
       "specifications": "Specifications",
@@ -212,11 +240,81 @@
     "city": "City",
     "state": "State",
     "zipCode": "Zip Code",
-    "country": "Country"
+    "country": "Country",
+    "streetAddress": "Street Address",
+    "stateRegion": "State / Region",
+    "postalCode": "Postal Code",
+    "proceedToPayment": "Proceed to Payment",
+    "preparingPayment": "Preparing Payment...",
+    "selectCountry": "Select country",
+    "selectCity": "Select city",
+    "selectCountryFirst": "Select country first",
+    "completePayment": "Complete your payment",
+    "paymentInfo": "Your order is created. Please pay to finalize it. Closing without paying keeps it unpaid.",
+    "processing": "Processing...",
+    "payNow": "Pay Now",
+    "cancel": "Cancel",
+    "guestCheckout": "Guest Checkout - Please enter your information",
+    "loadingCheckout": "Loading checkout...",
+    "guestCheckoutLabel": "Guest Checkout",
+    "freeShippingMessage": "✨ You've unlocked Free Shipping! Orders over $55 or 200 AED in UAE ship free.",
+    "rewardDiscount": "Reward Discount",
+    "usePoints": "Use {points} points",
+    "pointsAvailable": "You have {points} points available",
+    "unableToLoadCities": "Unable to load cities. Please try again.",
+    "unableToLoadCountries": "Unable to load shipping countries. Please try again.",
+    "orderCreatedSuccess": "Order created successfully. Please complete payment.",
+    "failedSyncBasket": "Failed to sync basket. Please try again.",
+    "emptyBasket": "Your basket is empty. Please add items before checkout.",
+    "quantity": "Qty",
+    "loadingPrice": "Loading price...",
+    "validationMessages": {
+      "streetAddressRequired": "Street address is required",
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "emailRequired": "Email is required",
+      "phoneRequired": "Phone number is required",
+      "cityRequired": "City is required",
+      "stateRequired": "State is required",
+      "postalCodeRequired": "Postal code is required",
+      "countryRequired": "Country is required"
+    }
+  },
+  "orders": {
+    "confirmation": {
+      "title": "Thank You for Your Order!",
+      "subtitle": "Your order has been successfully placed and is being processed.",
+      "orderDetails": "Order Details",
+      "orderId": "Order ID",
+      "orderDate": "Order Date",
+      "status": "Status",
+      "totalAmount": "Total Amount",
+      "shippingAddress": "Shipping Address",
+      "orderItems": "Order Items",
+      "quantity": "Quantity",
+      "dateNotAvailable": "Date not available",
+      "shippingAddressNotAvailable": "Shipping address not available",
+      "confirmationEmail": "A confirmation email has been sent to your registered email address with order details and tracking information.",
+      "viewAllOrders": "View All Orders",
+      "continueShopping": "Continue Shopping",
+      "loadingDetails": "Loading your order details...",
+      "orderNotFound": "Order Not Found",
+      "orderNotFoundDesc": "We couldn't find the order you're looking for.",
+      "viewYourOrders": "View Your Orders",
+      "contactSupport": "Contact Support",
+      "statuses": {
+        "pending": "Pending",
+        "paid": "Paid",
+        "shipped": "Shipped",
+        "delivered": "Delivered",
+        "cancelled": "Cancelled"
+      }
+    }
   },
   "auth": {
     "login": {
       "title": "Sign in to Dune & Flame L.L.C",
+      "brandName": "DUNE & FLAME",
       "subtitle": "Welcome back — please enter your credentials.",
       "email": "Email",
       "emailPlaceholder": "Enter your email",
@@ -230,16 +328,24 @@
       "noAccount": "Don't have an account?",
       "signUp": "Sign up",
       "success": "Logged in successfully",
-      "error": "Invalid email or password"
+      "error": "Invalid email or password",
+      "returnToHome": "Return to Home"
     },
     "register": {
       "title": "Create your account",
+      "brandName": "DUNE & FLAME",
       "subtitle": "Join Dune & Flame L.L.C today",
       "firstName": "First Name",
+      "firstNamePlaceholder": "John",
       "lastName": "Last Name",
+      "lastNamePlaceholder": "Doe",
       "email": "Email",
+      "emailPlaceholder": "hello@example.com",
       "password": "Password",
+      "passwordPlaceholder": "••••••••",
       "confirmPassword": "Confirm Password",
+      "termsLabel": "I agree to the Terms of Service",
+      "termsLink": "Terms of Service",
       "createAccount": "Create Account",
       "creating": "Creating account...",
       "orContinueWith": "Or continue with",
@@ -248,6 +354,25 @@
       "signIn": "Sign in",
       "success": "Account created successfully",
       "error": "Registration failed"
+    },
+    "forgotPassword": {
+      "title": "Forgot password",
+      "description": "Enter your email and we'll send a reset link if an account exists.",
+      "email": "Email",
+      "sendButton": "Send reset link",
+      "sending": "Sending...",
+      "backToLogin": "Back to login",
+      "successMessage": "If an account exists, a reset link has been sent."
+    },
+    "resetPassword": {
+      "title": "Reset password",
+      "description": "Enter a new password for your account.",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "resetButton": "Reset password",
+      "resetting": "Resetting...",
+      "invalidLink": "Invalid or expired reset link",
+      "successMessage": "Password reset successful. Please login."
     },
     "validation": {
       "emailRequired": "Email is required",
@@ -266,13 +391,46 @@
     "rewards": "Rewards",
     "savedCoffees": "Saved Coffees",
     "orderHistory": "Order History",
-    "noOrders": "No orders yet",
+    "noOrders": "No orders found.",
     "viewOrder": "View Order",
     "reorder": "Reorder",
+    "loading": "Loading your dashboard...",
+    "loadingData": "Loading your data...",
+    "errorLoading": "Failed to load dashboard data. Please try again.",
+    "details": "Details",
+    "orderId": "Order ID:",
+    "products": "product",
+    "productsPlural": "products",
+    "location": "📍 Location:",
+    "address": "📮 Address:",
+    "phone": "📱 Phone:",
+    "profileDataMissing": "Profile data is missing.",
+    "flamePoints": "Flame Points",
+    "availablePoints": "Available Points",
+    "backToDashboard": "Back to Dashboard",
+    "created": "Created:",
+    "status": "Status",
+    "total": "Total",
+    "shippingAddress": "Shipping Address",
+    "payment": "Payment",
+    "method": "Method:",
+    "transactionId": "Transaction ID:",
     "orderStatus": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "shipped": "Shipped",
       "delivered": "Delivered",
-      "processing": "Processing",
-      "shipped": "Shipped"
+      "cancelled": "Cancelled"
+    },
+    "orderSteps": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "shipped": "Shipped",
+      "delivered": "Delivered"
+    },
+    "orderTracking": {
+      "orderCancelled": "Order Cancelled",
+      "orderCancelledDesc": "This order has been cancelled."
     }
   },
   "errors": {
@@ -280,45 +438,39 @@
     "network": "Network error. Please check your connection.",
     "notFound": "Page not found",
     "unauthorized": "Please login to continue",
-    "serverError": "Server error. Please try again later.",
-      "orderStatus": {
-        "delivered": "Delivered",
-        "processing": "Processing",
-        "shipped": "Shipped"
-    }
+    "serverError": "Server error. Please try again later."
   },
   "metadata": {
-      "home": {
-        "title": "Dune & Flame L.L.C",
-        "description": "Experience the perfect blend of warmth, aroma, and luxury. Premium coffee roasts from around the world."
-      },
-      "about": {
-        "title": "Dune & Flame L.L.C",
-        "description": "Learn about our passion for coffee and commitment to excellence."
-      },
-      "products": {
-        "title": "Dune & Flame L.L.C",
-        "description": "Explore our carefully curated selection of premium coffee beans."
-      },
-      "contact": {
-        "title": "Dune & Flame L.L.C",
-        "description": "Have questions? We'd love to hear from you. Contact us today."
-      },
-      "dashboard": {
-        "title": "Dashboard | Dune & Flame L.L.C - Your Account",
-        "description": "Manage your orders, profile, and preferences."
-      }
+    "home": {
+      "title": "Dune & Flame L.L.C",
+      "description": "Experience the perfect blend of warmth, aroma, and luxury. Premium coffee roasts from around the world."
     },
-    "notFound": {
-      "title": "Page Not Found",
-      "description": "The page you are looking for has evaporated like steam.",
-      "backHome": "Return Home",
-      "subtitle": "404"
+    "about": {
+      "title": "Dune & Flame L.L.C",
+      "description": "Learn about our passion for coffee and commitment to excellence."
     },
-    "loading": {
-      "text": "Loading...",
-      "skeleton": "Loading content..."
+    "products": {
+      "title": "Dune & Flame L.L.C",
+      "description": "Explore our carefully curated selection of premium coffee beans."
+    },
+    "contact": {
+      "title": "Dune & Flame L.L.C",
+      "description": "Have questions? We'd love to hear from you. Contact us today."
+    },
+    "dashboard": {
+      "title": "Dashboard | Dune & Flame L.L.C - Your Account",
+      "description": "Manage your orders, profile, and preferences."
     }
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "description": "The page you are looking for has evaporated like steam.",
+    "backHome": "Return Home",
+    "subtitle": "404"
+  },
+  "loading": {
+    "text": "Loading...",
+    "skeleton": "Loading content..."
   },
   "pages": {
     "shop": {
@@ -332,10 +484,216 @@
       "showing": "Showing",
       "of": "of",
       "products": "products"
+    },
+    "contact": {
+      "pageTitle": "CONTACT INFORMATION",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "locationLabel": "Location",
+      "location": "Abu Dhabi, UAE",
+      "phone": "+971 52 145 0202",
+      "formTitle": "Contact Form",
+      "namePlaceholder": "Your Name",
+      "emailPlaceholder": "Your Email",
+      "phonePlaceholder": "Your Phone Number",
+      "subjectPlaceholder": "Subject",
+      "messagePlaceholder": "Your Message",
+      "sendButton": "Send Message"
     }
   },
   "pagination": {
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "page": "Page",
+    "of": "of",
+    "resetFilters": "Reset Filters",
+    "noProductsFound": "No products found"
+  },
+  "payment": {
+    "success": {
+      "title": "Payment Successful!",
+      "description": "Your payment has been processed successfully. Thank you for your purchase!",
+      "confirmation": "A confirmation email has been sent to your registered email address.",
+      "view_orders": "View My Orders",
+      "continue_shopping": "Continue Shopping",
+      "order_id": "Order ID"
+    },
+    "cancelled": {
+      "title": "Payment Cancelled",
+      "description": "Your payment has been cancelled. No charges have been made to your account.",
+      "message": "You can try again or continue browsing our products.",
+      "back_to_products": "Back to Products",
+      "view_cart": "View Cart",
+      "support": "If you need help, please",
+      "contact_us": "contact us"
+    }
+  },
+  "policies": {
+    "pageTitle": "Legal & Policies",
+    "pageDescription": "Your guide to our terms, privacy, shipping, and refund policies",
+    "sections": {
+      "contact": "Contact Us",
+      "privacy": "Privacy Policy",
+      "terms": "Terms and Conditions",
+      "shipping": "Shipping Policy",
+      "refund": "Refund & Cancellation"
+    },
+    "contact": {
+      "title": "Contact Information",
+      "subtitle": "We're here to help and answer any questions about our premium coffee.",
+      "emailLabel": "Email",
+      "email": "info@duneflame.com",
+      "phoneLabel": "Phone",
+      "phone": "+971 52 145 0202",
+      "addressLabel": "Address",
+      "address": "Abu Dhabi, United Arab Emirates",
+      "businessHours": "Business Hours",
+      "hours": "Sunday - Thursday: 9:00 AM - 6:00 PM\nFriday - Saturday: Closed",
+      "responseTime": "We typically respond within 24 hours.",
+      "supportChannels": "Support Channels",
+      "email_support": "Email Support",
+      "phone_support": "Phone Support",
+      "liveChat": "Live Chat Available"
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "lastUpdated": "Last Updated: January 2025",
+      "intro": "At Dune & Flame L.L.C., we are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information.",
+      "section1": {
+        "title": "Information We Collect",
+        "content": "We collect information that you provide directly to us, such as when you create an account, make a purchase, or contact us. This includes:\n\n• Name and contact information (email, phone number, address)\n• Payment information (processed securely through third-party providers)\n• Order history and preferences\n• Communications and feedback\n\nWe also automatically collect certain information about your device and browsing activity through cookies and similar tracking technologies."
+      },
+      "section2": {
+        "title": "How We Use Your Information",
+        "content": "We use the information we collect to:\n\n• Process your orders and payments\n• Provide customer support and respond to inquiries\n• Send promotional emails and updates (with your consent)\n• Improve our website and services\n• Comply with legal obligations\n• Prevent fraud and enhance security"
+      },
+      "section3": {
+        "title": "Data Security",
+        "content": "We implement advanced security measures to protect your personal information. However, no method of transmission over the Internet is 100% secure. We encourage you to use strong passwords and keep your account information confidential."
+      },
+      "section4": {
+        "title": "Third-Party Services",
+        "content": "We may share your information with trusted third-party service providers (payment processors, shipping partners, email providers) who assist us in operating our website and conducting our business. These partners are bound by strict confidentiality agreements."
+      },
+      "section5": {
+        "title": "Your Privacy Rights",
+        "content": "You have the right to:\n\n• Access, update, or delete your personal information\n• Opt-out of marketing communications\n• Request data portability\n\nTo exercise these rights, please contact us at info@duneflame.com."
+      },
+      "section6": {
+        "title": "Cookies",
+        "content": "Our website uses cookies to enhance your browsing experience. You can control cookie preferences through your browser settings, though some features may not work optimally if cookies are disabled."
+      },
+      "section7": {
+        "title": "Contact Us",
+        "content": "If you have questions about this Privacy Policy, please contact us at info@duneflame.com or +971 52 145 0202."
+      }
+    },
+    "terms": {
+      "title": "Terms and Conditions",
+      "lastUpdated": "Last Updated: January 2025",
+      "intro": "Welcome to Dune & Flame L.L.C. (\"we,\" \"us,\" or \"our\"). By accessing or using our website and services, you agree to be bound by these Terms and Conditions.",
+      "section1": {
+        "title": "Use License",
+        "content": "Permission is granted to temporarily download one copy of the materials (information or software) on our website for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:\n\n• Modify or copy the materials\n• Sell or distribute materials\n• Use the materials for any commercial purpose or for any public display\n• Attempt to decompile or reverse engineer any software contained on the website\n• Remove any copyright or proprietary notations\n• Transfer the materials to another person or \"mirror\" the materials on any other server"
+      },
+      "section2": {
+        "title": "Disclaimer",
+        "content": "The materials on our website are provided on an 'as is' basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights."
+      },
+      "section3": {
+        "title": "Limitations",
+        "content": "In no event shall Dune & Flame L.L.C. or our suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on our website."
+      },
+      "section4": {
+        "title": "Accuracy of Materials",
+        "content": "The materials appearing on our website could include technical, typographical, or photographic errors. We do not warrant that any of the materials on our website are accurate, complete, or current. We may make changes to the materials contained on our website at any time without notice."
+      },
+      "section5": {
+        "title": "Links",
+        "content": "We have not reviewed all of the sites linked to our website and are not responsible for the contents of any such linked site. The inclusion of any link does not imply endorsement by us of the site. Use of any such linked website is at the user's own risk."
+      },
+      "section6": {
+        "title": "Modifications",
+        "content": "We may revise these terms and conditions for our website at any time without notice. By using this website, you are agreeing to be bound by the then current version of these terms and conditions."
+      },
+      "section7": {
+        "title": "Governing Law",
+        "content": "These terms and conditions are governed by and construed in accordance with the laws of the United Arab Emirates, and you irrevocably submit to the exclusive jurisdiction of the courts in that location."
+      }
+    },
+    "shipping": {
+      "title": "Shipping Policy",
+      "lastUpdated": "Last Updated: January 2025",
+      "intro": "We are committed to delivering your premium Dune & Flame coffee quickly and safely to your doorstep.",
+      "uae": {
+        "title": "🇦🇪 UAE (United Arab Emirates) Shipping",
+        "rates": "Shipping Rates",
+        "standard": "Standard Shipping (4-7 business days): AED 25",
+        "express": "Express Shipping (2-3 business days): AED 50",
+        "freeShipping": "FREE Shipping on orders over AED 200 (Standard only)",
+        "serviceAreas": "Service Areas: All Emirates (Abu Dhabi, Dubai, Ajman, Fujairah, Ras Al Khaimah, Sharjah, Umm Al Quwain)",
+        "processing": "Processing Time: 1-2 business days",
+        "notes": "Orders placed on weekends or holidays will be processed on the next business day."
+      },
+      "gcc": {
+        "title": "🌍 International GCC Shipping",
+        "regions": "Available Countries: Saudi Arabia, Kuwait, Qatar, Bahrain, Oman",
+        "rates": "Shipping Rates",
+        "standard": "International Standard (7-10 business days): AED 75-120 (varies by country)",
+        "express": "International Express (4-5 business days): AED 150-200 (varies by country)",
+        "processing": "Processing Time: 2-3 business days before transit",
+        "customs": "Customs & Duties: Customer is responsible for any customs duties or taxes imposed by the destination country.",
+        "restrictions": "Some restricted items may not be available for international shipping. Please check specific product pages."
+      },
+      "tracking": {
+        "title": "Order Tracking",
+        "content": "Once your order ships, you'll receive an email with a tracking number. You can use this to monitor your package's journey in real-time through our shipping partner's tracking system."
+      },
+      "damaged": {
+        "title": "Damaged or Lost Shipments",
+        "content": "If your package arrives damaged or is lost in transit, please contact us within 48 hours of delivery with photos of the damage. We'll work with our shipping partner to investigate and provide a replacement or refund."
+      },
+      "delays": {
+        "title": "Shipping Delays",
+        "content": "While we strive to meet our delivery timelines, delays may occur due to unforeseen circumstances (weather, customs, carrier delays). We'll keep you informed of any delays and work to resolve them quickly."
+      }
+    },
+    "refund": {
+      "title": "Refund & Cancellation Policy",
+      "lastUpdated": "Last Updated: January 2025",
+      "intro": "We want you to be completely satisfied with your Dune & Flame coffee. If you're not happy, we're here to help.",
+      "section1": {
+        "title": "14-Day Return Policy",
+        "content": "Unopened coffee bags can be returned within 14 days of delivery for a full refund. The coffee must be in its original packaging and condition."
+      },
+      "section2": {
+        "title": "Return Conditions",
+        "eligibility": "Eligible for Returns",
+        "items": "• Unopened coffee bags in original packaging\n• Merchandise defects or damage (customer not responsible)\n• Incorrect items sent",
+        "notEligible": "NOT Eligible for Returns",
+        "exclude": "• Opened or partially used coffee bags\n• Items damaged by customer misuse\n• Custom orders or personalized items\n• Clearance or sale items (unless defective)",
+        "refundTime": "Refund Timeline: Processing takes 7-10 business days after we receive your return. Refunds are credited to your original payment method."
+      },
+      "section3": {
+        "title": "Cancellation Policy",
+        "content": "Orders can be cancelled within 24 hours of placement. After 24 hours, orders enter processing and cannot be cancelled. Contact us immediately if you need to cancel:\n\nEmail: info@duneflame.com\nPhone: +971 52 145 0202"
+      },
+      "section4": {
+        "title": "How to Return",
+        "steps": "1. Contact us at info@duneflame.com with your order number\n2. Provide reason for return and photos if applicable\n3. We'll provide return shipping instructions and a label\n4. Pack the item securely in its original packaging\n5. Ship to our returns address using the provided label\n6. Once received and inspected, we'll process your refund"
+      },
+      "section5": {
+        "title": "Defective Items",
+        "content": "If you receive a defective or damaged item, please contact us within 48 hours of delivery. We'll arrange a replacement or full refund at no cost to you. No return shipment necessary for truly defective items—we'll cover all costs."
+      },
+      "section6": {
+        "title": "Shipping Costs",
+        "content": "Complimentary return shipping is provided for defective items or incorrect orders. For customer-initiated returns of non-defective items, return shipping costs are the customer's responsibility."
+      },
+      "section7": {
+        "title": "Questions?",
+        "content": "For any questions about returns or refunds, please contact us:\n\nEmail: info@duneflame.com\nPhone: +971 52 145 0202"
+      }
+    }
   }
 }

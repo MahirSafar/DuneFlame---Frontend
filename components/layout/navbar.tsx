@@ -20,6 +20,7 @@ export default function Navbar() {
   const { isLoggedIn, logout } = useAuth()
   const { loadBasket, items } = useCartStore()
   const t = useTranslations('common.nav')
+  const tFooter = useTranslations('common.footer')
   const lastScrollY = useRef(0)
 
   // Load basket from backend when user logs in
@@ -71,9 +72,9 @@ export default function Navbar() {
   }, [isOpen])
 
   const navLinks = [
-    { href: "/products", key: "our-coffee", label: "OUR COFFEE" },
-    { href: "/wholesale", key: "wholesale", label: "WHOLESALE" },
-    { href: "/about", key: "about", label: "ABOUT US" },
+    { href: "/products", key: "our-coffee", label: t('ourCoffee') },
+    { href: "/wholesale", key: "wholesale", label: t('wholesale') },
+    { href: "/about", key: "about", label: t('aboutUs') },
     { href: "/contact", key: "contact" },
   ]
 
@@ -85,7 +86,7 @@ export default function Navbar() {
           className="w-full text-center py-2 text-sm font-semibold transition-opacity duration-300 animate-in fade-in z-60 fixed top-0 left-0"
           style={{ backgroundColor: "#2b1b13", color: "white" }}
         >
-          🚚 Free Shipping on Orders Over 200 AED in UAE! 🌿
+          {tFooter('freeShippingBanner')}
         </div>
       )}
       <nav 
@@ -220,7 +221,7 @@ export default function Navbar() {
               <Search size={20} className="text-foreground/70" />
               <input
                 type="text"
-                placeholder="Search for coffee, products..."
+                placeholder={t('searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus

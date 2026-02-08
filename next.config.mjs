@@ -15,7 +15,7 @@ const nextConfig = {
         hostname: 'storage.googleapis.com',
         pathname: '/duneflame-images/**',
       },
-      // Legacy local storage patterns (can be removed after full GCS migration)
+      // Legacy local storage patterns
       {
         protocol: 'https',
         hostname: 'localhost',
@@ -53,6 +53,28 @@ const nextConfig = {
     ],
   },
   output: 'standalone',
+  
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://www.gstatic.com https://appleid.cdn-apple.com https://js.stripe.com https://apis.google.com; " +
+                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com; " +
+                   "img-src 'self' data: https: blob:; " +
+                   "frame-src 'self' https://accounts.google.com https://appleid.apple.com https://js.stripe.com; " +
+                   "connect-src 'self' https://duneflame.com https://accounts.google.com https://www.gstatic.com https://dune-flame-backend-180239181668.me-central1.run.app https://api.stripe.com https://localhost:7190;"
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'no-referrer-when-downgrade',
+          }
+        ],
+      },
+    ];
+  },
 }
 
 export default withNextIntl(nextConfig);
