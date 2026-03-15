@@ -40,6 +40,10 @@ interface ShippingAddress {
   phoneNumber?: string
 }
 
+type ShippingErrors = Partial<ShippingAddress> & {
+  fullName?: string
+}
+
 interface ShippingRate {
   currency: string | number  // Handle Enum (could be "USD" or 0)
   cost: number
@@ -57,6 +61,8 @@ interface City {
   id: string
   name: string
 }
+
+const GCC_COUNTRY_CODES = ["AE", "SA", "KW", "QA", "BH", "OM"]
 
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null
@@ -380,7 +386,9 @@ export default function CheckoutForm() {
     phoneNumber: "",
   })
 
-  const [errors, setErrors] = useState<Partial<ShippingAddress>>({})
+  const [errors, setErrors] = useState<ShippingErrors>({})
+  const [guestStep, setGuestStep] = useState<1 | 2>(1)
+  const [guestFullName, setGuestFullName] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
@@ -397,11 +405,39 @@ export default function CheckoutForm() {
   const [usePoints, setUsePoints] = useState(false)
   const [isLoadingRewards, setIsLoadingRewards] = useState(false)
 
+  const isGuest = !accessToken
+
   useEffect(() => {
     if (accessToken && refreshToken) {
       setTokens({ accessToken, refreshToken })
     }
   }, [accessToken, refreshToken])
+
+  // Restore selected country from localStorage after login
+  useEffect(() => {
+    if (accessToken && !selectedCountryId && typeof window !== "undefined") {
+      const savedCountryId = localStorage.getItem("checkout_selected_country_id")
+      if (savedCountryId) {
+        console.log("[CheckoutForm] 🔄 Restored selected country from localStorage:", savedCountryId)
+        setSelectedCountryId(savedCountryId)
+      } else {
+        // If no saved country and in UAE, suggest AE by default
+        const savedCountryFromAPI = localStorage.getItem("df_default_country")
+        if (savedCountryFromAPI) {
+          console.log("[CheckoutForm] 🔄 Using default country from API:", savedCountryFromAPI)
+          setSelectedCountryId(savedCountryFromAPI)
+        }
+      }
+    }
+  }, [accessToken, selectedCountryId])
+
+  // Save selected country to localStorage when it changes
+  useEffect(() => {
+    if (selectedCountryId && typeof window !== "undefined") {
+      localStorage.setItem("checkout_selected_country_id", selectedCountryId)
+      console.log("[CheckoutForm] 💾 Saved selected country to localStorage:", selectedCountryId)
+    }
+  }, [selectedCountryId])
 
   // Fetch user's reward balance on component mount
   useEffect(() => {
@@ -440,6 +476,18 @@ export default function CheckoutForm() {
       }))
     }
   }, [user])
+
+  useEffect(() => {
+    if (isGuest) {
+      const prefilledName = [shippingAddress.firstName, shippingAddress.lastName].filter(Boolean).join(" ")
+      if (prefilledName && !guestFullName) {
+        setGuestFullName(prefilledName)
+      }
+    } else {
+      setGuestStep(1)
+      setGuestFullName("")
+    }
+  }, [isGuest, shippingAddress.firstName, shippingAddress.lastName, guestFullName])
 
   // Ensure locale is set in API client before fetching products
   useEffect(() => {
@@ -484,6 +532,38 @@ export default function CheckoutForm() {
     }
   }
 
+  const splitFullName = (value: string) => {
+    const normalized = value.trim().replace(/\s+/g, " ")
+    if (!normalized) {
+      return { firstName: "", lastName: "" }
+    }
+
+    const parts = normalized.split(" ")
+    const firstName = parts[0] || ""
+    const lastName = parts.slice(1).join(" ")
+
+    return { firstName, lastName }
+  }
+
+  const handleGuestFullNameChange = (value: string) => {
+    setGuestFullName(value)
+    const { firstName, lastName } = splitFullName(value)
+    setShippingAddress((prev) => ({ ...prev, firstName, lastName }))
+
+    if (errors.fullName) {
+      setErrors((prev) => ({ ...prev, fullName: undefined }))
+    }
+    if (successMessage) {
+      setSuccessMessage("")
+    }
+    if (clientSecret) {
+      setClientSecret(null)
+    }
+    if (paymentError) {
+      setPaymentError(null)
+    }
+  }
+
   const fetchCities = useCallback(async (countryId: string) => {
     setIsLoadingCities(true)
     setShippingError(null)
@@ -506,11 +586,12 @@ export default function CheckoutForm() {
 
     try {
       const data = await apiFetch<Country[]>('/shipping/countries')
-      setCountries(data)
+      const filtered = data.filter((country) => GCC_COUNTRY_CODES.includes(country.code))
+      setCountries(filtered)
 
       // Keep selected country name in sync or clear if it no longer exists
       if (selectedCountryId) {
-        const selected = data.find((country) => country.id === selectedCountryId)
+        const selected = filtered.find((country) => country.id === selectedCountryId)
         if (selected) {
           setShippingAddress((prev) => ({ ...prev, country: selected.code }))
         } else {
@@ -526,11 +607,25 @@ export default function CheckoutForm() {
     } finally {
       setIsLoadingCountries(false)
     }
-  }, [currency, selectedCountryId, t])
+  }, [selectedCountryId, t])
 
   useEffect(() => {
     fetchCountries()
   }, [fetchCountries])
+
+  // Auto-fetch cities when country is selected/restored
+  useEffect(() => {
+    if (selectedCountryId && countries.length > 0) {
+      const selected = countries.find((country) => country.id === selectedCountryId)
+      const selectedCode = selected?.code || ""
+      if (selectedCode === "AE" || selectedCode === "KW") {
+        console.log("[CheckoutForm] 🔄 Auto-fetching cities for country:", selectedCountryId)
+        fetchCities(selectedCountryId)
+      } else {
+        setCities([])
+      }
+    }
+  }, [selectedCountryId, countries, fetchCities])
 
   const handleCountryChange = (countryId: string) => {
     setSelectedCountryId(countryId)
@@ -539,9 +634,9 @@ export default function CheckoutForm() {
     if (selected) {
       console.log("Secilen Olke Kodu:", selected.code)
       // Store ISO code so backend ShippingService matches (e.g., "KW" instead of country name)
-      setShippingAddress((prev) => ({ ...prev, country: selected.code, city: "" }))
+      setShippingAddress((prev) => ({ ...prev, country: selected.code, city: "", state: "" }))
     } else {
-      setShippingAddress((prev) => ({ ...prev, country: "", city: "" }))
+      setShippingAddress((prev) => ({ ...prev, country: "", city: "", state: "" }))
     }
     setCities([])
 
@@ -559,7 +654,10 @@ export default function CheckoutForm() {
     }
 
     if (countryId) {
-      fetchCities(countryId)
+      const selectedCode = selected?.code || ""
+      if (selectedCode === "AE" || selectedCode === "KW") {
+        fetchCities(countryId)
+      }
     }
   }
 
@@ -567,16 +665,33 @@ export default function CheckoutForm() {
     handleInputChange("city", value)
   }
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<ShippingAddress> = {}
+  const handleRegionChange = (value: string) => {
+    handleInputChange("state", value)
+  }
 
-    // Validate guest info if not logged in
-    if (!user) {
-      if (!shippingAddress.firstName?.trim()) {
-        newErrors.firstName = t("validationMessages.firstNameRequired")
-      }
-      if (!shippingAddress.lastName?.trim()) {
-        newErrors.lastName = t("validationMessages.lastNameRequired")
+  const validateGuestStepOne = (): boolean => {
+    const newErrors: ShippingErrors = {}
+
+    if (!guestFullName.trim()) {
+      newErrors.fullName = t("validationMessages.fullNameRequired")
+    }
+    if (!shippingAddress.email?.trim()) {
+      newErrors.email = t("validationMessages.emailRequired")
+    }
+    if (!shippingAddress.phoneNumber?.trim()) {
+      newErrors.phoneNumber = t("validationMessages.phoneRequired")
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const validateForm = (): boolean => {
+    const newErrors: ShippingErrors = {}
+
+    if (isGuest) {
+      if (!guestFullName.trim()) {
+        newErrors.fullName = t("validationMessages.fullNameRequired")
       }
       if (!shippingAddress.email?.trim()) {
         newErrors.email = t("validationMessages.emailRequired")
@@ -586,20 +701,26 @@ export default function CheckoutForm() {
       }
     }
 
-    if (!shippingAddress.street.trim()) {
-      newErrors.street = t("validationMessages.streetAddressRequired")
-    }
-    if (!shippingAddress.city.trim()) {
-      newErrors.city = t("validationMessages.cityRequired")
-    }
-    if (!shippingAddress.state.trim()) {
-      newErrors.state = t("validationMessages.stateRequired")
-    }
-    if (!shippingAddress.postalCode.trim()) {
-      newErrors.postalCode = t("validationMessages.postalCodeRequired")
-    }
-    if (!shippingAddress.country.trim()) {
+    if (!selectedCountryId) {
       newErrors.country = t("validationMessages.countryRequired")
+    } else {
+      const selected = countries.find((country) => country.id === selectedCountryId)
+      const selectedCode = selected?.code || ""
+      if (!shippingAddress.street.trim()) {
+        newErrors.street = t("validationMessages.streetAddressRequired")
+      }
+      if (!shippingAddress.city.trim()) {
+        newErrors.city = t("validationMessages.cityRequired")
+      }
+      if ((selectedCode === "AE" || selectedCode === "KW") && !shippingAddress.state.trim()) {
+        newErrors.state = t("validationMessages.regionRequired")
+      }
+      if (!shippingAddress.email?.trim()) {
+        newErrors.email = t("validationMessages.emailRequired")
+      }
+      if (!shippingAddress.phoneNumber?.trim()) {
+        newErrors.phoneNumber = t("validationMessages.phoneRequired")
+      }
     }
 
     setErrors(newErrors)
@@ -781,6 +902,16 @@ export default function CheckoutForm() {
       console.log("[Checkout Debug] Access Token exists:", !!authState.accessToken);
 
       const finalShippingAddress = { ...shippingAddress };
+
+      if (!finalShippingAddress.state?.trim()) {
+        finalShippingAddress.state = finalShippingAddress.city
+      }
+
+      if (isGuest) {
+        const { firstName, lastName } = splitFullName(guestFullName)
+        finalShippingAddress.firstName = firstName
+        finalShippingAddress.lastName = lastName || "-"
+      }
 
       // AGGRESSIVE: Use FRESH user data from Zustand, not closure value
       // Account for nested user object structure
@@ -972,6 +1103,13 @@ export default function CheckoutForm() {
     e.preventDefault()
     setPaymentError(null)
 
+    if (isGuest && guestStep === 1) {
+      if (validateGuestStepOne()) {
+        setGuestStep(2)
+      }
+      return
+    }
+
     if (validateForm()) {
       await initializePayment()
     }
@@ -979,6 +1117,8 @@ export default function CheckoutForm() {
 
   const subtotal = total(currency)
   const selectedCountry = countries.find((country) => country.id === selectedCountryId)
+  const selectedCountryCode = selectedCountry?.code || ""
+  const isRegionCountry = selectedCountryCode === "AE" || selectedCountryCode === "KW"
   // Find rate that matches current currency
   const rateObj = selectedCountry?.shippingRates.find((r) =>
     String(r.currency).toUpperCase() === currency.toUpperCase()
@@ -1039,42 +1179,26 @@ export default function CheckoutForm() {
                   </Alert>
                 )}
 
-                {/* Guest Checkout - Show guest info fields if not logged in */}
-                {!user && (
+                {/* Guest Checkout */}
+                {isGuest && guestStep === 1 && (
                   <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">{t("guestCheckout")}</h3>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label htmlFor="firstName" className="text-sm font-medium">
-                          {t("firstName")}
-                        </label>
-                        <Input
-                          id="firstName"
-                          type="text"
-                          placeholder="John"
-                          value={shippingAddress.firstName || ""}
-                          onChange={(e) => handleInputChange("firstName", e.target.value)}
-                          aria-invalid={!!errors.firstName}
-                          className={`${errors.firstName ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
-                        />
-                        {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
-                      </div>
 
-                      <div className="space-y-2">
-                        <label htmlFor="lastName" className="text-sm font-medium">
-                          {t("lastName")}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2 sm:col-span-2">
+                        <label htmlFor="fullName" className="text-sm font-medium">
+                          {t("fullName")}
                         </label>
                         <Input
-                          id="lastName"
+                          id="fullName"
                           type="text"
-                          placeholder="Doe"
-                          value={shippingAddress.lastName || ""}
-                          onChange={(e) => handleInputChange("lastName", e.target.value)}
-                          aria-invalid={!!errors.lastName}
-                          className={`${errors.lastName ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
+                          placeholder="John Doe"
+                          value={guestFullName}
+                          onChange={(e) => handleGuestFullNameChange(e.target.value)}
+                          aria-invalid={!!errors.fullName}
+                          className={`${errors.fullName ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
                         />
-                        {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
+                        {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
                       </div>
 
                       <div className="space-y-2">
@@ -1109,119 +1233,185 @@ export default function CheckoutForm() {
                         {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber}</p>}
                       </div>
                     </div>
+
+                    <div className="mt-4 flex justify-end">
+                      <Button type="button" onClick={() => validateGuestStepOne() && setGuestStep(2)}>
+                        {t("next")}
+                      </Button>
+                    </div>
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <label htmlFor="street" className="text-sm font-medium">
-                    {t("streetAddress")}
-                  </label>
-                  <Input
-                    id="street"
-                    type="text"
-                    placeholder="123 Main Street"
-                    value={shippingAddress.street}
-                    onChange={(e) => handleInputChange("street", e.target.value)}
-                    aria-invalid={!!errors.street}
-                    className={`${errors.street ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
-                  />
-                  {errors.street && <p className="text-sm text-destructive">{errors.street}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="state" className="text-sm font-medium">
-                    {t("stateRegion")}
-                  </label>
-                  <Input
-                    id="state"
-                    type="text"
-                    placeholder="NY"
-                    value={shippingAddress.state}
-                    onChange={(e) => handleInputChange("state", e.target.value)}
-                    aria-invalid={!!errors.state}
-                    className={`${errors.state ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
-                  />
-                  {errors.state && <p className="text-sm text-destructive">{errors.state}</p>}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="postalCode" className="text-sm font-medium">
-                      {t("postalCode")}
-                    </label>
-                    <Input
-                      id="postalCode"
-                      type="text"
-                      placeholder="10001"
-                      value={shippingAddress.postalCode}
-                      onChange={(e) => handleInputChange("postalCode", e.target.value)}
-                      aria-invalid={!!errors.postalCode}
-                      className={`${errors.postalCode ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
-                    />
-                    {errors.postalCode && <p className="text-sm text-destructive">{errors.postalCode}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="country" className="text-sm font-medium">
-                      {t("country")}
-                    </label>
-                    <Select
-                      value={selectedCountryId}
-                      onValueChange={handleCountryChange}
-                      disabled={isLoadingCountries}
-                    >
-                      <SelectTrigger
-                        id="country"
-                        className={`w-full ${errors.country ? "border-destructive" : ""}`}
-                        aria-invalid={!!errors.country}
-                        aria-busy={isLoadingCountries}
+                {(isGuest ? guestStep === 2 : true) && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="country" className="text-sm font-medium">
+                        {t("country")}
+                      </label>
+                      <Select
+                        value={selectedCountryId}
+                        onValueChange={handleCountryChange}
+                        disabled={isLoadingCountries}
                       >
-                        <SelectValue placeholder={t("selectCountry")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countries.map((country) => (
-                          <SelectItem key={country.id} value={country.id}>
-                            {country.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.country && <p className="text-sm text-destructive">{errors.country}</p>}
-                    {shippingError && !errors.country && (
-                      <p className="text-sm text-destructive">{shippingError}</p>
-                    )}
-                  </div>
-                </div>
+                        <SelectTrigger
+                          id="country"
+                          className={`w-full ${errors.country ? "border-destructive" : ""}`}
+                          aria-invalid={!!errors.country}
+                          aria-busy={isLoadingCountries}
+                        >
+                          <SelectValue placeholder={t("selectCountry")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countries.map((country) => (
+                            <SelectItem key={country.id} value={country.id}>
+                              {country.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.country && <p className="text-sm text-destructive">{errors.country}</p>}
+                      {shippingError && !errors.country && (
+                        <p className="text-sm text-destructive">{shippingError}</p>
+                      )}
+                    </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="city" className="text-sm font-medium">
-                    {t("city")}
-                  </label>
-                  <Select
-                    value={shippingAddress.city}
-                    onValueChange={handleCityChange}
-                    disabled={!selectedCountryId || isLoadingCities}
-                  >
-                    <SelectTrigger
-                      id="city"
-                      className={`w-full ${errors.city ? "border-destructive" : ""}`}
-                      aria-invalid={!!errors.city}
-                      aria-busy={isLoadingCities}
-                    >
-                      <SelectValue
-                        placeholder={selectedCountryId ? t("selectCity") : t("selectCountryFirst")}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cities.map((city) => (
-                        <SelectItem key={city.id} value={city.name}>
-                          {city.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
-                </div>
+                    {(!isGuest && selectedCountryId) || (isGuest && guestStep === 2) ? (
+                      <>
+                        <div className="space-y-2">
+                          <label htmlFor="street" className="text-sm font-medium">
+                            {t("address")}
+                          </label>
+                          <Input
+                            id="street"
+                            type="text"
+                            placeholder="123 Main Street"
+                            value={shippingAddress.street}
+                            onChange={(e) => handleInputChange("street", e.target.value)}
+                            aria-invalid={!!errors.street}
+                            className={`${errors.street ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
+                          />
+                          {errors.street && <p className="text-sm text-destructive">{errors.street}</p>}
+                        </div>
+
+                        {isRegionCountry && (
+                          <div className="space-y-2">
+                            <label htmlFor="region" className="text-sm font-medium">
+                              {selectedCountryCode === "AE" ? t("emirate") : t("governorate")}
+                            </label>
+                            <Select
+                              value={shippingAddress.state}
+                              onValueChange={handleRegionChange}
+                              disabled={!selectedCountryId || isLoadingCities}
+                            >
+                              <SelectTrigger
+                                id="region"
+                                className={`w-full ${errors.state ? "border-destructive" : ""}`}
+                                aria-invalid={!!errors.state}
+                                aria-busy={isLoadingCities}
+                              >
+                                <SelectValue
+                                  placeholder={
+                                    selectedCountryId
+                                      ? selectedCountryCode === "AE"
+                                        ? t("selectEmirate")
+                                        : t("selectGovernorate")
+                                      : t("selectCountryFirst")
+                                  }
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cities.map((city) => (
+                                  <SelectItem key={city.id} value={city.name}>
+                                    {city.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {errors.state && <p className="text-sm text-destructive">{errors.state}</p>}
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          <label htmlFor="city" className="text-sm font-medium">
+                            {t("city")}
+                          </label>
+                          <Input
+                            id="city"
+                            type="text"
+                            placeholder="Dubai"
+                            value={shippingAddress.city}
+                            onChange={(e) => handleCityChange(e.target.value)}
+                            aria-invalid={!!errors.city}
+                            className={`${errors.city ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
+                          />
+                          {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label htmlFor="postalCode" className="text-sm font-medium">
+                              {t("postalCode")}
+                            </label>
+                            <Input
+                              id="postalCode"
+                              type="text"
+                              placeholder="10001"
+                              value={shippingAddress.postalCode}
+                              onChange={(e) => handleInputChange("postalCode", e.target.value)}
+                              aria-invalid={!!errors.postalCode}
+                              className={`${errors.postalCode ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
+                            />
+                            {errors.postalCode && <p className="text-sm text-destructive">{errors.postalCode}</p>}
+                          </div>
+
+                          {!isGuest && (
+                            <div className="space-y-2">
+                              <label htmlFor="email" className="text-sm font-medium">
+                                {t("email")}
+                              </label>
+                              <Input
+                                id="email"
+                                type="email"
+                                placeholder="john@example.com"
+                                value={shippingAddress.email || ""}
+                                onChange={(e) => handleInputChange("email", e.target.value)}
+                                aria-invalid={!!errors.email}
+                                className={`${errors.email ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
+                              />
+                              {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                            </div>
+                          )}
+                        </div>
+
+                        {!isGuest && (
+                          <div className="space-y-2">
+                            <label htmlFor="phoneNumber" className="text-sm font-medium">
+                              {t("phone")}
+                            </label>
+                            <Input
+                              id="phoneNumber"
+                              type="tel"
+                              placeholder="+1 (555) 123-4567"
+                              value={shippingAddress.phoneNumber || ""}
+                              onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                              aria-invalid={!!errors.phoneNumber}
+                              className={`${errors.phoneNumber ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
+                            />
+                            {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber}</p>}
+                          </div>
+                        )}
+
+                        {isGuest && (
+                          <div className="flex justify-between">
+                            <Button type="button" variant="outline" onClick={() => setGuestStep(1)}>
+                              {t("back")}
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    ) : null}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1230,7 +1420,7 @@ export default function CheckoutForm() {
               size="lg"
               className="w-full text-lg font-semibold"
               style={{ backgroundColor: '#2b1b13', color: '#fff' }}
-              disabled={isInitializingPayment}
+              disabled={isInitializingPayment || (isGuest && guestStep === 1)}
             >
               {isInitializingPayment ? t("preparingPayment") : t("proceedToPayment")}
             </Button>

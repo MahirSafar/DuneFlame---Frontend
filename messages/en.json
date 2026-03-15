@@ -213,6 +213,13 @@
     "itemRemoved": "Item removed from cart",
     "quantityUpdated": "Quantity updated"
   },
+  "shipping": {
+    "standard": "Standard Shipping",
+    "express": "Express Shipping",
+    "overnight": "Overnight Shipping",
+    "calculating": "Calculating shipping...",
+    "not_available": "Shipping is not available for this location"
+  },
   "checkout": {
     "title": "Checkout",
     "summary": "Order Summary",
@@ -232,6 +239,7 @@
     "orderConfirmed": "Your order has been confirmed",
     "orderNumber": "Order Number",
     "estimatedDelivery": "Estimated Delivery",
+    "fullName": "Full Name",
     "firstName": "First Name",
     "lastName": "Last Name",
     "email": "Email",
@@ -244,10 +252,14 @@
     "streetAddress": "Street Address",
     "stateRegion": "State / Region",
     "postalCode": "Postal Code",
+    "emirate": "Emirate",
+    "governorate": "Governorate",
     "proceedToPayment": "Proceed to Payment",
     "preparingPayment": "Preparing Payment...",
     "selectCountry": "Select country",
     "selectCity": "Select city",
+    "selectEmirate": "Select emirate",
+    "selectGovernorate": "Select governorate",
     "selectCountryFirst": "Select country first",
     "completePayment": "Complete your payment",
     "paymentInfo": "Your order is created. Please pay to finalize it. Closing without paying keeps it unpaid.",
@@ -264,22 +276,49 @@
     "unableToLoadCities": "Unable to load cities. Please try again.",
     "unableToLoadCountries": "Unable to load shipping countries. Please try again.",
     "orderCreatedSuccess": "Order created successfully. Please complete payment.",
+    "next": "Next",
+    "back": "Back",
     "failedSyncBasket": "Failed to sync basket. Please try again.",
     "emptyBasket": "Your basket is empty. Please add items before checkout.",
     "quantity": "Qty",
     "loadingPrice": "Loading price...",
     "validationMessages": {
       "streetAddressRequired": "Street address is required",
+      "fullNameRequired": "Full name is required",
       "firstNameRequired": "First name is required",
       "lastNameRequired": "Last name is required",
       "emailRequired": "Email is required",
       "phoneRequired": "Phone number is required",
       "cityRequired": "City is required",
+      "regionRequired": "Region is required",
       "stateRequired": "State is required",
       "postalCodeRequired": "Postal code is required",
       "countryRequired": "Country is required"
     }
   },
+  "expressCheckout": {
+    "fastCheckout": "Fast Checkout",
+    "quickBuy": "Buy Now",
+    "totalLabel": "Order Total",
+    "processing": "Processing payment...",
+    "paymentSuccess": "Payment successful!",
+    "paymentError": "Payment failed. Please try again.",
+    "securePayment": "Secure payment powered by Stripe",
+    "applePay": "Apple Pay",
+    "googlePay": "Google Pay",
+    "shippingCalculation": "Calculating shipping...",
+    "countryNotSupported": "This country is not supported for shipping",
+    "noShippingAvailable": "Shipping not available for this location",
+    "shippingCalculationFailed": "Failed to calculate shipping rates",
+    "validationError": "Validation error. Please check your information.",
+    "networkError": "Network error. Please check your connection and try again.",
+    "orderCreationFailed": "Failed to create order. Please try again.",
+    "paymentMethodRequired": "Payment method is required to complete purchase.",
+    "shippingAddressRequired": "Shipping address is required.",
+    "paymentProcessingError": "An error occurred while processing your payment.",
+    "stripeError": "Payment processing error. Please contact support if the problem persists."
+  },
+  "paymentFailed": "Payment failed. Please check your card balance.",
   "orders": {
     "confirmation": {
       "title": "Thank You for Your Order!",
@@ -498,7 +537,10 @@
       "phonePlaceholder": "Your Phone Number",
       "subjectPlaceholder": "Subject",
       "messagePlaceholder": "Your Message",
-      "sendButton": "Send Message"
+      "sendButton": "Send Message",
+      "sendingButton": "Sending...",
+      "successMessage": "Message sent successfully!",
+      "errorMessage": "Failed to send message. Please try again."
     }
   },
   "pagination": {

@@ -3,16 +3,30 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Mail, ArrowRight } from "lucide-react"
+import { Mail, ArrowRight, Loader2 } from "lucide-react"
 import { useTranslations } from "next-intl"
+import toast from "react-hot-toast"
+import { subscribeToNewsletter } from "@/lib/services/newsletter"
+import { getErrorMessage } from "@/lib/utils"
 
 export default function Newsletter() {
   const t = useTranslations()
   const [email, setEmail] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setEmail("")
+    if (!email) return
+    setIsSubmitting(true)
+    try {
+      await subscribeToNewsletter({ email })
+      toast.success(t("home.newsletter.success"))
+      setEmail("")
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -38,10 +52,17 @@ export default function Newsletter() {
             </div>
             <button
               type="submit"
-              className="px-6 py-3 font-semibold rounded-lg transition-smooth flex items-center gap-2 btn-subscribe"
+              disabled={isSubmitting || !email}
+              className="px-6 py-3 font-semibold rounded-lg transition-smooth flex items-center gap-2 btn-subscribe disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t('home.newsletter.subscribe')}
-              <ArrowRight size={18} className="rtl:rotate-180" />
+              {isSubmitting ? (
+                <Loader2 className="animate-spin w-4 h-4 mr-2" />
+              ) : (
+                <>
+                  {t('home.newsletter.subscribe')}
+                  <ArrowRight size={18} className="rtl:rotate-180" />
+                </>
+              )}
             </button>
           </form>
         </div>

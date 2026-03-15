@@ -55,6 +55,7 @@ interface CartStore {
   removeItem: (idOrKey: string, isAuthenticated?: boolean) => void
   updateQuantity: (id: string, quantity: number, isAuthenticated?: boolean) => void
   clearCart: () => void
+  clearGuestData: () => void
   loadBasket: () => Promise<void>
   syncGuestItemsToAuthenticatedBasket: () => Promise<void>
   total: (currency?: CurrencyType) => number
@@ -192,6 +193,19 @@ export const useCartStore = create<CartStore>()(
   clearCart: () => {
     set({ items: [] })
     syncWithBackend([])
+  },
+
+  clearGuestData: () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("guestBasketId")
+      localStorage.removeItem("df_guest_basket_id")
+      localStorage.removeItem("df-cart-storage")
+      localStorage.removeItem("cart-storage")
+      localStorage.removeItem("basketId")
+    }
+
+    // Clear local items only; do not touch backend basket
+    set({ items: [] })
   },
 
   loadBasket: async () => {

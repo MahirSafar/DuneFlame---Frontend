@@ -16,6 +16,8 @@ import type { ProductResponse } from "@/lib/services/products"
 import { cn, getImageUrl } from "@/lib/utils"
 import { EMPTY_GUID } from "@/lib/cart-store"
 import { useTranslations } from "next-intl"
+import { ProductQuickBuy } from "@/components/products/product-quick-buy"
+import { StripeElementsProvider } from "@/components/payment/stripe-elements-provider"
 
 interface ProductVariantModalProps {
   product: ProductResponse
@@ -380,37 +382,58 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
               </div>
             </div>
 
-            <DialogFooter className="sm:justify-between">
+            <DialogFooter className="sm:justify-between flex-col sm:flex-row gap-3">
               <div className="text-sm text-muted-foreground">
                 {isPriceAvailable ? "Crafted to order. Taxes included." : "Select currency and weight"}
               </div>
-              <Button
-                size="lg"
-                className="w-full sm:w-auto"
-                style={{
-                  backgroundColor: 'rgb(56, 109, 118)',
-                  color: '#fff',
-                  borderRadius: '0.5rem',
-                  fontWeight: 600,
-                  fontSize: '1rem',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  transition: 'background 0.2s',
-                }}
-                onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
-                onMouseOut={e => (e.currentTarget.style.backgroundColor = 'rgb(56, 109, 118)')}
-                onClick={handleAddToCart}
-                disabled={!hasValidSelection || !isPriceAvailable}
-              >
-                <ShoppingCart className="h-4 w-4" />
-                {isPriceAvailable ? (
-                  t('common.actions.addToCart')
-                ) : (
-                  t('products.detail.selectWeight')
-                )}
-              </Button>
+
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                {/* Quick Buy with Express Checkout */}
+                <div className="flex-1 sm:flex-none">
+                  <StripeElementsProvider>
+                    <ProductQuickBuy
+                      product={fullProduct}
+                      selectedWeight={selectedWeight}
+                      selectedWeightId={selectedWeightId}
+                      selectedRoast={selectedRoast}
+                      selectedGrind={selectedGrind}
+                      currentPrice={currentPrice}
+                      isPriceAvailable={isPriceAvailable}
+                      hasValidSelection={hasValidSelection}
+                      onSuccess={() => onClose()}
+                    />
+                  </StripeElementsProvider>
+                </div>
+
+                {/* Add to Cart Button */}
+                <Button
+                  size="lg"
+                  className="flex-1 sm:flex-none w-full sm:w-auto"
+                  style={{
+                    backgroundColor: 'rgb(56, 109, 118)',
+                    color: '#fff',
+                    borderRadius: '0.5rem',
+                    fontWeight: 600,
+                    fontSize: '1rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
+                  onMouseOut={e => (e.currentTarget.style.backgroundColor = 'rgb(56, 109, 118)')}
+                  onClick={handleAddToCart}
+                  disabled={!hasValidSelection || !isPriceAvailable}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  {isPriceAvailable ? (
+                    t('common.actions.addToCart')
+                  ) : (
+                    t('products.detail.selectWeight')
+                  )}
+                </Button>
+              </div>
             </DialogFooter>
           </div>
         </div>

@@ -213,6 +213,13 @@
     "itemRemoved": "تمت إزالة العنصر من السلة",
     "quantityUpdated": "تم تحديث الكمية"
   },
+  "shipping": {
+    "standard": "الشحن العادي",
+    "express": "الشحن السريع",
+    "overnight": "شحن بين عشية وضحاها",
+    "calculating": "جاري حساب الشحن...",
+    "not_available": "الشحن غير متوفر لهذا الموقع"
+  },
   "checkout": {
     "title": "الدفع",
     "summary": "ملخص الطلب",
@@ -232,6 +239,7 @@
     "orderConfirmed": "تم تأكيد طلبك",
     "orderNumber": "رقم الطلب",
     "estimatedDelivery": "التسليم المتوقع",
+    "fullName": "الاسم الكامل",
     "firstName": "الاسم الأول",
     "lastName": "اسم العائلة",
     "email": "البريد الإلكتروني",
@@ -244,10 +252,14 @@
     "streetAddress": "عنوان الشارع",
     "stateRegion": "الولاية / المنطقة",
     "postalCode": "الرمز البريدي",
+    "emirate": "الإمارة",
+    "governorate": "المحافظة",
     "proceedToPayment": "متابعة الدفع",
     "preparingPayment": "جاري تحضير الدفع...",
     "selectCountry": "اختر الدولة",
     "selectCity": "اختر المدينة",
+    "selectEmirate": "اختر الإمارة",
+    "selectGovernorate": "اختر المحافظة",
     "selectCountryFirst": "اختر الدولة أولاً",
     "completePayment": "أكمل دفعك",
     "paymentInfo": "تم إنشاء طلبك. يرجى الدفع لإنهاؤه. إغلاق النافذة بدون الدفع سيبقي الطلب بدون دفع.",
@@ -264,22 +276,49 @@
     "unableToLoadCities": "تعذر تحميل المدن. يرجى حاول مرة أخرى.",
     "unableToLoadCountries": "تعذر تحميل دول الشحن. يرجى حاول مرة أخرى.",
     "orderCreatedSuccess": "تم إنشاء الطلب بنجاح. يرجى إكمال الدفع.",
+    "next": "التالي",
+    "back": "رجوع",
     "failedSyncBasket": "فشل مزامنة السلة. يرجى حاول مرة أخرى.",
     "emptyBasket": "سلتك فارغة. يرجى أضف منتجات قبل الدفع.",
     "quantity": "الكمية",
     "loadingPrice": "جاري تحميل السعر...",
+    "expressCheckout": {
+      "fastCheckout": "دفع سريع",
+      "quickBuy": "اشترِ الآن",
+      "totalLabel": "الإجمالي",
+      "processing": "جاري معالجة الدفع...",
+      "paymentSuccess": "تم الدفع بنجاح!",
+      "paymentError": "فشل الدفع. يرجى حاول مرة أخرى.",
+      "securePayment": "دفع آمن مشفّر بواسطة Stripe",
+      "applePay": "Apple Pay",
+      "googlePay": "Google Pay",
+      "shippingCalculation": "جاري حساب تكاليف الشحن...",
+      "countryNotSupported": "هذه الدولة غير مدعومة للشحن",
+      "noShippingAvailable": "الشحن غير متوفر لهذا الموقع",
+      "shippingCalculationFailed": "فشل حساب تكاليف الشحن",
+      "validationError": "خطأ في التحقق. يرجى تحقق من معلوماتك.",
+      "networkError": "خطأ في الاتصال. يرجى تحقق من اتصالك بالإنترنت وحاول مرة أخرى.",
+      "orderCreationFailed": "فشل إنشاء الطلب. يرجى حاول مرة أخرى.",
+      "paymentMethodRequired": "طريقة الدفع مطلوبة لإكمال الشراء.",
+      "shippingAddressRequired": "عنوان الشحن مطلوب.",
+      "paymentProcessingError": "حدث خطأ أثناء معالجة دفعتك.",
+      "stripeError": "خطأ في معالجة الدفع. يرجى اتصل بالدعم إذا استمرت المشكلة."
+    },
     "validationMessages": {
       "streetAddressRequired": "عنوان الشارع مطلوب",
+      "fullNameRequired": "الاسم الكامل مطلوب",
       "firstNameRequired": "الاسم الأول مطلوب",
       "lastNameRequired": "اسم العائلة مطلوب",
       "emailRequired": "البريد الإلكتروني مطلوب",
       "phoneRequired": "رقم الهاتف مطلوب",
       "cityRequired": "المدينة مطلوبة",
+      "regionRequired": "المنطقة مطلوبة",
       "stateRequired": "الولاية مطلوبة",
       "postalCodeRequired": "الرمز البريدي مطلوب",
       "countryRequired": "الدولة مطلوبة"
     }
   },
+  "paymentFailed": "فشل الدفع. يرجى التحقق من رصيد بطاقتك.",
   "orders": {
     "confirmation": {
       "title": "شكراً على طلبك!",
@@ -476,7 +515,10 @@
       "phonePlaceholder": "رقم هاتفك",
       "subjectPlaceholder": "الموضوع",
       "messagePlaceholder": "رسالتك",
-      "sendButton": "إرسال الرسالة"
+      "sendButton": "إرسال الرسالة",
+      "sendingButton": "جارٍ الإرسال...",
+      "successMessage": "تم إرسال الرسالة بنجاح!",
+      "errorMessage": "فشل إرسال الرسالة. يرجى المحاولة مرة أخرى."
     }
   },
   "pagination": {

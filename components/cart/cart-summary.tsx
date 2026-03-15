@@ -10,6 +10,8 @@ import { getImageUrl } from "@/lib/utils"
 import { useAuthStore } from "@/lib/auth-store"
 import { setApiClientLocale } from "@/lib/api-client"
 import { FormattedPrice } from "@/components/currency/formatted-price"
+import { CartExpressCheckout } from "@/components/cart/cart-express-checkout"
+import { StripeElementsProvider } from "@/components/payment/stripe-elements-provider"
 
 export default function CartSummary() {
   const t = useTranslations()
@@ -159,6 +161,11 @@ export default function CartSummary() {
           <span>{t('cart.total')}</span>
           <FormattedPrice amount={total(currency)} />
         </div>
+
+        {/* Express Checkout - Apple Pay / Google Pay */}
+        <StripeElementsProvider>
+          <CartExpressCheckout className="mb-4" />
+        </StripeElementsProvider>
 
         <div className="flex flex-col md:flex-row gap-2 md:gap-4">
           <Link

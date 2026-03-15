@@ -48,25 +48,29 @@ export default function GoogleCallbackPage() {
         useAuthStore.setState({ accessToken, refreshToken });
       }
 
-      // STEP 1: Sync guest cart items to authenticated user's basket
+      // Clear guest data before loading the authenticated basket
+      const { clearGuestData } = useCartStore.getState();
+      clearGuestData();
+
+      // STEP 1: Load authenticated user's basket
       (async () => {
         try {
-          // STEP 2: Sync guest cart items to authenticated user's basket
+          const authState = useAuthStore.getState();
+          if (!authState.user) {
+            await authState.fetchUser();
+          }
+
           try {
-            const { syncGuestItemsToAuthenticatedBasket } = useCartStore.getState();
-            await syncGuestItemsToAuthenticatedBasket();
-            
-            // After syncing, reload the basket from server
             const { loadBasket } = useCartStore.getState();
             await loadBasket();
-            console.log("[GoogleCallback] ✅ Cart synced after Google login");
+            console.log("[GoogleCallback] ✅ Basket loaded after Google login");
           } catch (cartError) {
-            console.error("[GoogleCallback] Failed to sync cart after Google login:", cartError);
+            console.error("[GoogleCallback] Failed to load basket after Google login:", cartError);
             // Don't break - login was successful
           }
 
           toast.success("Successfully logged in with Google");
-          // Redirect to home after a short delay
+          // Redirect to home after successful login
           setTimeout(() => router.replace("/"), 700);
         } catch (error) {
           console.error("[GoogleCallback] Error during post-login setup:", error);

@@ -58,16 +58,14 @@ export const useAuthStore = create<AuthState>()(
             localStorage.setItem("df_user_object", JSON.stringify(user));
           }
           
-          // Sync guest cart items to authenticated user's basket
+          // Clear guest data and load authenticated user's basket from backend
           try {
-            const { syncGuestItemsToAuthenticatedBasket } = useCartStore.getState();
-            await syncGuestItemsToAuthenticatedBasket();
-            // After syncing, reload the basket from server to get the merged state
-            const { loadBasket } = useCartStore.getState();
+            const { clearGuestData, loadBasket } = useCartStore.getState();
+            clearGuestData();
             await loadBasket();
           } catch (cartError) {
-            console.error("[Auth] Failed to sync cart after login:", cartError);
-            // Don't throw - login was successful, cart sync failure shouldn't break login
+            console.error("[Auth] Failed to load basket after login:", cartError);
+            // Don't throw - login was successful, cart load failure shouldn't break login
           }
         } catch (e: any) {
           const msg = getErrorMessage(e) || "Login failed";

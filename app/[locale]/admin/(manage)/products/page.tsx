@@ -53,6 +53,7 @@ import {
   type Origin,
   createProduct,
   deleteProduct,
+  restoreProduct,
   getCategories,
   getOrigins,
   getProduct,
@@ -83,6 +84,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  RotateCcw,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -292,7 +294,11 @@ const handleOpenEdit = async (productId: string) => {
     const arTrans = getTrans("ar");
 
     // --- Qiymət Matrisini Birləşdiririk ---
-    const allPrices = [p.activePrice, ...(p.otherAvailableCurrencies || [])].filter(Boolean);
+    const allPrices = [
+      p.activePrice,
+      ...(p.otherAvailableCurrencies || []),
+      ...(p.availablePrices || []),
+    ].filter(Boolean);
     const weightPrices: WeightPrice[] = [];
 
     if (currentMasterData) {
@@ -638,6 +644,16 @@ const handleOpenEdit = async (productId: string) => {
     }
   }
 
+  const handleRestore = async (id: string) => {
+    try {
+      await restoreProduct(id)
+      toast.success("Product restored successfully")
+      loadProducts()
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    }
+  }
+
   // Render Helper
   const displayedProducts = useMemo(() => products, [products])
 
@@ -791,13 +807,16 @@ const handleOpenEdit = async (productId: string) => {
             </TableHeader>
             <TableBody>
               {displayedProducts.map((product) => (
-                <TableRow key={product.id} className="hover:bg-white/5 transition-colors group">
+                <TableRow key={product.id} className={`hover:bg-white/5 transition-colors group ${!product.isActive ? 'opacity-50 bg-red-500/5' : ''}`}>
                   <TableCell className="cursor-pointer py-4 px-6" onClick={() => handleViewProduct(product)}>
                     <div className="flex items-center gap-3">
                       {renderImage(product)}
                       <div className="space-y-1">
-                        <div className="font-semibold text-foreground leading-tight group-hover:text-accent transition-colors">
+                        <div className="font-semibold text-foreground leading-tight group-hover:text-accent transition-colors flex items-center gap-2">
                             {product.name}
+                            {!product.isActive && (
+                              <Badge variant="destructive" className="text-[10px] h-4 px-1.5">Deleted</Badge>
+                            )}
                         </div>
                         <div className="text-xs text-muted-foreground line-clamp-1 max-w-50">
                             {product.description}
@@ -877,24 +896,38 @@ const handleOpenEdit = async (productId: string) => {
                       >
                         <Eye className="size-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleOpenEdit(product.id)}
-                        className="hover:bg-accent/10 hover:text-accent"
-                        title="Edit Product"
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => confirmDelete(product.id)}
-                        className="hover:bg-destructive/10 text-destructive"
-                        title="Delete Product"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+                      {product.isActive ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenEdit(product.id)}
+                            className="hover:bg-accent/10 hover:text-accent"
+                            title="Edit Product"
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => confirmDelete(product.id)}
+                            className="hover:bg-destructive/10 text-destructive"
+                            title="Delete Product"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRestore(product.id)}
+                          className="hover:bg-green-500/10 text-green-500"
+                          title="Restore Product"
+                        >
+                          <RotateCcw className="size-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

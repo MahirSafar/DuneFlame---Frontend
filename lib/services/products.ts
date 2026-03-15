@@ -228,6 +228,11 @@ export async function deleteProduct(id: string) {
   await axios.delete(`/admin/products/${id}`);
 }
 
+export async function restoreProduct(id: string) {
+  const response = await axios.patch<Product>(`/admin/products/${id}/restore`);
+  return response.data;
+}
+
 export async function createProductV2(data: FormData) {
   const response = await axios.post<Product>("/admin/products", data, {
     headers: { "Content-Type": "multipart/form-data" },

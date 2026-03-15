@@ -102,9 +102,8 @@ export default function Navbar() {
               alt="DuneFlame Logo"
               width={96}
               height={96}
-              className="w-8 sm:w-14 md:w-16 h-8 sm:h-14 md:h-16 rounded-full group-hover:scale-110 transition-smooth"
+              className="w-6 sm:w-9 md:w-10 h-6 sm:h-9 md:h-10 rounded-full group-hover:scale-110 transition-smooth"
               style={{ display: "block" }}
-              priority
             />
           </Link>
 

@@ -7,22 +7,43 @@ import { useLocale } from "next-intl"
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
 import Newsletter from "@/components/home/newsletter"
-import { Mail, Phone, MapPin, Send } from "lucide-react"
+import { Mail, Phone, MapPin, Send, Loader2 } from "lucide-react"
+import toast from "react-hot-toast"
+import { submitContactForm } from "@/lib/services/contact"
+import { getErrorMessage } from "@/lib/utils"
 
 export default function ContactPage() {
   const t = useTranslations("pages.contact")
   const locale = useLocale()
   const isArabic = locale === "ar"
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", subject: "", message: "" })
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setFormData({ name: "", email: "", phone: "", subject: "", message: "" })
+
+    try {
+      setIsSubmitting(true)
+
+      await submitContactForm({
+        Name: formData.name,
+        Email: formData.email,
+        Subject: formData.subject,
+        Message: `Phone: ${formData.phone}\n\n${formData.message}`,
+      })
+
+      toast.success(t("successMessage"))
+      setFormData({ name: "", email: "", phone: "", subject: "", message: "" })
+    } catch (err) {
+      toast.error(getErrorMessage(err) || t("errorMessage"))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -113,11 +134,21 @@ export default function ContactPage() {
 
               <button
                 type="submit"
-                className="w-full px-6 py-3 hover:opacity-90 text-white font-bold rounded-lg transition-smooth flex items-center justify-center gap-2 glow-accent"
+                disabled={isSubmitting}
+                className="w-full px-6 py-3 hover:opacity-90 disabled:opacity-70 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-smooth flex items-center justify-center gap-2 glow-accent"
                 style={{ backgroundColor: '#2b1b13' }}
               >
-                <Send size={20} />
-                {t("sendButton")}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2" size={20} />
+                    {t("sendingButton")}
+                  </>
+                ) : (
+                  <>
+                    <Send size={20} />
+                    {t("sendButton")}
+                  </>
+                )}
               </button>
             </form>
           </div>
