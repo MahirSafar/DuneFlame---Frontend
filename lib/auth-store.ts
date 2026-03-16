@@ -47,7 +47,10 @@ export const useAuthStore = create<AuthState>()(
       async login(email, password) {
         set({ loggingIn: true, error: undefined });
         try {
-          const res = await axios.post<AuthResponse>("/auth/login", { email, password });
+          const guestBasketId = typeof window !== "undefined" ? localStorage.getItem("guestBasketId") : null;
+          const headers = guestBasketId ? { "X-Guest-Basket-Id": guestBasketId } : {};
+
+          const res = await axios.post<AuthResponse>("/auth/login", { email, password }, { headers });
           const data = res.data;
           const { accessToken, refreshToken, ...user } = data;
           set({ user, accessToken, refreshToken, loggingIn: false });
@@ -56,6 +59,9 @@ export const useAuthStore = create<AuthState>()(
             sessionStorage.setItem("token_refresh_time", Date.now().toString());
             // v17: Also persist user object to localStorage for offline restoration
             localStorage.setItem("df_user_object", JSON.stringify(user));
+
+            localStorage.removeItem("guestBasketId");
+            localStorage.removeItem("df_user_basket_id");
           }
           
           // Clear guest data and load authenticated user's basket from backend
@@ -120,24 +126,22 @@ export const useAuthStore = create<AuthState>()(
           await axios.post("/auth/logout");
         } catch {}
         
-        // Clear guest basket ID and user basket ID
+        // 1. TƏHLÜKƏSİZLİK: Tokenləri və yaddaşı DƏRHAL silirik ki, backend-ə gedən
+        // "səbəti boşalt" (clearCart) sorğusu anonim getsin və sənin şəxsi profilini silməsin!
+        set({ user: null, accessToken: null, refreshToken: null, userBasketId: null });
+        setTokens(null); 
+        setAxiosAuthToken(null);
+        
         if (typeof window !== "undefined") {
           localStorage.removeItem("guestBasketId");
           localStorage.removeItem("df_user_basket_id");
-        }
-        
-        // Clear local cart state (do NOT delete backend basket - user should see it on next login)
-        useCartStore.getState().clearCart();
-        
-        // Clear auth state
-        set({ user: null, accessToken: null, refreshToken: null, userBasketId: null });
-        setTokens(null); // Clear from api-client memory
-        setAxiosAuthToken(null);
-        if (typeof window !== "undefined") {
           localStorage.removeItem("df_tokens");
           localStorage.removeItem("df_user_object");
           sessionStorage.removeItem("token_refresh_time");
         }
+        
+        // 2. İndi səbəti UI-dan silmək təhlükəsizdir (Token olmadığı üçün profilinə toxunmayacaq)
+        useCartStore.getState().clearCart();
       },
       setFromStorage() {
         if (typeof window === "undefined") return;
@@ -161,7 +165,6 @@ export const useAuthStore = create<AuthState>()(
             try {
               user = JSON.parse(userRaw);
             } catch {
-              console.warn("[Auth] Failed to parse user object from localStorage");
             }
           }
           
@@ -171,7 +174,6 @@ export const useAuthStore = create<AuthState>()(
           
           // If token exists but user is null, fetch user data from backend
           if (accessToken && !user) {
-            console.log("[Auth] ⚠️ Token exists but user is null - fetching user data from backend");
             get().fetchUser().catch(err => 
               console.error("[Auth] Failed to fetch user after storage restoration:", err)
             );
@@ -196,8 +198,7 @@ export const useAuthStore = create<AuthState>()(
           
           // 5. CRITICAL: Clear guest basket ID when user logs in
           // User now has an authenticated basket, guest ID must be removed
-          localStorage.removeItem("df_guest_basket_id");
-          console.log("[Auth] ✅ Cleared guest basket ID - user is now authenticated");
+          localStorage.removeItem("guestBasketId");
         }
       },
       async fetchUser() {
@@ -205,21 +206,25 @@ export const useAuthStore = create<AuthState>()(
           const state = get();
           
           if (!state.accessToken) {
-            console.warn("[Auth] No accessToken available for fetchUser");
             return;
           }
           
-          // Fetch user data from /users/me endpoint (correct backend endpoint)
-          console.log("[Auth] 🔄 Fetching user from /users/me...");
           const response = await apiFetch<Omit<AuthResponse, "accessToken" | "refreshToken">>("/users/me", {
             method: "GET",
           });
           
           if (response) {
-            console.log("[Auth] ✅ Successfully fetched user:", response);
             set({ user: response });
             if (typeof window !== "undefined") {
               localStorage.setItem("df_user_object", JSON.stringify(response));
+            }
+            
+            // YENİ ƏLAVƏ: Səhifə yenilənəndə və ya Google ilə girəndə səbəti avtomatik yüklə
+            try {
+              const { loadBasket } = useCartStore.getState();
+              await loadBasket();
+            } catch (cartError) {
+              console.error("[Auth] Failed to load basket after fetchUser:", cartError);
             }
           } else {
             console.error("[Auth] ❌ Failed to fetch user - empty response");
@@ -236,14 +241,12 @@ export const useAuthStore = create<AuthState>()(
           
           // v17 CRITICAL: Use userId if available
           if (userId) {
-            console.log("[Auth] 🔑 Using user ID for basket fetch:", userId);
             const response = await basketService.getBasket(userId);
             const basketId = response?.id;
 
             if (basketId) {
               // v16 CRITICAL: REJECT guest_ IDs for authenticated users
               if (basketId.startsWith("guest_")) {
-                console.warn("[Auth] ⚠️ Backend returned guest_ ID for authenticated user (sync in progress):", basketId);
                 return null;  // Signal to retry
               }
               
@@ -252,10 +255,8 @@ export const useAuthStore = create<AuthState>()(
                 localStorage.setItem("df_user_basket_id", basketId);
               }
               
-              console.log("[Auth] ✅ Fetched basketId via user ID:", basketId);
               return basketId;
             } else {
-              console.error("[Auth] ❌ Backend returned no basketId for user:", userId);
               return null;
             }
           }
@@ -264,7 +265,6 @@ export const useAuthStore = create<AuthState>()(
           // This handles page reload case where token is restored but user object not yet fetched
           const tokenToUse = optionalToken || accessToken;
           if (tokenToUse && typeof window !== "undefined") {
-            console.log("[Auth] 🔑 User ID not available yet, using token-based backup basket fetch");
             try {
               const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dune-flame-backend-180239181668.me-central1.run.app';
               const response = await fetch(`${apiBaseUrl}/api/v1/basket/me`, {
@@ -282,7 +282,6 @@ export const useAuthStore = create<AuthState>()(
                 if (basketId) {
                   // v16 CRITICAL: REJECT guest_ IDs for authenticated users
                   if (basketId.startsWith("guest_")) {
-                    console.warn("[Auth] ⚠️ Token-based fetch returned guest_ ID (sync in progress)");
                     return null;  // Signal to retry
                   }
                   
@@ -290,29 +289,22 @@ export const useAuthStore = create<AuthState>()(
                   if (typeof window !== "undefined") {
                     localStorage.setItem("df_user_basket_id", basketId);
                   }
-                  console.log("[Auth] ✅ Fetched basketId via token (user object not yet ready):", basketId);
                   return basketId;
                 } else {
-                  console.error("[Auth] ❌ Backend returned no basketId via token");
                   return null;
                 }
               } else if (response.status === 404) {
-                console.error("[Auth] ❌ Backend /basket/me endpoint not found (404). Check backend endpoint name.");
                 return null;
               } else {
-                console.error("[Auth] ❌ Failed to fetch basket with token. Status:", response.status);
                 return null;
               }
             } catch (tokenError) {
-              console.error("[Auth] Failed to fetch basket with token:", tokenError);
               return null;
             }
           }
           
-          console.warn("[Auth] ⚠️ No user ID or access token available for basket fetch");
           return null;
         } catch (error) {
-          console.error("[Auth] Failed to fetch basketId:", error);
           return null;
         }
       },

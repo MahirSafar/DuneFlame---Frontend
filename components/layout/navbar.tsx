@@ -1,11 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
 import { Menu, X, User, LogOut, ShoppingBag, Search, ChevronUp } from "lucide-react"
 import { useTranslations } from "next-intl"
+import { Link, useRouter } from "@/i18n/routing"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useCartStore } from "@/lib/cart-store"
 import { InstantCurrencySwitcher } from "@/components/currency/instant-switcher"
@@ -96,7 +95,7 @@ export default function Navbar() {
         <div className="w-full px-4 sm:px-6 md:px-10">
         <div className="relative flex items-center h-16 sm:h-20 gap-3 sm:gap-6">
           {/* Logo - Left Side */}
-          <Link href="/" className="flex items-center gap-2 group flex-shrink-0 z-10">
+          <Link href="/" aria-label="DuneFlame Home" className="flex items-center gap-2 group flex-shrink-0 z-10">
             <Image
               src="/logo.svg"
               alt="DuneFlame Logo"
@@ -144,6 +143,7 @@ export default function Navbar() {
             {/* Basket */}
             <Link
               href="/cart"
+              aria-label="Shopping Cart"
               className="relative p-1.5 sm:p-2 hover:bg-accent/10 rounded-lg transition-smooth scale-100 hover:scale-110"
             >
               <ShoppingBag size={18} className="sm:w-5 sm:h-5" />
@@ -157,7 +157,7 @@ export default function Navbar() {
             {/* Profile - Always visible */}
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => router.push(isLoggedIn ? "/dashboard" : "/login")}
+                onClick={() => router.push(isLoggedIn ? "/dashboard" : "/auth/login")}
                 className="p-1.5 sm:p-2 hover:bg-accent/10 rounded-lg transition-smooth"
                 aria-label="Profile"
               >
@@ -176,6 +176,7 @@ export default function Navbar() {
 
             {/* Mobile/Tablet Menu Button */}
             <button
+              aria-label="Toggle menu"
               className="lg:hidden p-1.5 sm:p-2 hover:bg-accent/10 rounded-lg transition-smooth"
               onClick={() => setIsOpen(!isOpen)}
             >

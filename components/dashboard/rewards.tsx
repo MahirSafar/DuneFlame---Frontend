@@ -13,7 +13,6 @@ export default function Rewards({ rewards }: RewardsProps) {
   const locale = useLocale()
   const isArabic = locale === "ar"
   // Debug
-  console.log("Rewards Data:", rewards)
 
   // Get balance - handle null/undefined
   const balance = rewards?.stats?.balance ?? 0

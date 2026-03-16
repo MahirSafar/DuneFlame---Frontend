@@ -40,6 +40,8 @@ export interface ProductResponse {
   slug: string;
   name: string;
   description: string;
+  nameTranslations?: Array<{ languageCode: string; name: string }>;
+  descriptionTranslations?: Array<{ languageCode: string; description: string }>;
   stockInKg: number;
   isActive: boolean;
   categoryId: string;
@@ -122,14 +124,6 @@ export async function getProducts(params: ProductQuery = {}): Promise<PagedResul
   
   // 🔍 DEBUG: Log the final URL being sent
   const finalUrl = `/products${qs ? `?${qs}` : ""}`;
-  console.log("[getProducts] Final URL:", finalUrl);
-  console.log("[getProducts] Query params:", {
-    roastLevelIds: params.roastLevelIds,
-    originIds: params.originIds,
-    minPrice: params.minPrice,
-    maxPrice: params.maxPrice,
-    sortBy: params.sortBy,
-  });
 
   const response = await apiFetch<PagedResult<ProductResponse>>(finalUrl);
   return response;

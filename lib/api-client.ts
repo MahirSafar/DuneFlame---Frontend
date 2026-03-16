@@ -82,7 +82,6 @@ function clearAuthAndRedirect() {
         }, 500);
       } else {
         // Already reloaded once - prevent infinite loop
-        console.warn("⚠️ Session expiry cleanup already performed, preventing infinite reload loop");
         // Clear the flag for future sessions
         sessionStorage.removeItem("session_expired_reload_flag");
       }
@@ -92,22 +91,14 @@ function clearAuthAndRedirect() {
 
 async function refreshTokens(): Promise<boolean> {
   try {
-    console.log("🔄 [TOKEN REFRESH] Starting refresh attempt...");
     
     if (!refreshToken) {
-      console.error("❌ [TOKEN REFRESH] No refreshToken available in memory");
       clearAuthAndRedirect();
       return false;
     }
 
     // Log the exact payload being sent
     const refreshPayload = { accessToken, refreshToken };
-    console.log("📤 [TOKEN REFRESH] Sending payload to /auth/refresh:", {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-      accessTokenLength: accessToken?.length,
-      refreshTokenLength: refreshToken?.length,
-    });
 
     const res = await fetch(`${API_URL}/auth/refresh`, {
       method: "POST",
@@ -116,10 +107,8 @@ async function refreshTokens(): Promise<boolean> {
       body: JSON.stringify(refreshPayload),
     });
 
-    console.log("📥 [TOKEN REFRESH] Response status:", res.status);
 
     if (!res.ok) {
-      console.error(`❌ [TOKEN REFRESH] Refresh failed with status ${res.status}`);
       
       // Try to parse error response
       let errorData;
@@ -127,10 +116,8 @@ async function refreshTokens(): Promise<boolean> {
         const contentType = res.headers.get("content-type");
         if (contentType?.includes("application/json")) {
           errorData = await res.json();
-          console.error("📋 [TOKEN REFRESH] Error response body:", errorData);
         } else {
           const text = await res.text();
-          console.error("📋 [TOKEN REFRESH] Error response (text):", text);
         }
       } catch (parseError) {
         console.error("⚠️ [TOKEN REFRESH] Could not parse error response:", parseError);
@@ -141,11 +128,6 @@ async function refreshTokens(): Promise<boolean> {
     }
 
     const data = await res.json();
-    console.log("✅ [TOKEN REFRESH] Refresh response received:", {
-      hasAccessToken: !!data?.accessToken,
-      hasRefreshToken: !!data?.refreshToken,
-      responseKeys: Object.keys(data || {}),
-    });
 
     if (data?.accessToken && data?.refreshToken) {
       setTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken });
@@ -157,18 +139,12 @@ async function refreshTokens(): Promise<boolean> {
         }));
       }
 
-      console.log("✅ [TOKEN REFRESH] Tokens updated successfully");
       return true;
     }
 
-    console.error("❌ [TOKEN REFRESH] Invalid response format - missing tokens:", data);
     clearAuthAndRedirect();
     return false;
   } catch (e) {
-    console.error("❌ [TOKEN REFRESH] Network or parsing error:", {
-      error: e instanceof Error ? e.message : String(e),
-      stack: e instanceof Error ? e.stack : undefined,
-    });
     clearAuthAndRedirect();
     return false;
   }
@@ -205,32 +181,25 @@ export async function apiFetch<T>(path: string, init: RequestInit & { method?: H
 
   let res = await doFetch();
 
-  console.log(`🌐 [API FETCH] ${init.method || "GET"} ${path} -> Status: ${res.status}, Headers: Accept-Language=${headers["Accept-Language"]}, X-Currency=${headers["X-Currency"]}`);
 
   if (res.status === 401) {
-    console.log("🔐 [API FETCH] 401 Unauthorized - Token may be expired");
     
     // --- DÜZƏLİŞ BURADADIR ---
     // Əvvəl yalnız "accessToken" yoxlanılırdı. İndi "refreshToken" varsa, yeniləməyə cəhd edirik.
     // Çünki accessToken null ola bilər (siz sildiyiniz kimi), amma refreshToken hələ də ola bilər.
     if (refreshToken) { 
-      console.log("🔄 [API FETCH] Attempting token refresh (RefreshToken found)...");
       const refreshed = await refreshTokens();
       
       if (refreshed) {
-        console.log("✅ [API FETCH] Token refreshed successfully, retrying request...");
         // Retry with new access token
         const retryHeaders = { ...headers };
         if (accessToken) retryHeaders["Authorization"] = `Bearer ${accessToken}`;
         res = await fetch(url, { ...init, headers: retryHeaders, credentials: "include" });
-        console.log(`🔄 [API FETCH] Retry response status: ${res.status}`);
       } else {
-        console.error("❌ [API FETCH] Token refresh failed, throwing session expired error");
         // Token refresh failed, redirect already triggered
         throw new Error("Session expired");
       }
     } else {
-      console.log("⚠️ [API FETCH] 401 and NO refreshToken in memory - treating as guest request");
     }
     // If no token, let the response be handled as-is (backend may allow anonymous requests)
   }

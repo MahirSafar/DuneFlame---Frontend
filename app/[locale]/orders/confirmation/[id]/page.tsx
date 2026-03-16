@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 import { useLocale, useTranslations } from "next-intl"
 import confetti from "canvas-confetti"
 import { CheckCircle, Loader2, AlertCircle, ArrowRight } from "lucide-react"
@@ -17,6 +18,7 @@ interface OrderItem {
   productId: string
   productName: string
   unitPrice: number
+  price?: number
   quantity: number
 }
 
@@ -63,23 +65,10 @@ export default function OrderConfirmationPage() {
 
       try {
         const data = await apiFetch<OrderResponse>(`/orders/${orderId}`)
-        console.log("📦 [ORDER CONFIRMATION] Order data received:", {
-          id: data?.id,
-          hasOrderDate: !!data?.orderDate,
-          orderDate: data?.orderDate,
-          hasShippingAddress: !!data?.shippingAddress,
-          shippingAddress: data?.shippingAddress,
-          hasItems: !!data?.items,
-          itemsCount: data?.items?.length,
-          items: data?.items,
-          totalAmount: data?.totalAmount,
-          status: data?.status,
-        })
         setOrder(data)
         setIsLoading(false)
 
         // Ensure locale is set for product translation
-        console.log(`[OrderConfirmation] Setting API locale to: ${locale}`)
         setApiClientLocale(locale)
 
         // Trigger confetti celebration
@@ -110,7 +99,6 @@ export default function OrderConfirmationPage() {
           })
         }, 250)
       } catch (err) {
-        console.error("❌ [ORDER CONFIRMATION] Failed to fetch order:", err)
         setError(err instanceof Error ? err.message : "Failed to load order details")
         setIsLoading(false)
       }
@@ -123,13 +111,11 @@ export default function OrderConfirmationPage() {
   useEffect(() => {
     const refreshProductNames = async () => {
       if (!order || !order.items || order.items.length === 0) {
-        console.log('[OrderConfirmation] No items to display')
         return
       }
 
       // Note: Product translation disabled due to endpoint availability issues
       // Using product names from stored order data
-      console.log('[OrderConfirmation] Using product names from order data')
     }
 
     refreshProductNames()
@@ -299,11 +285,6 @@ export default function OrderConfirmationPage() {
                     const itemQuantity = item.quantity || 1
                     const totalPrice = itemPrice * itemQuantity
 
-                    console.log(`📦 [ORDER ITEM] ${item.productName}:`, {
-                      unitPrice: item.unitPrice,
-                      quantity: itemQuantity,
-                      total: totalPrice,
-                    })
 
                     return (
                       <div key={item.id} className="flex justify-between items-center">

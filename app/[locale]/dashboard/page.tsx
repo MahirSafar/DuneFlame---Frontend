@@ -41,7 +41,6 @@ export default function DashboardPage() {
         setOrders(ordersData)
         setRewards(rewardsData)
       } catch (err) {
-        console.error("Failed to fetch dashboard data:", err)
         setError(t("errorLoading"))
       } finally {
         setLoading(false)

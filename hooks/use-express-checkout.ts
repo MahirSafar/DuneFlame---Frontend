@@ -65,7 +65,6 @@ export function useExpressCheckout() {
       const data = await apiFetch<Country[]>("/shipping/countries")
       setCountries(data)
     } catch (err) {
-      console.error("[Express Checkout] Failed to fetch countries:", err)
       setError({
         type: "network",
         message: t("failedLoadCountries") || "Failed to load countries",
@@ -126,10 +125,6 @@ export function useExpressCheckout() {
   const ensureCurrentBasketId = useCallback((basketId: string) => {
     const activeId = getActiveBasketId()
     if (activeId && activeId !== basketId) {
-      console.warn("[Express Checkout] BasketId mismatch, using active basketId:", {
-        basketId,
-        activeId,
-      })
       return activeId
     }
     return basketId
@@ -160,10 +155,6 @@ export function useExpressCheckout() {
           grindTypeName: item.selectedGrind || item.grindTypeName || "Whole Bean",
         }))
 
-        console.log("[Express Checkout] Syncing cart to backend:", {
-          basketId,
-          itemCount: basketItems.length,
-        })
 
         const syncedBasket = await basketService.updateBasket({
           id: basketId,
@@ -183,10 +174,8 @@ export function useExpressCheckout() {
           localStorage.setItem("guestBasketId", syncedBasketId)
         }
 
-        console.log("[Express Checkout] Cart synced successfully")
         return syncedBasketId
       } catch (err) {
-        console.error("[Express Checkout] Failed to sync cart:", err)
         throw err
       }
     },
@@ -332,13 +321,6 @@ export function useExpressCheckout() {
       payerPhone: string
     ) => {
       try {
-        console.log("[Express Checkout] Creating order with payload:", {
-          basketId,
-          shippingAddress,
-          shippingAmount,
-          email,
-          payerName,
-        })
 
         const mappedShippingAddress = mapShippingAddress(
           shippingAddress,
@@ -347,17 +329,7 @@ export function useExpressCheckout() {
           payerPhone
         )
         
-        console.log("[Express Checkout] Stripe raw address:", shippingAddress)
-        console.log("[Express Checkout] Mapped shipping address:", mappedShippingAddress)
-        console.log("[Express Checkout] Address field lengths:", {
-          street: mappedShippingAddress.street.length,
-          city: mappedShippingAddress.city.length,
-          state: mappedShippingAddress.state.length,
-          postalCode: mappedShippingAddress.postalCode.length,
-          country: mappedShippingAddress.country.length,
-        })
 
-        console.log("[Express Checkout] Mapped shipping address:", mappedShippingAddress)
 
         const orderPayload = {
           basketId,
@@ -367,14 +339,6 @@ export function useExpressCheckout() {
           languageCode: locale,
         }
 
-        console.log("[Express Checkout] Final order payload:", orderPayload)
-        console.log("[Express Checkout] ✅ Backend validation check:", {
-          street: `${mappedShippingAddress.street.length} chars (min 5) ✓`,
-          city: `${mappedShippingAddress.city.length} chars (min 2) ✓`,
-          state: `${mappedShippingAddress.state.length} chars (min 2) ✓`,
-          postalCode: `${mappedShippingAddress.postalCode.length} chars (min 3) ✓`,
-          country: `${mappedShippingAddress.country.length} chars (min 2) ✓`,
-        })
 
         const createOrderResponse = await apiFetch<{ id: string; clientSecret?: string }>(
           "/orders",
@@ -388,10 +352,8 @@ export function useExpressCheckout() {
           throw new Error("Failed to create order - no order ID returned")
         }
 
-        console.log("[Express Checkout] Order created successfully:", createOrderResponse.id)
         return createOrderResponse
       } catch (err) {
-        console.error("[Express Checkout] Failed to create order:", err)
         throw err
       }
     },
@@ -408,7 +370,6 @@ export function useExpressCheckout() {
     }): Promise<PaymentRequestUpdateDetails> => {
       try {
         const { address, subtotalAmount, baseItems, currencyCode } = params
-        console.log("[Express Checkout] Shipping address changed:", address)
 
         const fallbackOptions = getFallbackShippingOptions()
         const totalLabel = t("expressCheckout.totalLabel") || "Total"
@@ -526,7 +487,6 @@ export function useExpressCheckout() {
           total: { label: totalLabel, amount: computedTotal, pending: false },
         }
       } catch (err) {
-        console.error("[Express Checkout] Error handling shipping address:", err)
         setError({
           type: "shipping",
           message:
@@ -593,7 +553,6 @@ export function useExpressCheckout() {
         const totalWithShipping = orderTotal + shippingCost
 
         if (totalWithShipping <= 0) {
-          console.log("[Express Checkout] Zero payment order - completing immediately")
 
           const orderResponse = await createOrder(
             validatedBasketId,
@@ -634,7 +593,6 @@ export function useExpressCheckout() {
         })
 
         if (confirmResult.error) {
-          console.error("[Express Checkout] Payment confirmation failed:", confirmResult.error)
           paymentEvent.complete("fail")
 
           toast({
@@ -673,10 +631,8 @@ export function useExpressCheckout() {
         // 9. Clear cart
         useCartStore.getState().clearCart()
 
-        console.log("[Express Checkout] Payment completed successfully")
         return { orderId, success: true }
       } catch (err) {
-        console.error("[Express Checkout] Payment failed:", err)
         paymentEvent.complete("fail")
 
         const errorMessage =
@@ -708,7 +664,7 @@ export function useExpressCheckout() {
         ) {
           setError({
             type: "payment",
-            message: "Səbətiniz boşdur, zəhmət olmasa məhsulları yenidən əlavə edin",
+            message: "Your basket is empty. Please add items before checking out.",
           })
 
           const { loadBasket } = useCartStore.getState()

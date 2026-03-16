@@ -49,7 +49,6 @@ export function ExampleCurrencyLayout() {
           },
         ]);
       } catch (error) {
-        console.error("Failed to fetch products:", error);
       } finally {
         setIsLoading(false);
       }

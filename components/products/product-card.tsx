@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import Link from "next/link"
+import Image from "next/image"
+import { useMemo, useState, useRef, useEffect } from "react"
+import { Link } from "@/i18n/routing"
 import { Eye } from "lucide-react"
 import type { ProductResponse } from "@/lib/services/products"
 import { useLocale } from "next-intl"
@@ -14,13 +15,38 @@ import { useTranslations } from "next-intl"
 
 interface ProductCardProps {
   product: ProductResponse
+  priority?: boolean
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, priority = false }: ProductCardProps) {
   const locale = useLocale();
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+  const cardRef = useRef<HTMLElement>(null)
   const { currency, currencySymbol } = useCurrency()
   const t = useTranslations()
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Kart tam olaraq (75% ekranda olanda) ishe dushsun
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+        } else {
+          setIsVisible(false)
+        }
+      },
+      { threshold: 0.75 }
+    )
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current)
+    }
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
 
   const rawMainImage = product.images?.find((i) => i.isMain)?.imageUrl || product.images?.[0]?.imageUrl
   const mainImage = rawMainImage ? getImageUrl(rawMainImage) : null
@@ -36,7 +62,6 @@ export default function ProductCard({ product }: ProductCardProps) {
   const resolved = useMemo(() => {
     const result = resolvePrice(product as unknown as ProductWithPricing, currency, defaultWeight ?? undefined);
     if (!result) {
-      console.warn(`[ProductCard] No price resolved for product "${product.name}" (ID: ${product.id}, currency: ${currency}, weight: ${defaultWeight})`);
     }
     return result;
   }, [product, currency, defaultWeight])
@@ -65,19 +90,26 @@ export default function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <article className="group relative glass rounded-xl overflow-hidden card-float card-depth cursor-pointer transition-all duration-500 ease-in-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-2xl hover:glow-accent">
+    <article
+      ref={cardRef}
+      className={`group relative glass rounded-xl overflow-hidden card-float card-depth cursor-pointer transition-all duration-500 ease-in-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-2xl hover:glow-accent ${
+        isVisible ? "mobile-visible" : ""
+      }`}
+    >
         <Link
           href={productUrl}
           className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <div className="relative h-64 overflow-hidden bg-muted rounded-t-xl">
             {hasImage && mainImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={mainImage}
                 alt={product.name}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
-                loading="lazy"
+                priority={priority}
+                fetchPriority={priority ? "high" : "auto"}
               />
             ) : (
               <div className="w-full h-full bg-linear-to-br from-amber-100 to-orange-100 dark:from-amber-900 dark:to-orange-900 flex items-center justify-center group-hover:scale-110 transition-all duration-500 ease-in-out">
@@ -120,7 +152,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Quick View Button - At bottom of card */}
         <button
           onClick={openModal}
-          className="absolute bottom-0 left-0 right-0 z-20 py-2 px-4 font-heading flex items-center justify-center gap-2 transition-all duration-300 opacity-0 translate-y-full group-hover:opacity-100 group-hover:translate-y-0 rounded-b-xl uppercase"
+          className={`absolute bottom-0 left-0 right-0 z-20 py-2 px-4 font-heading flex flex-row items-center justify-center gap-2 transition-all duration-700 ease-in-out rounded-b-xl uppercase ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1/2"
+          } lg:opacity-0 lg:translate-y-full lg:group-hover:opacity-100 lg:group-hover:translate-y-0`}
           style={{ backgroundColor: "#2b1b13", color: "white" }}
         >
           <Eye size={16} />

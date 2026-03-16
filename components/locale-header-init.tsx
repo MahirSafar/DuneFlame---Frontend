@@ -37,7 +37,6 @@ export function LocaleHeaderInit() {
     setApiClientLocale(locale);
 
     // Log for debugging
-    console.debug(`[LocaleHeaderInit] Updated API locale headers to: ${locale}`);
   }, [locale]);
 
   useEffect(() => {
@@ -45,7 +44,6 @@ export function LocaleHeaderInit() {
     setApiClientCurrency(currency);
 
     // Log for debugging
-    console.debug(`[LocaleHeaderInit] Updated API currency header to: ${currency}`);
   }, [currency]);
   // This component doesn't render anything
   return null;

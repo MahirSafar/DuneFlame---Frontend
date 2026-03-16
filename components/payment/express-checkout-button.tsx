@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from "react"
 import { useStripe } from "@stripe/react-stripe-js"
 import type Stripe from "@stripe/stripe-js"
 import { useLocale, useTranslations } from "next-intl"
+import { useRouter } from "@/i18n/routing"
 import { useExpressCheckout } from "@/hooks/use-express-checkout"
 import { useCurrency } from "@/lib/currency-context"
 import { useCartStore } from "@/lib/cart-store"
@@ -25,6 +26,7 @@ export function ExpressCheckoutButton({
 }: ExpressCheckoutButtonProps) {
   const t = useTranslations()
   const locale = useLocale()
+  const router = useRouter()
   const stripe = useStripe()
   const { currency } = useCurrency()
   const { items, total } = useCartStore()
@@ -89,10 +91,6 @@ export function ExpressCheckoutButton({
           { label: totalLabel, amount: displayAmount },
         ]
 
-        console.log("[Express Checkout] PaymentRequest config:", {
-          currency: currency.toLowerCase(),
-          totalAmount: displayAmount,
-        })
 
         // Create PaymentRequest
         const pr = stripe.paymentRequest({
@@ -117,10 +115,8 @@ export function ExpressCheckoutButton({
 
         // Check if Apple Pay or Google Pay is available
         const result = await pr.canMakePayment()
-        console.log("[Express Checkout] canMakePayment result:", result)
 
         if (!result) {
-          console.log("[Express Checkout] Apple Pay/Google Pay not available")
           if (containerRef.current) {
             containerRef.current.style.display = "none"
           }
@@ -141,7 +137,6 @@ export function ExpressCheckoutButton({
         // Handle payment method
         pr.on("paymentmethod", async (event) => {
           try {
-            console.log("[Express Checkout] Payment method received")
 
             // Get shipping details
             const shippingDetails = {
@@ -162,12 +157,9 @@ export function ExpressCheckoutButton({
               onSuccess(orderId)
 
               // Redirect to confirmation page
-              if (typeof window !== "undefined") {
-                window.location.href = `/${locale}/orders/confirmation/${orderId}`
-              }
+              router.push(`/orders/confirmation/${orderId}`)
             }
           } catch (err) {
-            console.error("[Express Checkout] Payment processing error:", err)
             event.complete("fail")
             if (onError && err instanceof Error) {
               onError(err)
@@ -197,7 +189,6 @@ export function ExpressCheckoutButton({
 
         // Handle element click to show loading state
         element.on("click", () => {
-          console.log("[Express Checkout] Button clicked")
         })
       } catch (err) {
         console.error("[Express Checkout] Failed to initialize payment request:", err)

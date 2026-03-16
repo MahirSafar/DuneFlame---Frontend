@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
-import { Mail, Lock, Chrome } from "lucide-react";
+import React, { useState } from "react";
+import { Link } from "@/i18n/routing";
+import { Mail, Lock, Chrome, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { API_URL } from "@/lib/config";
 import { getErrorMessage } from "@/lib/utils";
@@ -10,13 +10,14 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 
 export default function LoginForm() {
   const t = useTranslations('auth.login')
   const { login } = useAuthStore();
   const router = useRouter();
+  const [authError, setAuthError] = useState<string | null>(null);
   
   const LoginSchema = z.object({
     email: z.string().min(1, t('email')).email(t('email')),
@@ -32,6 +33,9 @@ export default function LoginForm() {
   } = useForm<LoginValues>({ resolver: zodResolver(LoginSchema) });
 
 const onSubmit = async (vals: LoginValues) => {
+    // Clear previous errors
+    setAuthError(null);
+    
     try {
       await login(vals.email, vals.password);
       toast.success(t('success'));
@@ -40,18 +44,17 @@ const onSubmit = async (vals: LoginValues) => {
       router.refresh(); // Bəzən header-i yeniləmək üçün lazımdır
       
     } catch (err: any) {
-      // --- DÜZƏLİŞ BURADADIR ---
+      // Extract error message from various possible locations
+      const errorMessage = 
+        err?.response?.data?.message || 
+        err?.response?.data?.error ||
+        err?.message || 
+        getErrorMessage(err) ||
+        "Login failed. Please try again.";
       
-      // 1. Əgər xəta 401 (Login səhvdir) və ya 500 (Server) olarsa, 
-      // Axios Interceptor artıq toast göstərib. Biz ikincini göstərmirik.
-      if (err?.response?.status === 401 || err?.response?.status >= 500) {
-        return; 
-      }
-
-      // 2. Digər xətalar (məsələn 400 - Validation) üçün toast göstər
-      const msg = getErrorMessage(err);
-      toast.error(msg);
-      // -------------------------
+      // Display error in both toast and local state
+      setAuthError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -70,6 +73,13 @@ const onSubmit = async (vals: LoginValues) => {
           <p style={{ fontFamily: "'Bank Gothic', sans-serif", letterSpacing: '0.04em', color: '#a3291c', fontSize: '28px', fontWeight: 'bold', marginBottom: '16px', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
             {t('brandName')}
           </p>
+
+          {authError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-300 rounded-lg flex items-start gap-2">
+              <AlertCircle className="text-red-600 mt-0.5 flex-shrink-0" size={18} />
+              <p className="text-red-700 text-sm font-medium">{authError}</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
@@ -120,7 +130,6 @@ const onSubmit = async (vals: LoginValues) => {
               if (typeof window !== "undefined") {
                 window.location.href = `${API_URL}/auth/external-login?provider=Google`
               } else {
-                console.warn("Cannot redirect to Google login: window object not available")
               }
             }}
             className="w-full mt-6 py-3 border border-border hover:bg-muted dark:hover:bg-white/5 rounded-lg font-semibold transition-smooth flex items-center justify-center gap-2"

@@ -13,7 +13,6 @@ export function StripeElementsProvider({ children }: StripeProviderProps) {
   const stripePromise = useMemo(() => {
     const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
     if (!key) {
-      console.warn("[Stripe] Publishable key not configured")
       return null
     }
     return loadStripe(key)

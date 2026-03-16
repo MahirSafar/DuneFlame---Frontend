@@ -2,7 +2,7 @@
 
 import { useCallback } from "react"
 import { useLocale, useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 import toast from "react-hot-toast"
 import { ExpressCheckoutButton } from "@/components/payment/express-checkout-button"
 
@@ -21,18 +21,16 @@ export function CartExpressCheckout({ className = "" }: CartExpressCheckoutProps
 
   const handleSuccess = useCallback(
     (orderId: string) => {
-      console.log("[Cart Express Checkout] Payment successful, order ID:", orderId)
       toast.success(t("expressCheckout.paymentSuccess") || "Payment successful!")
 
       // Redirect to confirmation page (ExpressCheckoutButton also does this)
-      router.push(`/${locale}/orders/confirmation/${orderId}`)
+      router.push(`/orders/confirmation/${orderId}`)
     },
-    [locale, router, t]
+    [router, t]
   )
 
   const handleError = useCallback(
     (error: Error) => {
-      console.error("[Cart Express Checkout] Payment error:", error)
       toast.error(error.message || t("expressCheckout.paymentError") || "Payment failed")
     },
     [t]

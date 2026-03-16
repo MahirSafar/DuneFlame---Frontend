@@ -1,8 +1,10 @@
 'use client'
 
-import { usePathname, useRouter } from 'next/navigation'
-import { locales, type Locale } from '@/i18n'
+import { usePathname, useRouter } from '@/i18n/routing'
+import { locales, type Locale } from '@/i18n/routing'
 import { useState, useEffect } from 'react'
+import { useLocale } from 'next-intl'
+import { useParams } from 'next/navigation'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +28,8 @@ const localeFlags: Record<Locale, string> = {
 export function LanguageSwitcher() {
   const router = useRouter()
   const pathname = usePathname()
+  const params = useParams()
+  const locale = useLocale() as Locale
   const [isPending, startTransition] = useTransition()
   const [mounted, setMounted] = useState(false)
 
@@ -35,17 +39,17 @@ export function LanguageSwitcher() {
 
   if (!mounted) return null
 
-  // Get current locale from pathname
-  const currentLocale = (pathname.split('/')[1] || 'en') as Locale
+  const currentLocale = locale
 
   const handleLocaleChange = (newLocale: Locale) => {
     if (newLocale === currentLocale) return
 
     startTransition(() => {
-      // Replace the locale in the pathname
-      const pathnameWithoutLocale = pathname.replace(`/${currentLocale}`, '')
-      const newPath = `/${newLocale}${pathnameWithoutLocale || '/'}`
-      router.push(newPath)
+      router.replace(
+        // @ts-expect-error - next-intl type is strict on pathnames but we just reuse current one directly
+        { pathname, params },
+        { locale: newLocale }
+      )
     })
   }
 

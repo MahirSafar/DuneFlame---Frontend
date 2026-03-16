@@ -116,7 +116,6 @@ export async function handleBuyNow(productCode: string, quantity: number = 1): P
     const sessionId = await createCheckoutSession(productCode, quantity);
     await redirectToStripeCheckout(sessionId);
   } catch (error) {
-    console.error("[Payment] Buy Now failed:", error);
     throw error;
   }
 }

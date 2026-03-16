@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useRouter, Link } from "@/i18n/routing";
 import { Loader2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAdminProductById } from "@/lib/services/adminProducts";
@@ -76,7 +76,7 @@ export default function EditProductPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-background to-background/80 p-4 md:p-8">
+      <main className="min-h-screen bg-linear-to-br from-background to-background/80 p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
@@ -91,7 +91,7 @@ export default function EditProductPage() {
 
   if (error || !product) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-background to-background/80 p-4 md:p-8">
+      <main className="min-h-screen bg-linear-to-br from-background to-background/80 p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           <Button
             variant="ghost"
@@ -117,7 +117,7 @@ export default function EditProductPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background to-background/80 p-4 md:p-8">
+    <main className="min-h-screen bg-linear-to-br from-background to-background/80 p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

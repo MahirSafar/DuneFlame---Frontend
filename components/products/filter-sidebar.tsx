@@ -247,7 +247,6 @@ export default function FilterSidebar({ onFilterChange, minPrice = 0, maxPrice =
           const resetFilters: FilterState = {
             roastLevel: [],
             originIds: [],
-            categoryIds: [],
             priceRange: [minPrice, maxPrice],
           }
           setFilters(resetFilters)

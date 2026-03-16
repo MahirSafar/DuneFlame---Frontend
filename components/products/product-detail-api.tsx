@@ -44,7 +44,6 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
       const productCode = getProductCode(product.name);
       await handleBuyNow(productCode, quantity);
     } catch (error) {
-      console.error("Buy Now error:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to process purchase",

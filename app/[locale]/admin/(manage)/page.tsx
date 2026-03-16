@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation"
+import { redirect } from "@/i18n/routing"
+import type { Locale } from "@/i18n/routing"
 
-export default function AdminPage() {
-  redirect("/admin/dashboard")
+export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  redirect({ href: "/admin/dashboard", locale: locale as Locale })
 }

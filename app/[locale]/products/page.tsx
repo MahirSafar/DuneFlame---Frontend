@@ -90,7 +90,6 @@ export default function ProductsPage() {
           }
         }
       } catch (err) {
-        console.error("❌ [SHOP PAGE] Failed to load products:", err);
         setError((err as any)?.message || "Failed to load products");
       } finally {
         setLoading(false);
@@ -219,8 +218,8 @@ export default function ProductsPage() {
               {!loading && products.length > 0 && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                    {products.map((product) => (
-                      <ProductCard key={product.id} product={product} />
+                    {products.map((product, index) => (
+                      <ProductCard key={product.id} product={product} priority={index < 3} />
                     ))}
                   </div>
 

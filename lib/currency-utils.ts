@@ -141,14 +141,12 @@ export function resolvePrice(
   const w = selectedWeight ?? product.activePrice?.grams;
 
   if (typeof w !== "number" && !w) {
-    console.warn("[resolvePrice] No valid weight selected", { selectedWeight, activeGrams: product.activePrice?.grams });
     return null;
   }
 
   // Normalize weight to number
   const targetWeight = Number(w);
   if (isNaN(targetWeight) || targetWeight <= 0) {
-    console.warn("[resolvePrice] Invalid weight value", { weight: w });
     return null;
   }
 

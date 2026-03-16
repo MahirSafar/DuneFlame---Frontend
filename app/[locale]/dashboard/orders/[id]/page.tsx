@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { useLocale, useTranslations } from 'next-intl'
 import Navbar from '@/components/layout/navbar'
 import Footer from '@/components/layout/footer'
 import { ArrowLeft, MapPin, Package, CreditCard, CheckCircle, Loader2, XCircle } from 'lucide-react'
 import { getOrderById } from '@/lib/services/orders'
+import { getProduct } from '@/lib/services/products'
 import { useAuthStore } from '@/lib/auth-store'
 import { setTokens } from '@/lib/api-client'
 import { setApiClientLocale } from '@/lib/api-client'
@@ -41,7 +42,6 @@ export default function OrderDetailsPage() {
 
   // Ensure locale is set in API client before any requests
   useEffect(() => {
-    console.log(`[Dashboard Orders] Setting API locale to: ${locale}`)
     setApiClientLocale(locale)
   }, [locale])
 
@@ -51,10 +51,8 @@ export default function OrderDetailsPage() {
         setLoading(true)
         setError(null)
         const data = await getOrderById(params.id as string)
-        console.log('Order Data:', data)
         setOrder(data)
       } catch (err: any) {
-        console.error('Error fetching order:', err)
         if (err?.status === 403) {
           setError('Unauthorized. Please login again.')
         } else if (err?.status === 404) {
@@ -76,35 +74,38 @@ export default function OrderDetailsPage() {
   useEffect(() => {
     const refreshProductNames = async () => {
       if (!order || !order.items || order.items.length === 0) {
-        console.log('[Dashboard Orders] No items to refresh')
         return
       }
 
       try {
         // Ensure locale is set right before fetching
-        console.log(`[Dashboard Orders] Pre-refresh: Setting API locale to: ${locale}`)
         setApiClientLocale(locale)
         
         // Small delay to ensure header is set
         await new Promise(resolve => setTimeout(resolve, 50))
         
-        console.log(`[Dashboard Orders] Refreshing product names for locale: ${locale}`)
         
-        // Try to refetch each product, but don't fail if unavailable
-        // Many orders may have products that are no longer public/available
-        const updatedItems = order.items.map((item: any) => {
-          // For now, just ensure the product name exists from the order data
-          // Product translation endpoint issues will be handled separately
-          return item
-        })
+        // Try to refetch each product to get translated names, but don't fail if unavailable
+        const updatedItems = await Promise.all(
+          order.items.map(async (item: any) => {
+            if (item.productId) {
+              try {
+                const productDb = await getProduct(item.productId)
+                if (productDb && productDb.name) {
+                  return { ...item, productName: productDb.name }
+                }
+              } catch (err) {
+              }
+            }
+            return item
+          })
+        )
 
-        // Note: Product translation disabled until endpoint is properly configured
-        // Original product names from order data are being used
-        console.log('[Dashboard Orders] Using product names from order data:', updatedItems.map(i => ({ 
-          id: i.id, 
-          productId: i.productId, 
-          productName: i.productName 
-        })))
+        setOrder((prev: any) => ({
+          ...prev,
+          items: updatedItems
+        }))
+
       } catch (error) {
         console.error('Failed to refresh product names:', error)
         // Silently fail - order data will show original product names
@@ -173,9 +174,9 @@ export default function OrderDetailsPage() {
             </Link>
             <div className={`flex items-start gap-8 ${isArabic ? "flex-row-reverse text-right" : "justify-between"}`}>
               <div style={{ textAlign: isArabic ? "right" : "left" }}>
-                <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">Order #{order.id.slice(0, 8)}</h1>
+                <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{t('orderPrefix')} #{order.id.slice(0, 8)}</h1>
                 <p className="text-zinc-500 mt-1">
-                  {t('created')}: {new Date(order.createdAt).toLocaleDateString('en-US', {
+                  {t('created')}: {new Date(order.createdAt).toLocaleDateString(isArabic ? 'ar' : 'en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -284,7 +285,7 @@ export default function OrderDetailsPage() {
                       <div style={{ textAlign: isArabic ? "right" : "left", flex: 1 }}>
                         <p className="font-semibold text-zinc-900 dark:text-zinc-100">{item.productName}</p>
                         <p className="text-sm text-zinc-500">
-                          {item.quantity} qty × {item.unitPrice} {order.currency}
+                          {item.quantity} {t('qty')} × {item.unitPrice} {order.currency}
                         </p>
                       </div>
                       <p className="font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
@@ -315,7 +316,7 @@ export default function OrderDetailsPage() {
                   <p className="text-sm text-zinc-500 mt-1 leading-relaxed">{order.shippingAddress}</p>
                   <div className="mt-4 text-xs text-zinc-400 space-y-1">
                     <p>{order.customerEmail}</p>
-                    <p>{order.customerPhone}</p>
+                    <p>{order.customerPhone === 'No Phone' ? t('noPhone') : order.customerPhone}</p>
                   </div>
                 </div>
               </div>
@@ -333,7 +334,7 @@ export default function OrderDetailsPage() {
                   </div>
                   <div className={`flex items-center gap-4 text-sm ${isArabic ? "flex-row-reverse" : ""}`}>
                     <span className="text-zinc-500">{t('status')}:</span>
-                    <span className="font-medium" style={{ color: '#2b1b13', marginLeft: isArabic ? "auto" : "0", marginRight: isArabic ? "0" : "auto" }}>{order.status}</span>
+                    <span className="font-medium" style={{ color: '#2b1b13', marginLeft: isArabic ? "auto" : "0", marginRight: isArabic ? "0" : "auto" }}>{t(`orderStatus.${order.status.toLowerCase()}`)}</span>
                   </div>
                   {order.paymentTransactionId && (
                     <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800" style={{ textAlign: isArabic ? "right" : "left" }}>

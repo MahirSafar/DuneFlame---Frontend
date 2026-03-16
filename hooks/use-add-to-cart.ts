@@ -100,13 +100,6 @@ export function useAddToCart() {
 
     // Debug: show key inputs and the generated variant key
     try {
-      console.log("➕ ADDING LOCAL:", {
-        productId: product.id,
-        priceId: options.productPriceId,
-        roastId: roastLevelId || EMPTY_GUID,
-        grindId: grindTypeId || EMPTY_GUID,
-        GENERATED_KEY: variantKey,
-      })
     } catch {}
 
 

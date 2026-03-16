@@ -1,9 +1,6 @@
-"use client"
-
-import { useEffect, useState } from "react"
 import ProductCard from "@/components/products/product-card"
-import { getProducts, type ProductResponse } from "@/lib/services/products"
-import { useTranslations } from "next-intl"
+import type { ProductResponse } from "@/lib/services/products"
+import { getTranslations } from "next-intl/server"
 
 // Helper function to convert roast level number to descriptive text
 const getRoastLevelText = (level: number): string => {
@@ -12,17 +9,28 @@ const getRoastLevelText = (level: number): string => {
   return "Dark"
 }
 
-export default function Trending() {
-  const t = useTranslations()
-  const [products, setProducts] = useState<ProductResponse[]>([])
-  const [loading, setLoading] = useState(true)
+async function getTrendingProducts() {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dune-flame-backend-180239181668.me-central1.run.app';
+    const res = await fetch(`${baseUrl}/api/v1/products?pageNumber=1&pageSize=4`, {
+      next: { revalidate: 3600 }
+    });
+    
+    if (!res.ok) {
+      throw new Error(`Failed to fetch trending products: ${res.statusText}`);
+    }
+    
+    const data = await res.json();
+    return (data.items || []) as ProductResponse[];
+  } catch (err) {
+    console.error("Failed to fetch trending products:", err);
+    return [];
+  }
+}
 
-  useEffect(() => {
-    getProducts({ pageNumber: 1, pageSize: 4 })
-      .then((res) => setProducts(res.items))
-      .catch((err) => console.error("Failed to fetch trending products:", err))
-      .finally(() => setLoading(false))
-  }, [])
+export default async function Trending() {
+  const t = await getTranslations()
+  const products = await getTrendingProducts()
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -39,7 +47,7 @@ export default function Trending() {
         </a>
       </div>
 
-      {loading ? (
+      {products.length === 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="glass rounded-xl h-80 animate-pulse" />
@@ -47,9 +55,9 @@ export default function Trending() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product) => {
+          {products.map((product, index) => {
             return (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} priority={index < 4} />
             )
           })}
         </div>

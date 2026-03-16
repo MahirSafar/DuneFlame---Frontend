@@ -2,8 +2,7 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { Link, usePathname, useRouter } from "@/i18n/routing"
 import { useAuthStore } from "@/lib/auth-store"
 import {
   LayoutDashboard,
@@ -11,15 +10,13 @@ import {
   ShoppingCart,
   Users,
   Users2,
-  Gift,
-  Settings,
   Mail,
   Menu,
   X,
   LogOut,
   Bell,
   Search,
-  Loader2, // Loader ikonu əlavə etdik
+  Loader2,
 } from "lucide-react"
 import { Suspense } from "react"
 import { useTranslations } from "next-intl"
@@ -29,12 +26,8 @@ const adminNav = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/rewards", label: "Rewards", icon: Gift },
   { href: "/admin/contacts", label: "Contacts", icon: Mail },
   { href: "/admin/subscribers", label: "Subscribers", icon: Users2 },
-  { href: "/admin/sliders", label: "Sliders", icon: Settings },
-  { href: "/admin/content", label: "Content", icon: Settings },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

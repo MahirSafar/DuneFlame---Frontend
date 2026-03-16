@@ -1,8 +1,7 @@
 "use client"
 
 import React from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, Link } from "@/i18n/routing"
 import { Mail, Lock, User } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { useForm } from "react-hook-form"

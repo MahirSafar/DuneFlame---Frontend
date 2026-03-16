@@ -4,7 +4,7 @@ import { useCallback, useState, useRef, useEffect } from "react"
 import { useStripe } from "@stripe/react-stripe-js"
 import type Stripe from "@stripe/stripe-js"
 import { useLocale, useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 import toast from "react-hot-toast"
 import { Loader2 } from "lucide-react"
 import { useExpressCheckout } from "@/hooks/use-express-checkout"
@@ -107,10 +107,6 @@ export function ProductQuickBuy({
           { label: totalLabel, amount: displayAmount },
         ]
 
-        console.log("[Product Quick Buy] PaymentRequest config:", {
-          currency: currency.toLowerCase(),
-          totalAmount: displayAmount,
-        })
 
         const pr = stripe.paymentRequest({
           country: "AE",
@@ -134,10 +130,8 @@ export function ProductQuickBuy({
 
         // Check if Apple Pay or Google Pay is available
         const result = await pr.canMakePayment()
-        console.log("[Product Quick Buy] canMakePayment result:", result)
 
         if (!result) {
-          console.log("[Product Quick Buy] Apple Pay/Google Pay not available")
           if (containerRef.current) {
             containerRef.current.style.display = "none"
           }
@@ -161,7 +155,6 @@ export function ProductQuickBuy({
             setIsProcessing(true)
             setError(null)
 
-            console.log("[Product Quick Buy] Payment method received")
 
             // 1. Create temporary basket for this single product
             const basketId = user?.id || "guest_" + Math.random().toString(36).substring(2, 11)
@@ -289,18 +282,12 @@ export function ProductQuickBuy({
                   (address?.country?.trim() || "AE").length
                 } chars (min 2) ✓`,
               })
-              console.log("[Product Quick Buy] Stripe raw address:", address)
-              console.log(
-                "[Product Quick Buy] ✅ Order creation response:",
-                orderResponse?.id ? `Order ID: ${orderResponse.id}` : "Invalid response"
-              )
+            
 
               if (!orderResponse?.id) {
-                console.error("[Product Quick Buy] Order creation failed:", orderResponse)
                 throw new Error("Failed to create order")
               }
               
-              console.log("[Product Quick Buy] ✅ Order created successfully:", orderResponse.id)
 
               // If there's a client secret, confirm payment
               if (orderResponse.clientSecret && event.paymentMethod?.id) {
@@ -312,7 +299,6 @@ export function ProductQuickBuy({
                 )
 
                 if (confirmError) {
-                  console.error("[Product Quick Buy] Payment confirmation failed:", confirmError)
                   event.complete("fail")
                   const errorMessage =
                     confirmError.message || t("paymentFailed") || "Payment failed"
@@ -325,7 +311,6 @@ export function ProductQuickBuy({
               // Complete payment
               event.complete("success")
 
-              console.log("[Product Quick Buy] Payment successful, order ID:", orderResponse.id)
               toast.success(t("expressCheckout.paymentSuccess") || "Payment successful!")
 
               if (onSuccess) {
@@ -333,11 +318,8 @@ export function ProductQuickBuy({
               }
 
               // Redirect to confirmation page
-              if (typeof window !== "undefined") {
-                window.location.href = `/${locale}/orders/confirmation/${orderResponse.id}`
-              }
+              router.push(`/orders/confirmation/${orderResponse.id}`)
             } catch (orderError) {
-              console.error("[Product Quick Buy] Order creation failed:", orderError)
               event.complete("fail")
               const errorMessage =
                 orderError instanceof Error
@@ -347,7 +329,6 @@ export function ProductQuickBuy({
               toast.error(errorMessage)
             }
           } catch (err) {
-            console.error("[Product Quick Buy] Payment processing error:", err)
             event.complete("fail")
             const errorMessage =
               err instanceof Error ? err.message : "Payment processing failed"
@@ -376,7 +357,6 @@ export function ProductQuickBuy({
           element.mount(containerRef.current)
         }
       } catch (err) {
-        console.error("[Product Quick Buy] Failed to initialize:", err)
         setError("Express checkout not available")
       }
     }

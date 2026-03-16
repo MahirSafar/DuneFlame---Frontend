@@ -45,7 +45,6 @@ export default function CartRecommendations() {
 
         setProducts(filtered)
       } catch (err) {
-        console.error("Failed to fetch recommendations:", err)
         setError("Could not load recommendations")
       } finally {
         setLoading(false)

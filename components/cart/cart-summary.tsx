@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { Trash2 } from "lucide-react"
 import { useEffect } from "react"
 import { useLocale, useTranslations } from "next-intl"
@@ -28,7 +28,6 @@ export default function CartSummary() {
 
   // Ensure locale is set in API client before fetching products
   useEffect(() => {
-    console.log(`[CartSummary] Setting API locale to: ${locale}`)
     setApiClientLocale(locale)
   }, [locale])
 
@@ -36,13 +35,11 @@ export default function CartSummary() {
   useEffect(() => {
     const refreshProductNames = async () => {
       if (items.length === 0) {
-        console.log('[CartSummary] No items to display')
         return
       }
 
       // Note: Product translation disabled due to endpoint availability issues
       // Using product names from cart store data
-      console.log('[CartSummary] Using product names from cart store')
     }
 
     refreshProductNames()

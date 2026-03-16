@@ -1,8 +1,10 @@
 "use client"
 
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { useEffect, useMemo, useState } from "react"
 import { Leaf, ShoppingCart, Sparkles } from "lucide-react"
+import { useTranslations, useLocale } from "next-intl"
 import type { ProductResponse } from "@/lib/services/products"
 import { useAddToCart } from "@/hooks/use-add-to-cart"
 import { getImageUrl } from "@/lib/utils"
@@ -27,7 +29,23 @@ interface ProductDetailViewProps {
 export default function ProductDetailView({ product }: ProductDetailViewProps) {
   const { addToCart } = useAddToCart()
   const { currency, currencySymbol } = useCurrency()
+  const t = useTranslations('products')
+  const locale = useLocale()
   const [quantity, setQuantity] = useState(1)
+
+  // Get translated product name with fallback to default
+  const productName = useMemo(() => {
+    const translation = product.nameTranslations?.find(tr => tr.languageCode === locale)
+      || product.nameTranslations?.find(tr => tr.languageCode === 'en')
+    return translation?.name || product.name
+  }, [product, locale])
+
+  // Get translated product description with fallback to default
+  const productDescription = useMemo(() => {
+    const translation = product.descriptionTranslations?.find(tr => tr.languageCode === locale)
+      || product.descriptionTranslations?.find(tr => tr.languageCode === 'en')
+    return translation?.description || product.description
+  }, [product, locale])
   const [selectedImageId, setSelectedImageId] = useState<string | undefined>(
     product.images?.find((image) => image.isMain)?.id || product.images?.[0]?.id,
   )
@@ -98,7 +116,6 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   
   // DEBUG: Log if price resolution failed
   if (!resolved) {
-    console.warn(`[ProductDetail] PRICE NOT FOUND for currency=${currency}, weight=${selectedWeight}. Showing $0 or loading state.`);
   }
 
   // Determine productPriceId and labels for add-to-cart
@@ -142,16 +159,21 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
         <div className="absolute inset-0 bg-linear-to-br from-accent/10 via-transparent to-secondary/10" />
 
         {mainImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <motion.img
-            src={mainImage}
-            alt={product.name}
-            loading="lazy"
-            className="relative z-10 h-full w-full object-cover"
+          <motion.div
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-          />
+            className="relative z-10 w-full aspect-square md:aspect-auto md:h-[600px]"
+          >
+            <Image
+              src={mainImage}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
+              className="object-cover"
+            />
+          </motion.div>
         ) : (
           <div className="relative z-10 flex h-full min-h-105 items-center justify-center bg-linear-to-br from-amber-100 to-orange-200 text-8xl dark:from-amber-900 dark:to-orange-900">
             ☕
@@ -160,7 +182,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
 
         // ...removed Artisan Roast badge...
         <div className="absolute right-6 bottom-6 z-20 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs text-white backdrop-blur">
-          {product.stockInKg > 0 ? "In stock" : "Limited"}
+          {product.stockInKg > 0 ? t('detail.inStock') : t('detail.limitedStock')}
         </div>
 
         {galleryImages.length > 1 && (
@@ -199,14 +221,14 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
 
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="font-heading font-bold leading-tight text-primary dark:text-secondary uppercase" style={{ fontSize: "24px" }}>{product.name}</h1>
-              <p className="mt-2 text-base text-muted-foreground md:text-lg">{product.description}</p>
+              <h1 className="font-heading font-bold leading-tight text-primary dark:text-secondary uppercase" style={{ fontSize: "24px" }}>{productName}</h1>
+              <p className="mt-2 text-base text-muted-foreground md:text-lg">{productDescription}</p>
             </div>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="glass rounded-2xl border border-white/5 p-4 space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Weight</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('weight')}</p>
             <div className="grid grid-cols-2 gap-2">
               {(getAvailableWeights(product as unknown as ProductWithPricing)).map((grams) => {
                 const label = product.availablePrices?.find(p => p.grams === grams)?.weightLabel ?? formatWeight(grams)
@@ -230,7 +252,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           </div>
 
           <div className="glass rounded-2xl border border-white/5 p-4 space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Roast Level</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('roastLevel')}</p>
             <div className="flex flex-wrap gap-2">
               {(product.roastLevelNames || []).map((name) => (
                 <button
@@ -245,7 +267,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
               ))}
             </div>
 
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Grind Type</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('grindType')}</p>
             <div className="flex flex-wrap gap-2">
               {(product.grindTypeNames || []).map((name) => (
                 <button
@@ -266,7 +288,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm text-muted-foreground">
-                {currentPrice > 0 ? "Crafted for indulgent mornings" : "Select weight and currency"}
+                {currentPrice > 0 ? t('craftedForMornings') : t('selectWeightAndCurrency')}
               </p>
               <p className="font-heading text-2xl font-bold text-primary dark:text-secondary">
                 {currentPrice > 0 ? (
@@ -315,22 +337,22 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
               transition: 'box-shadow 0.2s, background 0.2s',
             }}
             className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
-            title={!resolved ? "Price not loaded for this currency/weight combination" : undefined}
+            title={!resolved ? t('priceNotLoaded') : undefined}
             onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
             onMouseOut={e => (e.currentTarget.style.backgroundColor = 'rgb(56, 109, 118)')}
           >
             <ShoppingCart size={20} />
-            Add to Basket
+            {t('addToBasket')}
           </button>
 
           <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">
               <Sparkles size={14} className="text-accent" />
-              Free 2-day shipping on orders over $200
+              {t('freeShipping')}
             </span>
             <span className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">
               <Leaf size={14} className="text-accent" />
-              Sustainable sourcing guaranteed
+              {t('sustainableSourcing')}
             </span>
           </div>
         </div>

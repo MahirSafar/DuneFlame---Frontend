@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
-import { locales, defaultLocale } from "./i18n";
+import { routing } from "./i18n/routing";
 import { readCurrencyCookie, DEFAULT_CURRENCY } from "@/lib/currency-utils";
 
-// Create next-intl middleware
-const intlMiddleware = createMiddleware({
-  locales,
-  defaultLocale,
-  localePrefix: "always", // Always show locale in URL
-});
+// Create next-intl middleware using the routing config
+const intlMiddleware = createMiddleware(routing);
 
 /**
  * Middleware to handle:
@@ -30,7 +26,7 @@ export function middleware(request: NextRequest) {
   // Extract locale from pathname (format: /locale/...)
   const pathname = request.nextUrl.pathname;
   const localeMatch = pathname.match(/^\/([a-z]{2})(?:\/|$)/);
-  const locale = localeMatch ? localeMatch[1] : defaultLocale;
+  const locale = localeMatch ? localeMatch[1] : routing.defaultLocale;
 
   // Read the currency from the cookie string
   const cookieHeader = request.headers.get("cookie") || "";

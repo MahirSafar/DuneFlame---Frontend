@@ -81,14 +81,12 @@ const syncWithBackend = async (items: CartItem[]) => {
     let basketId: string | undefined = undefined
     if (user?.id) {
       basketId = userBasketId || user.id;
-      console.log("[Cart] Using basketId:", { basketId, userBasketId, userId: user.id });
     } else {
       const storedGuestId = typeof window !== "undefined" ? localStorage.getItem("guestBasketId") : null
       basketId = storedGuestId ?? undefined
     }
 
     if (!basketId) {
-      console.warn("[Cart] No basketId available for sync")
       return
     }
 
@@ -169,11 +167,6 @@ export const useCartStore = create<CartStore>()(
         backendDeleteId = isGuid ? idOrKey : null
       }
 
-      console.log("Cart removeItem:", {
-        requestedId: idOrKey,
-        localFilterCartItemId: itemToDelete?.cartItemId ?? null,
-        localFilterVariantKey: itemToDelete?.variantKey ?? null,
-      })
 
       if (isAuthenticated) {
         // Always sync the entire basket instead of trying to delete individual items
@@ -228,7 +221,6 @@ export const useCartStore = create<CartStore>()(
         }
       }
       
-      console.log("[Cart] Loading basket for:", { basketId, isAuthenticated, userId: user?.id, userBasketId: userBasketId })
       
       // Call getBasket with basketId in URL
       const basket = await basketService.getBasket(basketId)
@@ -244,20 +236,12 @@ export const useCartStore = create<CartStore>()(
 
           // Debug log for server-loaded items and generated key
           try {
-            console.log("🌍 LOADED SERVER:", {
-              productId,
-              productPriceId,
-              roastLevelId,
-              grindTypeId,
-              GENERATED_KEY: variantKey,
-            })
           } catch {}
 
           let productData: ProductResponse | undefined
           try {
             productData = await getProduct(item.slug!)
           } catch (e) {
-            console.warn(`Could not sync product data for ${item.slug}`)
           }
 
           return {
@@ -288,7 +272,6 @@ export const useCartStore = create<CartStore>()(
       const resolvedItems = await Promise.all(itemPromises)
       set({ items: resolvedItems || [], isLoading: false })
     } catch (error) {
-      console.error("Basket load failed:", error)
       set({ items: [], isLoading: false })
     }
   },
@@ -313,7 +296,6 @@ export const useCartStore = create<CartStore>()(
     
     // Only proceed if user is authenticated
     if (!user?.id) {
-      console.log("[Cart] No authenticated user, skipping sync")
       return
     }
     
@@ -329,14 +311,12 @@ export const useCartStore = create<CartStore>()(
     const itemsToSync = items || []
     
     if (itemsToSync.length === 0) {
-      console.log("[Cart] No local items to sync, clearing local state")
       return
     }
     
     try {
       // Use stored userBasketId if available (set after Google login), otherwise use user.id
       const basketId = userBasketId || user.id;
-      console.log("[Cart] Syncing guest items to authenticated user:", { userId: user.id, basketId, itemCount: itemsToSync.length })
       
       // Convert current local items to BasketItem format
       const basketItems: BasketItem[] = itemsToSync.map((item) => ({
@@ -362,9 +342,7 @@ export const useCartStore = create<CartStore>()(
         items: basketItems,
       })
       
-      console.log("[Cart] Successfully synced guest items to authenticated user")
     } catch (error) {
-      console.error("[Cart] Failed to sync guest items to authenticated basket:", error)
       throw error
     }
   },

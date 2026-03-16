@@ -173,7 +173,6 @@ function getNextStatuses(currentStatus: OrderStatus | string): OrderStatus[] {
   // Convert incoming value to string for normalization (e.g., "Pending" or "0")
   const statusStr = String(currentStatus);
   
-  console.log(`[DEBUG] getNextStatuses - Input:`, currentStatus, `Stringified:`, statusStr);
   
   // Check for string status names (from backend) OR numeric strings
   if (statusStr === "Pending" || statusStr === "0") {
@@ -196,7 +195,6 @@ function getNextStatuses(currentStatus: OrderStatus | string): OrderStatus[] {
     return [];
   }
   
-  console.warn(`[DEBUG] getNextStatuses - Unknown status:`, statusStr);
   return [];
 }
 
@@ -290,11 +288,8 @@ export default function OrdersPage() {
   const handleCancelOrder = async (orderId: string) => {
     try {
       setActionLoading(orderId)
-      console.log(`[DEBUG] Attempting to cancel order: ${orderId}`);
-      console.log(`[DEBUG] Current data before cancel:`, data);
       
       await cancelOrder(orderId)
-      console.log(`[DEBUG] cancelOrder API call succeeded for: ${orderId}`);
       
       // Update local data
       if (data) {
@@ -304,14 +299,12 @@ export default function OrdersPage() {
             o.id === orderId ? { ...o, status: OrderStatus.Cancelled } : o
           ),
         };
-        console.log(`[DEBUG] Updated local data:`, updatedData);
         setData(updatedData)
       }
       
       toast.success("Order cancelled. Refunds and restocking processed.")
       setCancelConfirmOrder(null)
     } catch (error) {
-      console.error(`[DEBUG] cancelOrder failed:`, error);
       toast.error(getErrorMessage(error))
     } finally {
       setActionLoading(null)
@@ -358,7 +351,7 @@ export default function OrdersPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-3">
         {/* Search Input */}
         <div className="flex-1 flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-          <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <Input
             type="text"
             placeholder="Search by Order ID..."
@@ -433,9 +426,7 @@ export default function OrdersPage() {
             ) : (
               orders.map((order, orderIndex) => {
                 // DEBUG: Log order status details
-                console.log(`[DEBUG] Order ID: ${order.id}, Status Raw:`, order.status, `Type:`, typeof order.status);
                 const nextStatuses = getNextStatuses(order.status);
-                console.log(`[DEBUG] Order ${order.id} - Next Statuses Available:`, nextStatuses);
                 
                 return (
                 <TableRow key={`order-${orderIndex}-${order.id}`} className="hover:bg-muted/30">
@@ -737,15 +728,15 @@ export default function OrdersPage() {
                                   </p>
                                   <ol className="space-y-2 ml-2">
                                     <li className="flex gap-3">
-                                      <span className="font-bold text-destructive flex-shrink-0">1.</span>
+                                      <span className="font-bold text-destructive shrink-0">1.</span>
                                       <span>Refund the payment via Stripe</span>
                                     </li>
                                     <li className="flex gap-3">
-                                      <span className="font-bold text-destructive flex-shrink-0">2.</span>
+                                      <span className="font-bold text-destructive shrink-0">2.</span>
                                       <span>Reverse earned reward points <span className="text-xs text-muted-foreground">(Fraud Protection)</span></span>
                                     </li>
                                     <li className="flex gap-3">
-                                      <span className="font-bold text-destructive flex-shrink-0">3.</span>
+                                      <span className="font-bold text-destructive shrink-0">3.</span>
                                       <span>Restock inventory items</span>
                                     </li>
                                   </ol>

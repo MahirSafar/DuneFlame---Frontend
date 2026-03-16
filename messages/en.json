@@ -120,7 +120,7 @@
     "pageTitle": "OUR PRODUCTS",
     "description": "Discover our carefully curated selection",
     "searchPlaceholder": "Search products...",
-    "loading": "Loading...",
+    "loading": "Loading products...",
     "noProducts": "No products found",
     "showing": "Showing",
     "of": "of",
@@ -187,6 +187,7 @@
       "quantity": "Quantity",
       "inStock": "In Stock",
       "outOfStock": "Out of Stock",
+      "limitedStock": "Limited",
       "addedToCart": "Added to cart successfully!",
       "wholeBean": "Whole Bean",
       "fine": "Fine",
@@ -194,8 +195,16 @@
       "coarse": "Coarse",
       "espresso": "Espresso"
     },
-    "noProducts": "No products found",
-    "loading": "Loading products..."
+    "weight": "Weight",
+    "roastLevel": "Roast Level",
+    "grindType": "Grind Type",
+    "addToBasket": "Add to Basket",
+    "craftedForMornings": "Crafted for indulgent mornings",
+    "selectWeightAndCurrency": "Select weight and currency",
+    "priceNotLoaded": "Price not loaded for this currency/weight combination",
+    "freeShipping": "Free 2-day shipping on orders over $200",
+    "sustainableSourcing": "Sustainable sourcing guaranteed",
+    "backToProducts": "Back to Products"
   },
   "cart": {
     "title": "Shopping Cart",
@@ -736,6 +745,79 @@
         "title": "Questions?",
         "content": "For any questions about returns or refunds, please contact us:\n\nEmail: info@duneflame.com\nPhone: +971 52 145 0202"
       }
+    },
+    "footerCta": {
+      "title": "Still have questions?",
+      "description": "Our team is here to help! Reach out to us anytime.",
+      "button": "Contact Support"
+    }
+  },
+  "about": {
+    "title": "OUR STORY",
+    "story": "DuneFlame was born from a passion for exceptional coffee and a love of craftsmanship. In 2018, our founder traveled across the world's most renowned coffee-producing regions, connecting with farmers and roasters who shared our vision of quality.",
+    "missionTitle": "OUR MISSION",
+    "missionText": "To bring the world's finest single-origin coffees directly to your cup, celebrating the unique terroir and craftsmanship of each origin while supporting sustainable farming practices.",
+    "valuesTitle": "OUR VALUES",
+    "valuesSummary": [
+      "✓ Sustainability and Fair Trade practices",
+      "✓ Direct relationships with coffee farmers",
+      "✓ Small-batch artisan roasting",
+      "✓ Transparent sourcing"
+    ],
+    "sustainabilityTitle": "SUSTAINABILITY",
+    "sustainabilityText": "We're committed to environmental responsibility. All our packaging is compostable, and 5% of every purchase goes toward reforestation projects in coffee-producing regions. We work exclusively with farms that practice shade-growing and water conservation.",
+    "statsTrees": "Trees Planted",
+    "statsFarms": "Partner Farms",
+    "statsSust": "Sustainable"
+  },
+  "wholesale": {
+    "title": "Wholesale Partners",
+    "description": "Join DuneFlame's growing network of wholesale partners and bring premium coffee to your business.",
+    "getStarted": "Get Started",
+    "whyPartner": "Why Partner With Us?",
+    "benefits": {
+      "b1Title": "Competitive Pricing",
+      "b1Desc": "Enjoy exclusive wholesale rates on all coffee products with volume discounts available.",
+      "b2Title": "Dedicated Support",
+      "b2Desc": "Get access to a dedicated account manager who understands your business needs.",
+      "b3Title": "Marketing Materials",
+      "b3Desc": "Receive professionally designed marketing materials to promote DuneFlame products.",
+      "b4Title": "Fast Delivery",
+      "b4Desc": "Reliable and quick delivery across UAE and neighboring regions.",
+      "b5Title": "Product Training",
+      "b5Desc": "Train your staff on coffee preparation and product knowledge.",
+      "b6Title": "Flexible Orders",
+      "b6Desc": "Customize order quantities and delivery schedules to fit your needs."
+    },
+    "ourProcess": "Our Process",
+    "process": {
+      "s1Title": "Contact Us",
+      "s1Desc": "Reach out to our wholesale team with details about your business.",
+      "s2Title": "Schedule Consultation",
+      "s2Desc": "We'll arrange a meeting to discuss your needs and requirements.",
+      "s3Title": "Custom Quote",
+      "s3Desc": "Receive a tailored pricing proposal based on your order volume.",
+      "s4Title": "Sign Agreement",
+      "s4Desc": "Formalize the partnership with our wholesale agreement.",
+      "s5Title": "Start Ordering",
+      "s5Desc": "Access your wholesale account and place your first order."
+    },
+    "ctaTitle": "Ready to Join Our Network?",
+    "ctaDesc": "Contact our wholesale team today to discuss partnership opportunities and get personalized pricing.",
+    "contactUs": "Contact Us",
+    "viewProducts": "View All Products"
+  },
+  "OrderDetailsPage": {
+    "orderPrefix": "Order",
+    "qty": "qty",
+    "noPhone": "No Phone",
+    "orderStatus": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "processing": "Processing",
+      "cancelled": "Cancelled"
     }
   }
 }

@@ -35,7 +35,6 @@ export default function RelatedProducts({ categoryId, currentProductId }: Relate
 
         setProducts(filtered)
       } catch (err) {
-        console.error("Failed to fetch related products:", err)
         setError("Could not load related products")
       } finally {
         setLoading(false)

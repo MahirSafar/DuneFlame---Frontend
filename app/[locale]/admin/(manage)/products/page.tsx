@@ -1,8 +1,8 @@
 "use client"
 
 import { type DragEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { Link } from "@/i18n/routing"
+import { useRouter } from "@/i18n/routing"
 import {
   Table,
   TableBody,
@@ -251,7 +251,6 @@ export default function AdminProductsPage() {
         search: debouncedSearch || undefined,
         categoryId: categoryFilter || undefined,
       })
-      console.log('getAdminProducts result:', res)
       setProducts(res.items)
       setTotalPages(res.totalPages)
       setTotalCount(res.totalCount)
@@ -591,7 +590,6 @@ const handleOpenEdit = async (productId: string) => {
         setSelectedProduct(null);
         loadProducts();
       } catch (err: any) {
-        console.error("Error submitting product:", err);
         if (err.response?.data?.errors) {
           const errors = err.response.data.errors;
           const errorMessages: string[] = [];

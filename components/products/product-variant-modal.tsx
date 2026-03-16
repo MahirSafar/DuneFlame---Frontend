@@ -52,13 +52,11 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
   useEffect(() => {
     if (!isOpen) return
 
-    console.log("[Modal] useEffect triggered - isOpen:", isOpen)
 
     // Set default weight ONLY on first open (when selectedWeight is undefined)
     const availableWeights = getAvailableWeights(fullProduct as unknown as ProductWithPricing)
     if (availableWeights.length > 0 && selectedWeight === undefined) {
       const defaultWeightNum = Number(availableWeights[0])
-      console.log("[Modal] Setting default weight (first time only):", defaultWeightNum)
       setSelectedWeight(defaultWeightNum)
       
       // Also set default ID and Label from unified source
@@ -79,7 +77,6 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
 
     if (hasIncompleteData && product.slug) {
       // Fetch full product details
-      console.log("[Modal] Fetching full product details for:", product.slug)
       import("@/lib/services/products")
         .then(({ getProduct }) => getProduct(product.slug))
         .then((data) => {
@@ -88,7 +85,6 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
           const weights = getAvailableWeights(data as unknown as ProductWithPricing)
           if (weights.length > 0 && selectedWeight === undefined) {
             const firstWeight = Number(weights[0])
-            console.log("[Modal] Setting weight after fetch (first time only):", firstWeight)
             setSelectedWeight(firstWeight)
             
             // Use unified price source
@@ -114,7 +110,6 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
       const weights = getAvailableWeights(product as unknown as ProductWithPricing)
       if (weights.length > 0 && selectedWeight === undefined) {
         const firstWeight = Number(weights[0])
-        console.log("[Modal] Setting weight from complete data (first time only):", firstWeight)
         setSelectedWeight(firstWeight)
         
         // Use unified price source
@@ -148,20 +143,6 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
       ...((fullProduct as any).otherAvailableCurrencies || []),
       ...(fullProduct.availablePrices || []),
     ].filter(Boolean)
-    
-    console.log("[Modal] 📦 allPriceVariants created:", {
-      total: combined.length,
-      fromActivePrice: (fullProduct as any).activePrice ? 1 : 0,
-      fromOtherCurrencies: ((fullProduct as any).otherAvailableCurrencies || []).length,
-      fromAvailablePrices: (fullProduct.availablePrices || []).length,
-      details: combined.map(p => ({
-        grams: p.grams,
-        price: p.price,
-        currency: p.currency || p.currencyCode,
-        id: p.productPriceId,
-        label: p.weightLabel,
-      }))
-    })
     
     return combined
   }, [fullProduct])
@@ -275,15 +256,6 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                   const selectedNum = Number(selectedWeight)
                   const isActive = selectedNum === gramsNum
                   
-                  console.log(`[Modal] 🎯 Button ${grams}g render:`, {
-                    grams,
-                    gramsNum,
-                    selectedWeight,
-                    selectedNum,
-                    isActive,
-                    comparison: `${selectedNum} === ${gramsNum}`,
-                    hasPrice: weightPrice > 0,
-                  })
                   
                   return (
                     <button
@@ -291,32 +263,16 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                       type="button"
                       onClick={() => {
                         const numWeight = Number(grams)
-                                                console.log("[Modal] 🔘 Weight button clicked:", {
-                                                  clickedWeight: grams,
-                                                  numWeight,
-                                                  currentSelected: selectedWeight,
-                                                  allPriceVariantsLength: allPriceVariants.length,
-                                                })
                         
                         setSelectedWeight(numWeight)
                         
                         // Use unified price source instead of only availablePrices
                         const weightObj = allPriceVariants.find((p) => Number(p.grams) === numWeight)
-                        console.log("[Modal] 🔍 Search result:", {
-                          searching: `Number(p.grams) === ${numWeight}`,
-                          found: !!weightObj,
-                          weightObj,
-                        })
                         
                         if (weightObj) {
                           setSelectedWeightLabel(weightObj.weightLabel || `${numWeight}g`)
                           setSelectedWeightId(weightObj.productPriceId || "")
-                          console.log("[Modal] ✓ Weight metadata updated:", {
-                            label: weightObj.weightLabel || `${numWeight}g`,
-                            id: weightObj.productPriceId,
-                          })
                         } else {
-                          console.error("[Modal] ✗ WEIGHT NOT FOUND IN UNIFIED SOURCE")
                           console.error("[Modal] Available variants:", allPriceVariants.map(p => ({ 
                             grams: p.grams, 
                             gramsType: typeof p.grams,

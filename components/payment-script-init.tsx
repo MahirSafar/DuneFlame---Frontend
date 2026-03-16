@@ -17,9 +17,7 @@ export default function PaymentScriptInit() {
     if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
       const checkStripe = () => {
         if (typeof (window as any).Stripe === "undefined") {
-          console.warn("⚠️ Stripe SDK not yet available. Will attempt to load via loadStripe().")
         } else {
-          console.log("✅ Stripe SDK loaded successfully")
         }
       }
 
@@ -39,7 +37,6 @@ export default function PaymentScriptInit() {
     // Check if already loaded
     const checkGoogle = () => {
       if (typeof (window as any).google !== "undefined") {
-        console.log("✅ Google SDK loaded successfully")
         return true
       }
       return false
@@ -52,7 +49,6 @@ export default function PaymentScriptInit() {
 
     // Listen for the custom event dispatched by the script onload
     const handleGoogleSDKLoaded = () => {
-      console.log("✅ Google SDK initialized via onload callback")
     }
 
     window.addEventListener("google-sdk-loaded", handleGoogleSDKLoaded)
@@ -60,7 +56,6 @@ export default function PaymentScriptInit() {
     // Fallback: Check again after 2 seconds if event didn't fire (network delay)
     const fallbackTimer = setTimeout(() => {
       if (!checkGoogle()) {
-        console.warn("⚠️ Google SDK not yet available. OAuth redirects will use fallback method.")
       }
     }, 2000)
 

@@ -112,28 +112,13 @@ export default function ShopFilters({
 
   // 🔍 DEBUG: Log filters state changes
   useEffect(() => {
-    console.log("[ShopFilters] Current filters state:", {
-      roastLevelIds: filters.roastLevelIds,
-      originIds: filters.originIds,
-      minPrice: filters.minPrice,
-      maxPrice: filters.maxPrice,
-      sortBy: filters.sortBy,
-    });
   }, [filters]);
 
   // Fetch master data on mount
   useEffect(() => {
-    console.log("[ShopFilters] 🚀 Starting to fetch master data...");
 
     Promise.all([getCategories(), getRoastLevels(), getOrigins()])
       .then(([cats, roasts, orgs]) => {
-        console.log("[ShopFilters] ✅ Master data loaded:", {
-          categories: cats.length,
-          roastLevels: roasts.length,
-          origins: orgs.length,
-          roastLevelDetails: roasts,
-          originDetails: orgs,
-        });
 
         setCategories(cats);
         setRoastLevels(roasts);
@@ -141,7 +126,6 @@ export default function ShopFilters({
         setError(null);
       })
       .catch((err) => {
-        console.error("[ShopFilters] ❌ Failed to load filter data:", err);
         setError("Failed to load filter options");
       })
       .finally(() => {
@@ -162,29 +146,14 @@ export default function ShopFilters({
   };
 
   const handleRoastLevelChange = (id: string, checked: boolean) => {
-    console.log("[ShopFilters] 🔘 Roast Level checkbox changed:", {
-      id,
-      checked,
-      currentRoastLevelIds: filters.roastLevelIds,
-    });
     onRoastLevelToggle(id);
   };
 
   const handleOriginChange = (id: string, checked: boolean) => {
-    console.log("[ShopFilters] 🔘 Origin checkbox changed:", {
-      id,
-      checked,
-      currentOriginIds: filters.originIds,
-    });
     onOriginToggle(id);
   };
 
   const handleCategoryChange = (id: string, checked: boolean) => {
-    console.log("[ShopFilters] 🔘 Category checkbox changed:", {
-      id,
-      checked,
-      currentCategoryId: filters.categoryId,
-    });
     onCategoryChange(checked ? id : undefined);
   };
 

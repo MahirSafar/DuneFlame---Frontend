@@ -37,7 +37,6 @@ instance.interceptors.request.use(
       config.headers["Accept-Language"] = currentLocale;
     }
 
-    console.log(`🌐 [AXIOS] ${config.method?.toUpperCase()} ${config.url} -> Accept-Language=${config.headers?.["Accept-Language"]}, X-Currency=${config.headers?.["X-Currency"]}`);
 
     return config;
   },
@@ -114,9 +113,9 @@ instance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const { accessToken, refreshToken, user } = useAuthStore.getState();
+      const { accessToken, refreshToken } = useAuthStore.getState();
 
-      if (!refreshToken || !user?.email) {
+      if (!refreshToken || !accessToken) {
         isRefreshing = false;
         processQueue(new Error("No tokens available"));
         toast.error("Session expired. Please login again.");
@@ -129,7 +128,7 @@ instance.interceptors.response.use(
 
       try {
         
-        const newTokens = await refreshAccessToken(user.email, refreshToken);
+        const newTokens = await refreshAccessToken(accessToken, refreshToken);
 
         // Record the refresh timestamp BEFORE updating store to prevent bad rehydration
         if (typeof window !== "undefined") {

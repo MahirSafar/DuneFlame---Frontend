@@ -4,69 +4,72 @@ import type { Metadata } from "next"
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
+import { useTranslations } from "next-intl"
 
 export default function WholesalePage() {
+  const t = useTranslations("wholesale")
+
   const wholesaleData = {
-    title: "Wholesale Partners",
-    description: "Join DuneFlame's growing network of wholesale partners and bring premium coffee to your business.",
+    title: t("title"),
+    description: t("description"),
     benefits: [
       {
         id: 1,
-        title: "Competitive Pricing",
-        description: "Enjoy exclusive wholesale rates on all coffee products with volume discounts available."
+        title: t("benefits.b1Title"),
+        description: t("benefits.b1Desc")
       },
       {
         id: 2,
-        title: "Dedicated Support",
-        description: "Get access to a dedicated account manager who understands your business needs."
+        title: t("benefits.b2Title"),
+        description: t("benefits.b2Desc")
       },
       {
         id: 3,
-        title: "Marketing Materials",
-        description: "Receive professionally designed marketing materials to promote DuneFlame products."
+        title: t("benefits.b3Title"),
+        description: t("benefits.b3Desc")
       },
       {
         id: 4,
-        title: "Fast Delivery",
-        description: "Reliable and quick delivery across UAE and neighboring regions."
+        title: t("benefits.b4Title"),
+        description: t("benefits.b4Desc")
       },
       {
         id: 5,
-        title: "Product Training",
-        description: "Train your staff on coffee preparation and product knowledge."
+        title: t("benefits.b5Title"),
+        description: t("benefits.b5Desc")
       },
       {
         id: 6,
-        title: "Flexible Orders",
-        description: "Customize order quantities and delivery schedules to fit your needs."
+        title: t("benefits.b6Title"),
+        description: t("benefits.b6Desc")
       }
     ],
     process: [
       {
         step: 1,
-        title: "Contact Us",
-        description: "Reach out to our wholesale team with details about your business."
+        title: t("process.s1Title"),
+        description: t("process.s1Desc")
       },
       {
         step: 2,
-        title: "Schedule Consultation",
-        description: "We'll arrange a meeting to discuss your needs and requirements."
+        title: t("process.s2Title"),
+        description: t("process.s2Desc")
       },
       {
         step: 3,
-        title: "Custom Quote",
-        description: "Receive a tailored pricing proposal based on your order volume."
+        title: t("process.s3Title"),
+        description: t("process.s3Desc")
       },
       {
         step: 4,
-        title: "Sign Agreement",
-        description: "Formalize the partnership with our wholesale agreement."
+        title: t("process.s4Title"),
+        description: t("process.s4Desc")
       },
       {
         step: 5,
-        title: "Start Ordering",
-        description: "Access your wholesale account and place your first order."
+        title: t("process.s5Title"),
+        description: t("process.s5Desc")
       }
     ]
   }
@@ -86,7 +89,7 @@ export default function WholesalePage() {
               {wholesaleData.description}
             </p>
             <Button size="lg" asChild>
-              <Link href="/contact">Get Started</Link>
+              <Link href="/contact">{t("getStarted")}</Link>
             </Button>
           </div>
         </section>
@@ -95,7 +98,7 @@ export default function WholesalePage() {
         <section className="py-16 md:py-24 px-4">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold font-heading mb-12 text-center">
-              Why Partner With Us?
+              {t("whyPartner")}
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {wholesaleData.benefits.map((benefit) => (
@@ -119,7 +122,7 @@ export default function WholesalePage() {
         <section className="py-16 md:py-24 px-4">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold font-heading mb-12 text-center">
-              Our Process
+              {t("ourProcess")}
             </h2>
             <div className="grid md:grid-cols-5 gap-4 md:gap-2">
               {wholesaleData.process.map((item, index) => (
@@ -155,17 +158,17 @@ export default function WholesalePage() {
         <section className="py-16 md:py-24 px-4 bg-gradient-to-r from-primary/10 to-accent/10">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold font-heading mb-4">
-              Ready to Join Our Network?
+              {t("ctaTitle")}
             </h2>
             <p className="text-lg text-foreground/80 mb-8">
-              Contact our wholesale team today to discuss partnership opportunities and get personalized pricing.
+              {t("ctaDesc")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild>
-                <Link href="/contact">Contact Us</Link>
+                <Link href="/contact">{t("contactUs")}</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/products">View All Products</Link>
+                <Link href="/products">{t("viewProducts")}</Link>
               </Button>
             </div>
           </div>

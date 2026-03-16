@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { CheckCircle2, Package, ArrowRight, Mail } from "lucide-react"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCartStore } from "@/lib/cart-store"
@@ -12,7 +12,6 @@ export default function CheckoutSuccessPage() {
   useEffect(() => {
     const cartItems = useCartStore.getState().items
     if (cartItems.length > 0) {
-      console.warn("Cart not empty on success page, clearing now")
       useCartStore.getState().clearCart()
     }
   }, [])

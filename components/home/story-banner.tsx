@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { useLocale } from "next-intl"
 import { useTranslations } from "next-intl"
 
@@ -20,7 +20,7 @@ export default function StoryBanner() {
           <p className="text-lg text-muted-foreground max-w-2xl mb-8 leading-relaxed">
             {t('home.story.description')}
           </p>
-          <Link href={`/${locale}/about`}>
+          <Link href="/about">
             <button className="px-8 py-3 font-semibold rounded-lg transition-smooth" style={{ backgroundColor: "#2b1b13", color: "white" }}>
               {t('home.story.cta')}
             </button>

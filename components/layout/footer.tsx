@@ -1,14 +1,13 @@
 "use client"
 
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { LanguageSwitcher } from "./language-switcher"
 import { Instagram, Facebook, Mail, ChevronDown } from "lucide-react"
-import { useTranslations, useLocale } from "next-intl"
+import { useTranslations } from "next-intl"
 import { useState, useEffect } from "react"
 
 export default function Footer() {
   const t = useTranslations('common.footer')
-  const locale = useLocale()
   const [isMobile, setIsMobile] = useState(false)
   const [expandedSections, setExpandedSections] = useState({
     duneFlame: true,
@@ -53,10 +52,10 @@ export default function Footer() {
       { href: "/refund", label: t('cancellationRefund') },
     ],
     policy: [
-      { href: `/${locale}/policies?tab=privacy`, label: t('privacy') },
-      { href: `/${locale}/policies?tab=terms`, label: t('terms') },
-      { href: `/${locale}/policies?tab=shipping`, label: t('shippingPolicy') },
-      { href: `/${locale}/policies?tab=refund`, label: t('cancellationTerms') },
+      { href: "/policies?tab=privacy", label: t('privacy') },
+      { href: "/policies?tab=terms", label: t('terms') },
+      { href: "/policies?tab=shipping", label: t('shippingPolicy') },
+      { href: "/policies?tab=refund", label: t('cancellationTerms') },
     ]
   }
 
@@ -105,13 +104,13 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 md:gap-6 lg:gap-8 xl:gap-12">
             {/* Brand Section */}
             <div className="col-span-1 md:col-span-2 lg:col-span-2">
-              <Link href="/" className="inline-block group">
+              <Link href="/" aria-label="DuneFlame Home" className="inline-block group">
               </Link>
 
               
               {/* Social Links */}
               <div className="mb-4 md:mb-6">
-                <h4 className="font-semibold text-xs md:text-sm mb-2 md:mb-3">{t('followUs')}</h4>
+                <h3 className="font-semibold text-xs md:text-sm mb-2 md:mb-3">{t('followUs')}</h3>
                 <div className="flex gap-2 md:gap-3">
                   {socialLinks.map((social) => {
                     const Icon = social.icon

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -133,11 +133,7 @@ export default function CreateProductPage() {
     formData.append("MainImageIndex", mainImageIndex.toString());
 
     // FormData-nı göndərməzdən əvvəl konsola çıxarırıq
-    // eslint-disable-next-line no-console
-    console.log('--- FormData Payload ---');
     for (let pair of formData.entries()) {
-      // eslint-disable-next-line no-console
-      console.log(pair[0] + ': ' + pair[1]);
     }
     setSubmitting(true);
     try {

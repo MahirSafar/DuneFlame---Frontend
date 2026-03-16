@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import toast from "react-hot-toast";
 import { setTokens } from "@/lib/api-client";
 import { setAxiosAuthToken } from "@/lib/axios";
 import { useAuthStore } from "@/lib/auth-store";
 import { useCartStore } from "@/lib/cart-store";
+import { Loader2 } from "lucide-react";
 
 export default function GoogleCallbackPage() {
   const searchParams = useSearchParams();
@@ -63,19 +65,17 @@ export default function GoogleCallbackPage() {
           try {
             const { loadBasket } = useCartStore.getState();
             await loadBasket();
-            console.log("[GoogleCallback] ✅ Basket loaded after Google login");
           } catch (cartError) {
             console.error("[GoogleCallback] Failed to load basket after Google login:", cartError);
             // Don't break - login was successful
           }
 
           toast.success("Successfully logged in with Google");
-          // Redirect to home after successful login
-          setTimeout(() => router.replace("/"), 700);
+          // Redirect to dashboard after successful login
+          setTimeout(() => router.replace("/dashboard"), 700);
         } catch (error) {
-          console.error("[GoogleCallback] Error during post-login setup:", error);
           toast.success("Successfully logged in with Google");
-          setTimeout(() => router.replace("/"), 700);
+          setTimeout(() => router.replace("/dashboard"), 700);
         }
       })();
     } catch (e) {
@@ -87,7 +87,8 @@ export default function GoogleCallbackPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-900">
       <div className="w-full max-w-md">
-        <div className="glass p-8 rounded-2xl text-center">
+        <div className="glass p-8 rounded-2xl flex flex-col items-center justify-center text-center">
+          <Loader2 className="w-12 h-12 text-[#2b1b13] animate-spin mb-4" />
           <h2 className="text-lg font-semibold mb-2">Processing login…</h2>
           <p className="text-sm text-muted-foreground">Please wait while we sign you in.</p>
         </div>

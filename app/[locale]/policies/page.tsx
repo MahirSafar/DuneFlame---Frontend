@@ -471,10 +471,10 @@ export default function PoliciesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4">
             <h3 className="text-2xl font-bold" style={{ color: "#4B2E2B" }}>
-              Still have questions?
+              {t("footerCta.title")}
             </h3>
             <p className="text-muted-foreground mb-6">
-              Our team is here to help! Reach out to us anytime.
+              {t("footerCta.description")}
             </p>
             <a
               href="mailto:info@duneflame.com"
@@ -482,7 +482,7 @@ export default function PoliciesPage() {
               style={{ backgroundColor: "#1f6f78" }}
             >
               <Mail className="w-4 h-4" />
-              Contact Support
+              {t("footerCta.button")}
             </a>
           </div>
         </div>

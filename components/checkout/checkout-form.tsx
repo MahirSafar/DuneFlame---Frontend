@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState, type FormEvent } from "react"
+import { useRouter } from "@/i18n/routing"
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { useLocale, useTranslations } from "next-intl"
@@ -68,7 +69,6 @@ const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null
 
 if (!stripePromise) {
-  console.warn("Stripe key missing. Set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to enable payments.")
 }
 
 function PaymentContent({
@@ -88,6 +88,7 @@ function PaymentContent({
 }) {
   const stripe = useStripe()
   const elements = useElements()
+  const router = useRouter()
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false)
 
@@ -105,19 +106,13 @@ function PaymentContent({
           throw new Error("Order ID is missing")
         }
 
-        console.log("✅ ZERO AMOUNT ORDER - Finalizing without Stripe payment")
         
         // Clear cart
         useCartStore.getState().clearCart()
         
         // Redirect to confirmation page
-        if (typeof window !== "undefined") {
-          window.location.href = `/orders/confirmation/${orderId}`
-        } else {
-          throw new Error("Cannot redirect: window object not available")
-        }
+        router.push(`/orders/confirmation/${orderId}`)
       } catch (error) {
-        console.error("Zero-amount order finalization error:", error)
         setPaymentError(error instanceof Error ? error.message : "Failed to finalize order")
         setIsProcessing(false)
       }
@@ -141,17 +136,14 @@ function PaymentContent({
       // CHECK 1: Verify PaymentElement is actually mounted
       const paymentElement = elements.getElement(PaymentElement)
       if (!paymentElement) {
-        console.error("❌ Payment Element not found/mounted. Aborting confirmPayment.")
         throw new Error("Payment Element is not mounted. Please refresh the page and try again.")
       }
 
       // CHECK 2: Verify PaymentElement is ready before proceeding
       if (!isPaymentElementReady) {
-        console.error("❌ Payment Element is not ready yet. User clicked too fast.")
         throw new Error("Payment system is still loading. Please wait a moment and try again.")
       }
 
-      console.log("✅ Payment Element verified as mounted and ready. Proceeding with confirmPayment.")
 
       const result = await stripe.confirmPayment({
         elements,
@@ -179,13 +171,8 @@ function PaymentContent({
           ? `/orders/confirmation/${orderId}`
           : "/profile/orders"
         
-        // Safely redirect using window.location
-        if (typeof window !== "undefined") {
-          window.location.href = confirmationPath
-        } else {
-          console.warn("Cannot redirect: window object not available")
-          setPaymentError("Payment succeeded but redirection failed. Please refresh the page.")
-        }
+        // Safely redirect using router
+        router.push(confirmationPath)
       } else {
         const status = result.paymentIntent?.status || "unknown"
         if (status === "processing") {
@@ -198,7 +185,6 @@ function PaymentContent({
         setIsProcessing(false)
       }
     } catch (error) {
-      console.error("Payment error:", error)
       setPaymentError(error instanceof Error ? error.message : "Payment processing failed")
       setIsProcessing(false)
     }
@@ -214,7 +200,6 @@ function PaymentContent({
               layout: 'tabs',
             }}
             onReady={() => {
-              console.log("✅ PaymentElement is now ready")
               setIsPaymentElementReady(true)
             }}
           />
@@ -285,19 +270,6 @@ function StripePaymentModal({
   // Log client secret whenever modal opens or clientSecret changes
   useEffect(() => {
     if (open && clientSecret) {
-      console.log("📋 STRIPE PAYMENT MODAL OPENED - Client Secret Debug:", {
-        clientSecret: clientSecret,
-        type: typeof clientSecret,
-        clientSecretExists: !!clientSecret,
-        clientSecretLength: clientSecret.length,
-        clientSecretPrefix: clientSecret.substring(0, 30) + "...",
-        isValidFormat: clientSecret.includes("_secret_"),
-        noManipulation: clientSecret === clientSecret.trim() && !clientSecret.includes('\\n') && !clientSecret.includes('\\t'),
-        orderTotal,
-        isZeroAmount,
-        orderId,
-        timestamp: new Date().toISOString(),
-      })
     }
   }, [open, clientSecret, orderTotal])
 
@@ -328,16 +300,7 @@ function StripePaymentModal({
         ) : clientSecret && stripePromise ? (
           // Paid order - use Stripe Elements
           <>
-            {console.log("✅ RENDERING ELEMENTS PROVIDER WITH RAW CLIENT SECRET:", {
-              clientSecret: clientSecret,
-              type: typeof clientSecret,
-              clientSecretExists: !!clientSecret,
-              clientSecretLength: clientSecret.length,
-              clientSecretPrefix: clientSecret.substring(0, 30) + "...",
-              isValidFormat: clientSecret.includes("_secret_"),
-              noManipulation: clientSecret === clientSecret.trim() && !clientSecret.includes('\\n'),
-              timestamp: new Date().toISOString(),
-            })}
+            {undefined}
             <Elements
               stripe={stripePromise}
               options={{
@@ -366,6 +329,7 @@ function StripePaymentModal({
 }
 
 export default function CheckoutForm() {
+  const router = useRouter()
   const items = useCartStore((state) => state.items)
   const total = useCartStore((state) => state.total)
   const { currency } = useCurrency()
@@ -418,13 +382,11 @@ export default function CheckoutForm() {
     if (accessToken && !selectedCountryId && typeof window !== "undefined") {
       const savedCountryId = localStorage.getItem("checkout_selected_country_id")
       if (savedCountryId) {
-        console.log("[CheckoutForm] 🔄 Restored selected country from localStorage:", savedCountryId)
         setSelectedCountryId(savedCountryId)
       } else {
         // If no saved country and in UAE, suggest AE by default
         const savedCountryFromAPI = localStorage.getItem("df_default_country")
         if (savedCountryFromAPI) {
-          console.log("[CheckoutForm] 🔄 Using default country from API:", savedCountryFromAPI)
           setSelectedCountryId(savedCountryFromAPI)
         }
       }
@@ -435,7 +397,6 @@ export default function CheckoutForm() {
   useEffect(() => {
     if (selectedCountryId && typeof window !== "undefined") {
       localStorage.setItem("checkout_selected_country_id", selectedCountryId)
-      console.log("[CheckoutForm] 💾 Saved selected country to localStorage:", selectedCountryId)
     }
   }, [selectedCountryId])
 
@@ -451,11 +412,9 @@ export default function CheckoutForm() {
       } catch (error: any) {
         // Silently handle session expired errors (expected after token expiry)
         if (error?.message === "Session expired") {
-          console.debug("Skipping reward fetch - session expired");
           setRewardBalance(0)
           return
         }
-        console.error("Failed to fetch reward balance:", error)
         setRewardBalance(0)
       } finally {
         setIsLoadingRewards(false)
@@ -491,7 +450,6 @@ export default function CheckoutForm() {
 
   // Ensure locale is set in API client before fetching products
   useEffect(() => {
-    console.log(`[CheckoutForm] Setting API locale to: ${locale}`)
     setApiClientLocale(locale)
   }, [locale])
 
@@ -501,13 +459,11 @@ export default function CheckoutForm() {
       const currentItems = useCartStore.getState().items
       
       if (currentItems.length === 0) {
-        console.log('[CheckoutForm] No items to display')
         return
       }
 
       // Note: Product translation disabled due to endpoint availability issues
       // Using product names from cart store data
-      console.log('[CheckoutForm] Using product names from cart store')
     }
 
     refreshProductNames()
@@ -572,7 +528,6 @@ export default function CheckoutForm() {
       const data = await apiFetch<City[]>(`/shipping/countries/${countryId}/cities`)
       setCities(data)
     } catch (error) {
-      console.error("Failed to load cities", error)
       setCities([])
       setShippingError(t("unableToLoadCities"))
     } finally {
@@ -601,7 +556,6 @@ export default function CheckoutForm() {
         }
       }
     } catch (error) {
-      console.error("Failed to load countries", error)
       setCountries([])
       setShippingError(t("unableToLoadCountries"))
     } finally {
@@ -619,7 +573,6 @@ export default function CheckoutForm() {
       const selected = countries.find((country) => country.id === selectedCountryId)
       const selectedCode = selected?.code || ""
       if (selectedCode === "AE" || selectedCode === "KW") {
-        console.log("[CheckoutForm] 🔄 Auto-fetching cities for country:", selectedCountryId)
         fetchCities(selectedCountryId)
       } else {
         setCities([])
@@ -632,7 +585,6 @@ export default function CheckoutForm() {
 
     const selected = countries.find((country) => country.id === countryId)
     if (selected) {
-      console.log("Secilen Olke Kodu:", selected.code)
       // Store ISO code so backend ShippingService matches (e.g., "KW" instead of country name)
       setShippingAddress((prev) => ({ ...prev, country: selected.code, city: "", state: "" }))
     } else {
@@ -740,15 +692,8 @@ export default function CheckoutForm() {
       // CRITICAL CLEANUP: Clear any old guest basket ID when authenticated user proceeds to checkout
       if (authState.accessToken && typeof window !== "undefined") {
         localStorage.removeItem("df_guest_basket_id");
-        console.log("[Checkout] ✅ Cleared any old guest basket ID - authenticated user proceeding");
       }
       
-      console.log("📦 STORE STATE AT CHECKOUT:", {
-        itemsCount: currentItems.length,
-        itemNames: currentItems.map(i => i.name),
-        hasAccessToken: !!authState.accessToken,
-        hasUser: !!authState.user,
-      })
 
       // Determine consistent basketId for entire function
       let basketId: string
@@ -759,7 +704,6 @@ export default function CheckoutForm() {
       
       if (isAuthenticated) {
         // FOR AUTHENTICATED USERS: NEVER use guest_ ID - ALWAYS fetch UUID from backend
-        console.log("🔐 AUTHENTICATED USER DETECTED - Fetching UUID basket ID...");
         
         // v16 CRITICAL: Retry logic with backend sync wait
         let userBasketId: string | null = null;
@@ -771,7 +715,6 @@ export default function CheckoutForm() {
           retryCount++;
           
           if (retryCount > 1) {
-            console.log(`⏱️ RETRY ${retryCount}/${maxRetries}: Waiting 2 seconds for backend sync...`);
             setPaymentError("Finalizing your secure basket...");
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
@@ -781,25 +724,19 @@ export default function CheckoutForm() {
           if (candidateId && !candidateId.startsWith("guest_")) {
             // Valid UUID received
             userBasketId = candidateId;
-            console.log(`✅ RETRY ${retryCount}: Got valid UUID:`, userBasketId);
           } else if (candidateId?.startsWith("guest_")) {
-            console.warn(`⚠️ RETRY ${retryCount}: Backend still syncing (got guest_ ID):`, candidateId);
           } else {
-            console.warn(`⚠️ RETRY ${retryCount}: Backend returned null, will retry...`);
           }
         }
         
         // After 3 retries, if still no UUID, redirect to cart
         if (!userBasketId) {
-          console.error("❌ CRITICAL: Failed to get valid basketId after 3 retries. Redirecting to cart...");
           setPaymentError("Your basket is being prepared. Please refresh your cart and try again.");
           setIsInitializingPayment(false);
           
           // Redirect to cart page
           setTimeout(() => {
-            if (typeof window !== "undefined") {
-              window.location.href = "/cart";
-            }
+            router.push("/cart");
           }, 2000);
           return;
         }
@@ -809,19 +746,15 @@ export default function CheckoutForm() {
         // Validate basketId is UUID format (final sanity check)
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(basketId)) {
-          console.error("❌ INVALID BASKET ID FORMAT:", basketId);
           throw new Error("Invalid basket ID. Please go back to your cart and try again.");
         }
         
-        console.log("🔑 Using authenticated user basketId (UUID):", basketId);
         setPaymentError(null);  // Clear "Finalizing..." message
       } else {
         // For guests, generate ONCE and reuse throughout
         basketId = "guest_" + Math.random().toString(36).substring(2, 11);
-        console.log("👤 GUEST MODE - Generated guest basketId:", basketId);
       }
 
-      console.log("🔑 BASKET ID DETERMINED:", basketId)
 
       // STEP 1: FORCE SYNC - Sync current store items to Backend (Redis) BEFORE order creation
       if (currentItems.length > 0) {
@@ -842,11 +775,6 @@ export default function CheckoutForm() {
             grindTypeName: item.selectedGrind || item.grindTypeName || "Whole Bean",
           }))
 
-          console.log("🔄 FORCE SYNCING TO REDIS:", {
-            basketId: basketId,
-            itemCount: basketItems.length,
-            items: basketItems,
-          })
 
           // Force sync to Backend
           await basketService.updateBasket({
@@ -855,51 +783,33 @@ export default function CheckoutForm() {
             currencyCode: currency.toUpperCase(),
           })
 
-          console.log("✅ BASKET FORCE SYNCED TO REDIS:", basketId)
         } catch (syncError) {
-          console.error("❌ CRITICAL: Failed to sync basket to Redis:", syncError)
           throw new Error(t("failedSyncBasket"))
         }
       } else {
-        console.warn("⚠️ EMPTY BASKET: No items to sync")
         throw new Error(t("emptyBasket"))
       }
 
       // STEP 2: RE-VALIDATE basketId 1 second before payment (ensure latest UUID for authenticated)
-      console.log("⏱️ VALIDATION PAUSE: Waiting 1 second before order creation...");
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // For authenticated users, force-refresh basketId one more time
       if (isAuthenticated) {
-        console.log("🔄 RE-FETCHING basketId for authenticated user (final check)...");
         const freshBasketId = await authState.fetchAndStoreBasketId();
         
         if (freshBasketId && !freshBasketId.startsWith("guest_")) {
           basketId = freshBasketId;
-          console.log("✅ Up-to-date basketId retrieved:", basketId);
         } else {
-          console.warn("⚠️ Could not fetch fresh basketId, using previously validated one:", basketId);
         }
       }
 
       // STEP 3: Create order with same consistent basketId
-      console.log("📋 PAYLOAD CHECK (BEFORE ORDER):", {
-        basketId: basketId,
-        itemsCount: currentItems.length,
-        currency: currency.toUpperCase(),
-        shippingAddress: shippingAddress,
-        isAuthenticated: isAuthenticated,
-      })
 
       // v17: AGGRESSIVE - Force populate user data in checkout payload
       // Get FRESH user data directly from Zustand store
       const freshAuthState = useAuthStore.getState();
       const freshUser = freshAuthState.user;
       
-      console.log("[Checkout Debug] AUTH STATE USER (Closure):", authState.user);
-      console.log("[Checkout Debug] AUTH STATE USER (Fresh from Zustand):", freshUser);
-      console.log("[Checkout Debug] Is Authenticated:", isAuthenticated);
-      console.log("[Checkout Debug] Access Token exists:", !!authState.accessToken);
 
       const finalShippingAddress = { ...shippingAddress };
 
@@ -922,36 +832,25 @@ export default function CheckoutForm() {
         const extractedLastName = userObj?.lastName || freshUser?.lastName || "";
         const extractedEmail = userObj?.email || freshUser?.email || "";
 
-        console.log("[Checkout] 🔴 AGGRESSIVE POPULATION - Using fresh user data:", {
-          firstName: extractedFirstName,
-          lastName: extractedLastName,
-          email: extractedEmail,
-        });
 
         // Fill missing required fields (or OVERRIDE if empty)
         if (!finalShippingAddress.firstName?.trim()) {
           finalShippingAddress.firstName = extractedFirstName;
-          console.log("[Checkout] 📝 Set firstName:", finalShippingAddress.firstName);
         }
         if (!finalShippingAddress.lastName?.trim()) {
           finalShippingAddress.lastName = extractedLastName;
-          console.log("[Checkout] 📝 Set lastName:", finalShippingAddress.lastName);
         }
         if (!finalShippingAddress.email?.trim()) {
           finalShippingAddress.email = extractedEmail;
-          console.log("[Checkout] 📝 Set email:", finalShippingAddress.email);
         }
 
         // Ensure phoneNumber is never empty for the API
         if (!finalShippingAddress.phoneNumber?.trim()) {
           finalShippingAddress.phoneNumber = "00000000";
-          console.log("[Checkout] 📝 Set default phoneNumber:", finalShippingAddress.phoneNumber);
         }
       } else {
-        console.warn("[Checkout] ⚠️ NOT populating user data - isAuthenticated:", isAuthenticated, "freshUser:", freshUser);
       }
 
-      console.log("[Checkout] 🎯 FINAL PAYLOAD - ShippingAddress:", finalShippingAddress);
 
       const orderResponse = await apiFetch<{ id: string; clientSecret?: string }>("/orders", {
         method: "POST",
@@ -964,11 +863,6 @@ export default function CheckoutForm() {
         }),
       })
 
-      console.log("✅ ORDER CREATED:", {
-        orderId: orderResponse?.id,
-        basketIdUsed: basketId,
-        payloadShippingAddress: finalShippingAddress,
-      })
 
       setOrderId(orderResponse?.id || null)
 
@@ -994,25 +888,14 @@ export default function CheckoutForm() {
       const calculatedOrderTotal = subtotalWithShipping - rewardDiscount
       const isZeroPayment = calculatedOrderTotal <= 0
 
-      console.log("💰 PAYMENT CHECK:", {
-        subtotal,
-        shipping,
-        subtotalWithShipping,
-        rewardDiscount,
-        calculatedOrderTotal,
-        isZeroPayment,
-      })
 
       // If order total is 0 (rewards cover everything), skip Stripe and redirect
       if (isZeroPayment) {
-        console.log("🎉 ZERO PAYMENT ORDER - Skipping Stripe, redirecting to confirmation")
         useCartStore.getState().clearCart()
         setSuccessMessage(t("orderCreatedSuccess"))
         
         // Redirect directly to confirmation page
-        if (typeof window !== "undefined") {
-          window.location.href = `/orders/confirmation/${orderResponse?.id || ""}`
-        }
+        router.push(`/orders/confirmation/${orderResponse?.id || ""}`)
         setIsInitializingPayment(false)
         return
       }
@@ -1020,34 +903,14 @@ export default function CheckoutForm() {
       // STEP 4: Get payment intent for non-zero payments
       let clientSecretValue: string | undefined
 
-      console.log("🔍 FETCHING CLIENT SECRET...")
 
       if (orderResponse?.clientSecret) {
         clientSecretValue = orderResponse.clientSecret
-        console.log("✅ CLIENT SECRET FROM ORDER RESPONSE (RAW STRING):", {
-          clientSecret: clientSecretValue,
-          type: typeof clientSecretValue,
-          clientSecretExists: !!clientSecretValue,
-          clientSecretLength: clientSecretValue?.length,
-          clientSecretPrefix: clientSecretValue?.substring(0, 20) + "...",
-          isValidFormat: clientSecretValue?.includes("_secret_"),
-          timestamp: new Date().toISOString(),
-        })
       } else {
-        console.warn("⚠️ No clientSecret in orderResponse, fetching from /payments endpoint...")
         const paymentResponse = await apiFetch<{ clientSecret: string }>(`/payments/${basketId}`, {
           method: "POST",
         })
         clientSecretValue = paymentResponse?.clientSecret
-        console.log("✅ CLIENT SECRET FROM PAYMENTS ENDPOINT (RAW STRING):", {
-          clientSecret: clientSecretValue,
-          type: typeof clientSecretValue,
-          clientSecretExists: !!clientSecretValue,
-          clientSecretLength: clientSecretValue?.length,
-          clientSecretPrefix: clientSecretValue?.substring(0, 20) + "...",
-          isValidFormat: clientSecretValue?.includes("_secret_"),
-          timestamp: new Date().toISOString(),
-        })
       }
 
       if (!clientSecretValue) {
@@ -1073,23 +936,12 @@ export default function CheckoutForm() {
       }
 
       // NO string manipulation - passing raw string directly
-      console.log("🎯 FINAL CLIENT SECRET (NO MANIPULATION - RAW STRING):", {
-        clientSecret: clientSecretValue,
-        type: typeof clientSecretValue,
-        clientSecretExists: !!clientSecretValue,
-        clientSecretLength: clientSecretValue.length,
-        firstChars: clientSecretValue.substring(0, 30) + "...",
-        orderId: orderResponse?.id,
-        basketId: basketId,
-        timestamp: new Date().toISOString(),
-      })
 
       // Set the raw clientSecret directly without any manipulation
       setClientSecret(clientSecretValue)
       setIsPaymentModalOpen(true)
       setSuccessMessage(t("orderCreatedSuccess"))
     } catch (error) {
-      console.error("❌ CHECKOUT ERROR:", error)
       const message = error instanceof Error ? error.message : "Unable to start checkout process"
       setPaymentError(message)
       setClientSecret(null)
@@ -1142,19 +994,6 @@ export default function CheckoutForm() {
   const orderTotal = subtotalWithShipping - rewardDiscount
 
   // Debug log
-  console.log("📦 Checkout Pricing:", {
-    subtotal,
-    selectedCountry: selectedCountry?.name,
-    countryCode: selectedCountry?.code,
-    isUAE,
-    freeShippingThreshold,
-    qualifiesForFreeShipping,
-    shipping,
-    subtotalWithShipping,
-    rewardDiscount,
-    orderTotal,
-    currency,
-  })
 
   return (
     <>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 import { Button } from "@/components/ui/button"
 import { useLocale } from "next-intl"
 import { Flame } from "lucide-react"
@@ -47,7 +47,7 @@ export default function NotFound() {
 
           {/* CTA Button */}
           <Button
-            onClick={() => router.push(`/${locale}`)}
+            onClick={() => router.push("/")}
             className="bg-gradient-to-r from-flame-apricot to-flame-caramel hover:from-flame-apricot/90 hover:to-flame-caramel/90 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
             aria-label={t("backHome")}
           >

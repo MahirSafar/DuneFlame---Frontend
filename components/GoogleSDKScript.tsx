@@ -17,12 +17,9 @@ export default function GoogleSDKScript() {
   return (
     <Script
       src="https://accounts.google.com/gsi/client"
-      async
-      defer
-      strategy="afterInteractive"
+      strategy="lazyOnload"
       onLoad={() => {
         if (typeof window !== "undefined" && (window as any).google) {
-          console.log("✅ Google SDK loaded successfully");
           // Dispatch custom event to notify other components
           window.dispatchEvent(new Event("google-sdk-loaded"));
         }
