@@ -3,7 +3,7 @@
     "nav": {
       "home": "Home",
       "about": "About",
-      "products": "Products",
+      "products": "Coffee",
       "shop": "Shop",
       "contact": "Contact",
       "cart": "Cart",
@@ -15,7 +15,7 @@
       "ourCoffee": "OUR COFFEE",
       "wholesale": "WHOLESALE",
       "aboutUs": "ABOUT US",
-      "searchPlaceholder": "Search for coffee, products..."
+      "searchPlaceholder": "Search for coffee, coffee..."
     },
     "footer": {
       "company": "Company",
@@ -104,7 +104,7 @@
       "cta": "Discover Our Journey"
     },
     "trending": {
-      "title": "BEST-SELLING PRODUCTS",
+      "title": "BEST-SELLING COFFEE",
       "titleAccent": "THIS WEEK"
     },
     "newsletter": {
@@ -116,15 +116,15 @@
     }
   },
   "products": {
-    "title": "Our Products",
-    "pageTitle": "OUR PRODUCTS",
+    "title": "Our Coffee",
+    "pageTitle": "OUR COFFEE",
     "description": "Discover our carefully curated selection",
-    "searchPlaceholder": "Search products...",
-    "loading": "Loading products...",
-    "noProducts": "No products found",
+    "searchPlaceholder": "Search coffee...",
+    "loading": "Loading coffee...",
+    "noProducts": "No coffee found",
     "showing": "Showing",
     "of": "of",
-    "products": "products",
+    "products": "coffee",
     "sortByLabel": "Sort By",
     "sortByDefault": "Sort By: Default",
     "filters": {
@@ -173,14 +173,14 @@
       "signaturePick": "Signature pick",
       "quickView": "QUICK VIEW"
     },
-    "recommendations": "Explore more products to complete your order",
+    "recommendations": "Explore more coffee to complete your order",
     "relatedRecommendations": "Explore more from this collection",
     "youMayAlsoLike": "YOU MAY ALSO LIKE",
     "detail": {
       "description": "Description",
       "specifications": "Specifications",
       "reviews": "Reviews",
-      "relatedProducts": "Related Products",
+      "relatedProducts": "Related Coffee",
       "selectWeight": "Select Weight",
       "selectRoast": "Select Roast Level",
       "selectGrind": "Select Grind Type",
@@ -204,7 +204,7 @@
     "priceNotLoaded": "Price not loaded for this currency/weight combination",
     "freeShipping": "Free 2-day shipping on orders over $200",
     "sustainableSourcing": "Sustainable sourcing guaranteed",
-    "backToProducts": "Back to Products"
+    "backToProducts": "Back to Coffee"
   },
   "cart": {
     "title": "Shopping Cart",
@@ -447,8 +447,8 @@
     "errorLoading": "Failed to load dashboard data. Please try again.",
     "details": "Details",
     "orderId": "Order ID:",
-    "products": "product",
-    "productsPlural": "products",
+    "products": "coffee",
+    "productsPlural": "coffee",
     "location": "📍 Location:",
     "address": "📮 Address:",
     "phone": "📱 Phone:",
@@ -490,24 +490,32 @@
   },
   "metadata": {
     "home": {
-      "title": "Dune & Flame L.L.C",
+      "title": "Home",
       "description": "Experience the perfect blend of warmth, aroma, and luxury. Premium coffee roasts from around the world."
     },
     "about": {
-      "title": "Dune & Flame L.L.C",
+      "title": "About Us",
       "description": "Learn about our passion for coffee and commitment to excellence."
     },
     "products": {
-      "title": "Dune & Flame L.L.C",
+      "title": "Shop Coffee",
       "description": "Explore our carefully curated selection of premium coffee beans."
     },
     "contact": {
-      "title": "Dune & Flame L.L.C",
+      "title": "Contact Us",
       "description": "Have questions? We'd love to hear from you. Contact us today."
     },
     "dashboard": {
       "title": "Dashboard | Dune & Flame L.L.C - Your Account",
       "description": "Manage your orders, profile, and preferences."
+    },
+    "coffee": {
+      "title": "Best Coffee",
+      "description": "Premium coffee from Duneflame. Explore our carefully curated selection of premium coffee beans."
+    },
+    "wholesale": {
+      "title": "Wholesale",
+      "description": "Join DuneFlame's growing network of wholesale partners"
     }
   },
   "notFound": {
@@ -524,14 +532,14 @@
     "shop": {
       "title": "Shop",
       "description": "Discover our premium collection of specialty coffee from around the world.",
-      "loading": "Loading products...",
-      "noProducts": "No products found",
-      "noResultsTitle": "No Products Found",
+      "loading": "Loading coffee...",
+      "noProducts": "No coffee found",
+      "noResultsTitle": "No Coffee Found",
       "noResultsDescription": "Try adjusting your filters or search terms to find what you're looking for.",
       "resetFilters": "Reset Filters",
       "showing": "Showing",
       "of": "of",
-      "products": "products"
+      "products": "coffee"
     },
     "contact": {
       "pageTitle": "CONTACT INFORMATION",
@@ -558,7 +566,7 @@
     "page": "Page",
     "of": "of",
     "resetFilters": "Reset Filters",
-    "noProductsFound": "No products found"
+    "noProductsFound": "No coffee found"
   },
   "payment": {
     "success": {
@@ -572,8 +580,8 @@
     "cancelled": {
       "title": "Payment Cancelled",
       "description": "Your payment has been cancelled. No charges have been made to your account.",
-      "message": "You can try again or continue browsing our products.",
-      "back_to_products": "Back to Products",
+      "message": "You can try again or continue browsing our coffee.",
+      "back_to_products": "Back to Coffee",
       "view_cart": "View Cart",
       "support": "If you need help, please",
       "contact_us": "contact us"
@@ -694,7 +702,7 @@
         "express": "International Express (4-5 business days): AED 150-200 (varies by country)",
         "processing": "Processing Time: 2-3 business days before transit",
         "customs": "Customs & Duties: Customer is responsible for any customs duties or taxes imposed by the destination country.",
-        "restrictions": "Some restricted items may not be available for international shipping. Please check specific product pages."
+        "restrictions": "Some restricted items may not be available for international shipping. Please check specific coffee pages."
       },
       "tracking": {
         "title": "Order Tracking",
@@ -777,15 +785,15 @@
     "whyPartner": "Why Partner With Us?",
     "benefits": {
       "b1Title": "Competitive Pricing",
-      "b1Desc": "Enjoy exclusive wholesale rates on all coffee products with volume discounts available.",
+      "b1Desc": "Enjoy exclusive wholesale rates on all coffee coffee with volume discounts available.",
       "b2Title": "Dedicated Support",
       "b2Desc": "Get access to a dedicated account manager who understands your business needs.",
       "b3Title": "Marketing Materials",
-      "b3Desc": "Receive professionally designed marketing materials to promote DuneFlame products.",
+      "b3Desc": "Receive professionally designed marketing materials to promote DuneFlame coffee.",
       "b4Title": "Fast Delivery",
       "b4Desc": "Reliable and quick delivery across UAE and neighboring regions.",
-      "b5Title": "Product Training",
-      "b5Desc": "Train your staff on coffee preparation and product knowledge.",
+      "b5Title": "Coffee Training",
+      "b5Desc": "Train your staff on coffee preparation and coffee knowledge.",
       "b6Title": "Flexible Orders",
       "b6Desc": "Customize order quantities and delivery schedules to fit your needs."
     },
@@ -805,7 +813,8 @@
     "ctaTitle": "Ready to Join Our Network?",
     "ctaDesc": "Contact our wholesale team today to discuss partnership opportunities and get personalized pricing.",
     "contactUs": "Contact Us",
-    "viewProducts": "View All Products"
+    "viewProducts": "View All Coffee",
+    "pageTitle": "Wholesale"
   },
   "OrderDetailsPage": {
     "orderPrefix": "Order",

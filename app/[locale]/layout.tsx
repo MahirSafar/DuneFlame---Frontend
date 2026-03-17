@@ -8,7 +8,6 @@ import { locales, type Locale } from "@/i18n/routing"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages } from "next-intl/server"
 import AuthInit from "@/components/auth/auth-init"
-import CartInit from "@/components/cart/cart-init"
 import AuthProvider from "@/components/auth/auth-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { CurrencyProvider } from "@/lib/currency-context"
@@ -23,12 +22,14 @@ const urbanist = Urbanist({
   subsets: ["latin"],
   variable: "--font-sans",
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 })
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-serif",
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 })
 
 // Arabic font for better text rendering in RTL
@@ -36,6 +37,7 @@ const notoSansArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
   variable: "--font-arabic",
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 })
 
 export async function generateMetadata({
@@ -52,7 +54,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: homeMetadata.title,
+    title: { template: '%s - Duneflame', default: 'Duneflame - Premium Coffee Marketplace' },
     description: homeMetadata.description,
     generator: "v0.app",
     metadataBase: new URL("https://duneflame.com"),
@@ -114,6 +116,10 @@ export default async function LocaleLayout({
       className={isArabic ? notoSansArabic.variable : ""}
     >
       <head>
+        {/* Preload critical image domain to reduce LCP delay */}
+        <link rel="preconnect" href="https://storage.googleapis.com" />
+        <link rel="dns-prefetch" href="https://storage.googleapis.com" />
+        
         {/* External Payment & Auth Scripts - Load lazily so they don't block user experience */}
         {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && (
           <Script
@@ -147,7 +153,6 @@ export default async function LocaleLayout({
               <AuthProvider>
                 <LocaleHeaderInit />
                 <AuthInit />
-                <CartInit />
                 <PaymentScriptInit />
                 {children}
                 <ToasterWrapper />

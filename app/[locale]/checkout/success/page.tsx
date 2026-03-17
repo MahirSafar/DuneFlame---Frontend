@@ -71,7 +71,7 @@ export default function CheckoutSuccessPage() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="flex-1" size="lg">
-              <Link href="/products">
+              <Link href="/coffee">
                 Continue Shopping
               </Link>
             </Button>

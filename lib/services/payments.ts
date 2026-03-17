@@ -1,25 +1,5 @@
-import { apiFetch } from "@/lib/api-client";
-import { loadStripe } from "@stripe/stripe-js";
-
-/**
- * Product Code Mapping
- * Maps product names to their backend item codes
- */
-export const PRODUCT_CODES: Record<string, string> = {
-  "Brazil Lencois": "BLRB",
-  "Ethiopia Guji Hamebla": "EGHRB",
-  "Puro Localo": "PLRB",
-  "Tutti Frutti": "TFRB",
-};
-
-/**
- * Get product code by name
- * @param productName - The product name from the API
- * @returns The item code for the backend (e.g., "BLRB")
- */
-export function getProductCode(productName: string): string {
-  return PRODUCT_CODES[productName] || productName;
-}
+import { apiFetch } from "@/lib/axios";
+import { getGlobalStripeInstance } from "@/lib/stripe-global";
 
 /**
  * Get localized redirect URLs
@@ -45,12 +25,16 @@ function getRedirectUrls(): { successUrl: string; cancelUrl: string } {
 
 /**
  * Create a Stripe Checkout Session
- * @param productCode - Product code (BLRB, EGHRB, PLRB, TFRB)
+ * Accepts product ID and price ID directly - no frontend mapping needed
+ * 
+ * @param productId - The product ID from database
+ * @param productPriceId - The product price ID for the variant/weight
  * @param quantity - Quantity to purchase
  * @returns Session ID for Stripe redirect
  */
 export async function createCheckoutSession(
-  productCode: string,
+  productId: string,
+  productPriceId: string,
   quantity: number = 1
 ): Promise<string> {
   const { successUrl, cancelUrl } = getRedirectUrls();
@@ -60,7 +44,8 @@ export async function createCheckoutSession(
     {
       method: "POST",
       body: JSON.stringify({
-        itemCode: productCode,
+        productId,
+        productPriceId,
         quantity,
         successUrl,
         cancelUrl,
@@ -86,7 +71,7 @@ export async function redirectToStripeCheckout(sessionId: string): Promise<void>
     throw new Error("Stripe publishable key is not configured");
   }
 
-  const stripe = await loadStripe(stripeKey);
+  const stripe = await getGlobalStripeInstance();
 
   if (!stripe) {
     throw new Error("Failed to load Stripe");
@@ -110,10 +95,18 @@ export async function redirectToStripeCheckout(sessionId: string): Promise<void>
 /**
  * Handle the "Buy Now" flow
  * Creates a checkout session and redirects to Stripe
+ * 
+ * @param productId - The product ID from database
+ * @param productPriceId - The product price ID for the variant/weight
+ * @param quantity - Quantity to purchase
  */
-export async function handleBuyNow(productCode: string, quantity: number = 1): Promise<void> {
+export async function handleBuyNow(
+  productId: string,
+  productPriceId: string,
+  quantity: number = 1
+): Promise<void> {
   try {
-    const sessionId = await createCheckoutSession(productCode, quantity);
+    const sessionId = await createCheckoutSession(productId, productPriceId, quantity);
     await redirectToStripeCheckout(sessionId);
   } catch (error) {
     throw error;

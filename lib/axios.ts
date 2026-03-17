@@ -196,4 +196,67 @@ export function setAxiosLocale(locale: string) {
   instance.defaults.headers.common["Accept-Language"] = locale;
 }
 
+export interface ApiError extends Error {
+  status?: number;
+  data?: unknown;
+}
+
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+
+export async function apiFetch<T>(
+  path: string,
+  init: RequestInit & { method?: HttpMethod } = {}
+): Promise<T> {
+  const method = (init.method || "GET") as HttpMethod;
+  const config: any = {
+    method,
+    headers: init.headers || {},
+  };
+
+  // Handle FormData - axios will auto-set Content-Type with boundary
+  if (init.body instanceof FormData) {
+    config.data = init.body;
+  } else if (init.body) {
+    config.data = typeof init.body === "string" ? init.body : JSON.stringify(init.body);
+  }
+
+  try {
+    const response = await instance({
+      url: path,
+      ...config,
+    });
+    return response.data as T;
+  } catch (error: any) {
+    const apiError = new Error(error?.response?.data?.message || error?.message) as ApiError;
+    apiError.status = error?.response?.status;
+    apiError.data = error?.response?.data;
+    throw apiError;
+  }
+}
+
+// Helper functions for token management (kept for backward compatibility)
+let accessToken: string | null = null;
+let refreshToken: string | null = null;
+
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
+export function getRefreshToken(): string | null {
+  return refreshToken;
+}
+
+export function setTokens(tokens: { accessToken: string; refreshToken: string } | null) {
+  accessToken = tokens?.accessToken ?? null;
+  refreshToken = tokens?.refreshToken ?? null;
+}
+
+export function setApiClientCurrency(currency: string) {
+  instance.defaults.headers.common["X-Currency"] = currency;
+}
+
+export function setApiClientLocale(locale: string) {
+  setAxiosLocale(locale);
+}
+
 export default instance;

@@ -1,4 +1,4 @@
-import { apiFetch } from "../api-client";
+import { apiFetch } from "../axios";
 
 export interface BasketItem {
   id?: string;              // Unique basket item id from backend (used for DELETE /basket/{id}/{itemId})

@@ -20,6 +20,7 @@ interface ProductQuickBuyProps {
   selectedWeightId: string
   selectedRoast: string
   selectedGrind: string
+  quantity?: number
   currentPrice: number
   isPriceAvailable: boolean
   hasValidSelection: boolean
@@ -36,6 +37,7 @@ export function ProductQuickBuy({
   selectedWeightId,
   selectedRoast,
   selectedGrind,
+  quantity = 1,
   currentPrice,
   isPriceAvailable,
   hasValidSelection,
@@ -84,8 +86,14 @@ export function ProductQuickBuy({
 
     const initPaymentRequest = async () => {
       try {
+        // The container may have been hidden in a previous invalid state.
+        // Ensure it becomes visible again before mounting the button.
+        if (containerRef.current) {
+          containerRef.current.style.display = "block"
+        }
+
         // Create a single-item basket for quick buy
-        const displayAmount = Math.round(currentPrice * 100) // in cents
+        const displayAmount = Math.round(currentPrice * quantity * 100) // in cents
 
         const subtotalLabel = t("checkout.subtotal") || "Subtotal"
         const shippingLabel = t("checkout.shipping") || "Shipping"
@@ -138,6 +146,10 @@ export function ProductQuickBuy({
           return
         }
 
+        if (containerRef.current) {
+          containerRef.current.style.display = "block"
+        }
+
         // Handle shipping address changes
         pr.on("shippingaddresschange", async (event) => {
           const updateDetails = await handleShippingAddressChange({
@@ -174,7 +186,7 @@ export function ProductQuickBuy({
                 productName: product.name,
                 slug: product.slug,
                 price: currentPrice,
-                quantity: 1,
+                quantity,
                 imageUrl: product.images?.[0]?.imageUrl || "",
                 weightLabel: `${selectedWeight}g`,
                 grams: selectedWeight,
@@ -209,7 +221,7 @@ export function ProductQuickBuy({
 
             try {
               // Import createOrder dynamically to avoid circular dependencies
-              const { apiFetch } = await import("@/lib/api-client")
+              const { apiFetch } = await import("@/lib/axios")
 
               const nameParts = event.payerName
                 ? event.payerName.trim().split(" ")
@@ -383,6 +395,7 @@ export function ProductQuickBuy({
     selectedWeightId,
     selectedRoast,
     selectedGrind,
+    quantity,
     locale,
     t,
     handleShippingAddressChange,
@@ -394,7 +407,7 @@ export function ProductQuickBuy({
   }
 
   return (
-    <div className="quick-buy-payment-request">
+    <div className="quick-buy-payment-request w-full">
       {error && (
         <div className="mb-3 p-2 rounded text-sm bg-destructive/10 text-destructive border border-destructive">
           {error}

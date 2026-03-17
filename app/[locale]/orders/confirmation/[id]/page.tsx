@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FormattedPrice } from "@/components/currency/formatted-price"
-import { apiFetch, setApiClientLocale } from "@/lib/api-client"
+import { apiFetch, setApiClientLocale } from "@/lib/axios"
 import { useCurrency } from "@/lib/currency-context"
 
 interface OrderItem {
@@ -328,7 +328,7 @@ export default function OrderConfirmationPage() {
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
           <Button
-            onClick={() => router.push("/products")}
+            onClick={() => router.push("/coffee")}
             variant="outline"
             className="flex-1 text-lg py-6"
             size="lg"

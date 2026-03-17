@@ -1,6 +1,8 @@
 'use client'
 
-import type { Metadata } from "next"
+// Note: Metadata moved to metadata.ts
+
+
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
@@ -168,7 +170,7 @@ export default function WholesalePage() {
                 <Link href="/contact">{t("contactUs")}</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/products">{t("viewProducts")}</Link>
+                <Link href="/coffee">{t("viewProducts")}</Link>
               </Button>
             </div>
           </div>

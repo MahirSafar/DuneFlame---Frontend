@@ -2,8 +2,8 @@
 
 import { useMemo } from "react"
 import { Elements } from "@stripe/react-stripe-js"
-import { loadStripe } from "@stripe/stripe-js"
 import type React from "react"
+import { getGlobalStripeInstance } from "@/lib/stripe-global"
 
 interface StripeProviderProps {
   children: React.ReactNode
@@ -15,7 +15,7 @@ export function StripeElementsProvider({ children }: StripeProviderProps) {
     if (!key) {
       return null
     }
-    return loadStripe(key)
+    return getGlobalStripeInstance()
   }, [])
 
   if (!stripePromise) {

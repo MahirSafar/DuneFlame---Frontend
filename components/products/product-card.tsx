@@ -52,7 +52,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   const mainImage = rawMainImage ? getImageUrl(rawMainImage) : null
   const hasImage = Boolean(mainImage)
 
-  const productUrl = product.slug ? `/product/${product.slug}` : `/product/${product.id}`
+  const productUrl = product.slug ? `/coffee/${product.slug}` : `/coffee/${product.id}`
   const defaultWeight = useMemo(() => {
     const weights = getAvailableWeights(product as unknown as ProductWithPricing)
     if (weights.length) return weights[0]
@@ -92,7 +92,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   return (
     <article
       ref={cardRef}
-      className={`group relative glass rounded-xl overflow-hidden card-float card-depth cursor-pointer transition-all duration-500 ease-in-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-2xl hover:glow-accent ${
+      className={`group relative glass rounded-xl overflow-hidden card-float card-depth cursor-pointer transform-gpu will-change-transform transition-all duration-500 ease-in-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-2xl hover:glow-accent ${
         isVisible ? "mobile-visible" : ""
       }`}
     >
@@ -100,19 +100,20 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
           href={productUrl}
           className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <div className="relative h-64 overflow-hidden bg-muted rounded-t-xl">
+          <div className="relative h-64 overflow-hidden bg-muted rounded-t-xl transform-gpu">
             {hasImage && mainImage ? (
               <Image
                 src={mainImage}
                 alt={product.name}
                 fill
+                quality={60}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
+                className="absolute inset-0 h-full w-full object-cover transform-gpu will-change-transform transition-transform duration-500 ease-in-out group-hover:scale-110"
                 priority={priority}
                 fetchPriority={priority ? "high" : "auto"}
               />
             ) : (
-              <div className="w-full h-full bg-linear-to-br from-amber-100 to-orange-100 dark:from-amber-900 dark:to-orange-900 flex items-center justify-center group-hover:scale-110 transition-all duration-500 ease-in-out">
+              <div className="w-full h-full bg-linear-to-br from-amber-100 to-orange-100 dark:from-amber-900 dark:to-orange-900 flex items-center justify-center transform-gpu will-change-transform group-hover:scale-110 transition-all duration-500 ease-in-out">
                 <div className="text-6xl group-hover:animate-float">☕</div>
               </div>
             )}

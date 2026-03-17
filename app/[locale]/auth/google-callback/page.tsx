@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/routing";
 import toast from "react-hot-toast";
-import { setTokens } from "@/lib/api-client";
+import { setTokens } from "@/lib/axios";
 import { setAxiosAuthToken } from "@/lib/axios";
 import { useAuthStore } from "@/lib/auth-store";
 import { useCartStore } from "@/lib/cart-store";
@@ -26,7 +26,6 @@ export default function GoogleCallbackPage() {
     }
 
     try {
-      // Persist tokens for api-client / axios
       setTokens({ accessToken, refreshToken });
       setAxiosAuthToken(accessToken);
       if (typeof window !== "undefined") {

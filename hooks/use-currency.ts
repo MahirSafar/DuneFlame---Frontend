@@ -4,8 +4,7 @@ import { useCurrency as useContextCurrency } from "@/lib/currency-context";
 import { CurrencyType } from "@/lib/currency-utils";
 import { useCallback } from "react";
 import { useRouter } from "@/i18n/routing";
-import instance from "@/lib/axios";
-import { setApiClientCurrency } from "@/lib/api-client";
+import instance, { setApiClientCurrency } from "@/lib/axios";
 
 /**
  * Custom hook for currency management

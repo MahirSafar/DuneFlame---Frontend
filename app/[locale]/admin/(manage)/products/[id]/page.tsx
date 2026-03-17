@@ -108,7 +108,7 @@ export default function EditProductPage() {
               {error || "Unable to load the product. Please try again."}
             </p>
             <Button asChild>
-              <Link href="/admin/products-list">Back to Products</Link>
+              <Link href="/admin/products-list">Back to Coffee</Link>
             </Button>
           </div>
         </div>

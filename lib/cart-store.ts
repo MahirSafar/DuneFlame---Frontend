@@ -1,5 +1,6 @@
 "use client"
 
+import React, { useState, useEffect } from "react"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { basketService, BasketItem } from "./services/basket"
@@ -285,8 +286,8 @@ export const useCartStore = create<CartStore>()(
   getItemPrice: (item: CartItem, currency: CurrencyType) => getItemPrice(item, currency),
 
   rehydrate: () => {
-    // Manually rehydrate the store from localStorage
-    // This is needed because we set skipHydration: true to prevent hydration mismatch
+    // No longer needed - Zustand handles hydration automatically
+    // This method is kept for backward compatibility
     useCartStore.persist.rehydrate()
   },
 
@@ -349,10 +350,41 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: "df-cart-storage", // LocalStorage key
-      skipHydration: true, // Prevent hydration mismatch in Next.js
       partialize: (state) => ({
         items: state.items, // Only persist cart items
       }),
     }
   )
 )
+
+/**
+ * Safe cart store hook for use in client components
+ * Prevents hydration mismatches by ensuring state is only read after mount
+ */
+export function useSafeCartStore() {
+  const [isMounted, setIsMounted] = useState(false)
+  
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+  
+  // Return a proxy that returns safe defaults during SSR
+  if (!isMounted) {
+    return {
+      items: [],
+      isLoading: false,
+      addItem: () => {},
+      removeItem: () => {},
+      updateQuantity: () => {},
+      clearCart: () => {},
+      clearGuestData: () => {},
+      loadBasket: async () => {},
+      syncGuestItemsToAuthenticatedBasket: async () => {},
+      total: () => 0,
+      getItemPrice: () => 0,
+      rehydrate: () => {},
+    } as CartStore
+  }
+  
+  return useCartStore()
+}

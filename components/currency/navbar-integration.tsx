@@ -47,7 +47,7 @@ export function NavbarWithCurrency() {
             <a href="/" className="text-gray-700 hover:text-gray-900">
               Home
             </a>
-            <a href="/products" className="text-gray-700 hover:text-gray-900">
+            <a href="/coffee" className="text-gray-700 hover:text-gray-900">
               Products
             </a>
             <a href="/about" className="text-gray-700 hover:text-gray-900">

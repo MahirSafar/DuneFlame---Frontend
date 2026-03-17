@@ -57,7 +57,7 @@ export default function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      router.push(`/products?search=${encodeURIComponent(searchQuery)}`)
+      router.push(`/coffee?search=${encodeURIComponent(searchQuery)}`)
       setIsSearchOpen(false)
       setSearchQuery("")
     }
@@ -71,7 +71,7 @@ export default function Navbar() {
   }, [isOpen])
 
   const navLinks = [
-    { href: "/products", key: "our-coffee", label: t('ourCoffee') },
+    { href: "/coffee", key: "our-coffee", label: t('ourCoffee') },
     { href: "/wholesale", key: "wholesale", label: t('wholesale') },
     { href: "/about", key: "about", label: t('aboutUs') },
     { href: "/contact", key: "contact" },
@@ -101,6 +101,7 @@ export default function Navbar() {
               alt="DuneFlame Logo"
               width={96}
               height={96}
+              quality={60}
               className="w-6 sm:w-9 md:w-10 h-6 sm:h-9 md:h-10 rounded-full group-hover:scale-110 transition-smooth"
               style={{ display: "block" }}
             />

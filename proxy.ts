@@ -12,7 +12,7 @@ const intlMiddleware = createMiddleware(routing);
  * 2. Currency cookie management
  * 3. Locale header for API requests
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Handle locale routing first
   const intlResponse = intlMiddleware(request);
 
@@ -56,8 +56,9 @@ export const config = {
   matcher: [
     // Apply middleware to all paths except:
     // - api, _next/static, _next/image (Next.js internals)
+    // - sitemap.xml and robots.txt (system SEO files)
     // - Static files (images, fonts, manifests, etc.)
     // - apple-touch-icon and favicon
-    '/((?!api|_next/static|_next/image|favicon|apple-touch-icon|manifest|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    '/((?!api|_next/static|_next/image|sitemap\\.xml|robots\\.txt|favicon|apple-touch-icon|manifest|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
   ],
 };

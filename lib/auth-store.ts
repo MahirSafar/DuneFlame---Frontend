@@ -2,9 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import axios, { setAxiosAuthToken } from "./axios";
+import axios, { setAxiosAuthToken, setTokens, apiFetch } from "./axios";
 import { getErrorMessage } from "./utils";
-import { setTokens, getAccessToken, getRefreshToken, apiFetch } from "./api-client";
 import { useCartStore } from "./cart-store";
 import { basketService } from "./services/basket";
 
@@ -184,7 +183,6 @@ export const useAuthStore = create<AuthState>()(
         // 1. Update Zustand store state
         set({ accessToken, refreshToken });
         
-        // 2. Update api-client local variables (used by apiFetch)
         setTokens({ accessToken, refreshToken });
         
         // 3. Update axios headers for axios instance

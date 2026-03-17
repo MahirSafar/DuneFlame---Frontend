@@ -25,9 +25,6 @@ export default function Home() {
     <main className="min-h-screen flex flex-col">
       <Navbar />
       <div className="flex-1">
-        {/* <HeroCarousel /> */}
-        {/* <FeaturedSection /> */}
-        {/* <Categories /> */}
         <Trending />
         <StoryBanner />
         <Newsletter />

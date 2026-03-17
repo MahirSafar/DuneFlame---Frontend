@@ -27,10 +27,10 @@ export default function PaymentCancelledPage() {
 
         <div className="space-y-3 pt-4">
           <Link
-            href="/products"
+            href="/coffee"
             className="block w-full px-6 py-3 bg-accent hover:bg-accent/90 text-accent-foreground font-bold rounded-lg transition-smooth glow-accent"
           >
-            {t("cancelled.back_to_products") || "Back to Products"}
+            {t("cancelled.back_to_products") || "Back to Coffee"}
           </Link>
           <Link
             href="/cart"

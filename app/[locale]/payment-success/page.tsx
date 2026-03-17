@@ -33,7 +33,7 @@ export default function PaymentSuccessPage() {
             {t("success.view_orders") || "View My Orders"}
           </Link>
           <Link
-            href="/products"
+            href="/coffee"
             className="block w-full px-6 py-3 bg-secondary/20 hover:bg-secondary/30 text-foreground font-bold rounded-lg transition-smooth"
           >
             {t("success.continue_shopping") || "Continue Shopping"}

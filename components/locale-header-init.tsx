@@ -2,8 +2,7 @@
 
 import { useEffect } from "react";
 import { useLocale } from "next-intl";
-import { setAxiosLocale } from "@/lib/axios";
-import { setApiClientLocale, setApiClientCurrency } from "@/lib/api-client";
+import { setAxiosLocale, setApiClientLocale, setApiClientCurrency } from "@/lib/axios";
 import { useCurrency } from "@/hooks/use-currency";
 
 /**

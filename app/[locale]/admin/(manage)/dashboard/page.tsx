@@ -125,7 +125,7 @@ export default function AdminDashboard() {
         <div className="rounded-lg border border-flame-apricot/20 dark:border-flame-apricot/30 bg-flame-apricot/5 dark:bg-flame-apricot/10 p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="space-y-2 flex-1">
-              <p className="text-sm text-muted-foreground font-medium">Products in Stock</p>
+              <p className="text-sm text-muted-foreground font-medium">Coffee in Stock</p>
               <h3 className="text-2xl md:text-3xl font-bold text-flame-apricot dark:text-flame-apricot">
                 {stats.totalProducts}
               </h3>
@@ -242,18 +242,18 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Top Products Table */}
+      {/* Top Coffee Table */}
       {stats.topProducts && stats.topProducts.length > 0 && (
         <div className="glass hover-lift rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-6">
             <Package size={20} className="text-accent" />
-            <h3 className="text-lg font-bold text-primary dark:text-primary-foreground">Top Selling Products</h3>
+            <h3 className="text-lg font-bold text-primary dark:text-primary-foreground">Top Selling Coffee</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/50">
-                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Product Name</th>
+                  <th className="text-left py-3 px-4 text-muted-foreground font-semibold">Coffee Name</th>
                   <th className="text-right py-3 px-4 text-muted-foreground font-semibold">Units Sold</th>
                   <th className="text-right py-3 px-4 text-muted-foreground font-semibold">Revenue</th>
                 </tr>

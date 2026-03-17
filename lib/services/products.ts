@@ -1,5 +1,5 @@
 import axios from "@/lib/axios";
-import { apiFetch } from "../api-client";
+import { apiFetch } from "../axios";
 import type { MasterData, Product, ProductPriceDto } from "@/lib/types";
 import type { FlavourNoteDto } from "@/lib/types/flavour-note";
 

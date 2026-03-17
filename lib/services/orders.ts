@@ -1,4 +1,4 @@
-import { apiFetch } from "../api-client";
+import { apiFetch } from "../axios";
 
 export enum OrderStatus {
   Pending = 0,

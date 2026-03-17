@@ -4,10 +4,9 @@ import defaultTheme from 'tailwindcss/defaultTheme'
 const config = {
   // darkMode removed
   content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx}',
+    './lib/**/*.{js,ts}',
   ],
   theme: {
     extend: {

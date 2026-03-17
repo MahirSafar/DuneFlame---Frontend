@@ -39,7 +39,7 @@ export default async function Trending() {
           <span className="text-espresso-brown font-heading font-semibold uppercase tracking-wider" style={{ fontSize: "24px" }}>{t('home.trending.title')}</span>
         </div>
         <a
-          href="/products"
+          href="/coffee"
           className="text-espresso-brown font-heading font-semibold hover:gap-2 flex items-center gap-1 transition-smooth group"
         >
           {t('common.actions.viewDetails')}

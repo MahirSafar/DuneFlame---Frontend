@@ -710,7 +710,7 @@ const handleOpenEdit = async (productId: string) => {
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.25em] text-accent/80 font-semibold">Dashboard</p>
-          <h1 className="text-4xl md:text-5xl font-bold text-primary dark:text-secondary">Products</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-primary dark:text-secondary">Coffee</h1>
           <p className="text-muted-foreground mt-1">Manage catalog, discounts, and inventory.</p>
         </div>
         <div className="flex gap-3">
@@ -788,13 +788,13 @@ const handleOpenEdit = async (productId: string) => {
         {displayedProducts.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center h-100 text-muted-foreground">
             <Layers className="size-12 mb-4 opacity-20" />
-            <p>No products found.</p>
+            <p>No coffee found.</p>
           </div>
         ) : (
           <Table>
             <TableHeader className="bg-white/5">
               <TableRow className="border-border/60">
-                <TableHead className="py-4 px-6">Product</TableHead>
+                <TableHead className="py-4 px-6">Coffee</TableHead>
                 <TableHead className="py-4 px-4">Category</TableHead>
                 <TableHead className="py-4 px-4">Origin</TableHead>
                 <TableHead className="py-4 px-4">Attributes</TableHead>
@@ -901,7 +901,7 @@ const handleOpenEdit = async (productId: string) => {
                             size="icon"
                             onClick={() => handleOpenEdit(product.id)}
                             className="hover:bg-accent/10 hover:text-accent"
-                            title="Edit Product"
+                            title="Edit Coffee"
                           >
                             <Pencil className="size-4" />
                           </Button>
@@ -982,7 +982,7 @@ const handleOpenEdit = async (productId: string) => {
           className="glass-dark dark:glass border-border/60 backdrop-blur-xl shadow-2xl w-full sm:max-w-xl overflow-y-auto p-6 md:p-8"
         >
           <SheetHeader className="mb-10 pb-6 border-b border-border/30">
-            <SheetTitle className="text-3xl">{selectedProduct ? "Edit Product" : "New Product"}</SheetTitle>
+            <SheetTitle className="text-3xl">{selectedProduct ? "Edit Coffee" : "New Coffee"}</SheetTitle>
             <p className="text-sm text-muted-foreground mt-3">
               {selectedProduct
                 ? "Update details, discounts, or visuals."

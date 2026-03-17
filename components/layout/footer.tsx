@@ -43,7 +43,7 @@ export default function Footer() {
   
   const footerLinks = {
     duneFlame: [
-      { href: "/products", label: t('ourCoffee') },
+      { href: "/coffee", label: t('ourCoffee') },
       { href: "/wholesale", label: t('wholesale') },
       { href: "/about", label: t('about') },
     ],

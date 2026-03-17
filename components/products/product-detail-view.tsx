@@ -12,6 +12,8 @@ import { useCurrency } from "@/hooks/use-currency"
 import { getAvailableWeights, resolvePrice, type ProductWithPricing } from "@/lib/currency-utils"
 import { FormattedPrice } from "@/components/currency/formatted-price"
 import { EMPTY_GUID } from "@/lib/cart-store"
+import { ProductQuickBuy } from "@/components/products/product-quick-buy"
+import { StripeElementsProvider } from "@/components/payment/stripe-elements-provider"
 
 const formatWeight = (grams?: number) => {
   if (!grams) return "";
@@ -113,6 +115,48 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   )
 
   const currentPrice = resolved?.price ?? 0
+
+  const productJsonLd = useMemo(() => {
+    const offerCurrency = (currency || "USD").toUpperCase()
+
+    return {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: productName,
+      description: productDescription,
+      image: mainImage,
+      offers: {
+        "@type": "Offer",
+        priceCurrency: offerCurrency,
+        price: currentPrice,
+        availability: product.stockInKg > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      },
+      // Reflect currently selected options so rich results stay aligned with UI state.
+      additionalProperty: [
+        selectedWeight
+          ? {
+              "@type": "PropertyValue",
+              name: "Weight",
+              value: formatWeight(selectedWeight),
+            }
+          : null,
+        selectedRoast
+          ? {
+              "@type": "PropertyValue",
+              name: "Roast Level",
+              value: selectedRoast,
+            }
+          : null,
+        selectedGrind
+          ? {
+              "@type": "PropertyValue",
+              name: "Grind Type",
+              value: selectedGrind,
+            }
+          : null,
+      ].filter(Boolean),
+    }
+  }, [currency, currentPrice, mainImage, product.stockInKg, productDescription, productName, selectedGrind, selectedRoast, selectedWeight])
   
   // DEBUG: Log if price resolution failed
   if (!resolved) {
@@ -143,17 +187,25 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
     })
   }
 
+  const hasValidSelection = Boolean(selectedWeight && selectedEntry.productPriceId)
+  const isPriceAvailable = currentPrice > 0
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
-      className="grid gap-10 lg:grid-cols-[1.05fr_1fr]"
+      className="grid items-start gap-10 lg:grid-cols-[1.05fr_1fr]"
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+
       <motion.div
         whileHover={{ scale: 1.01 }}
         transition={{ type: "spring", stiffness: 120, damping: 12 }}
-        className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-background via-background/60 to-background/30 shadow-[0_25px_80px_-40px_rgba(0,0,0,0.55)]"
+        className="relative self-start overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-background via-background/60 to-background/30 shadow-[0_25px_80px_-40px_rgba(0,0,0,0.55)]"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.08),transparent_30%)]" />
         <div className="absolute inset-0 bg-linear-to-br from-accent/10 via-transparent to-secondary/10" />
@@ -163,12 +215,13 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="relative z-10 w-full aspect-square md:aspect-auto md:h-[600px]"
+            className="relative z-10 w-full aspect-square md:aspect-auto md:h-150"
           >
             <Image
               src={mainImage}
               alt={product.name}
               fill
+              quality={60}
               sizes="(max-width: 768px) 100vw, 50vw"
               priority
               className="object-cover"
@@ -180,7 +233,6 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           </div>
         )}
 
-        // ...removed Artisan Roast badge...
         <div className="absolute right-6 bottom-6 z-20 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs text-white backdrop-blur">
           {product.stockInKg > 0 ? t('detail.inStock') : t('detail.limitedStock')}
         </div>
@@ -317,33 +369,50 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
             </div>
           </div>
 
-          <button
-            onClick={handleAddToCart}
-            disabled={product.stockInKg <= 0 || !selectedWeight || !resolved}
-            style={{
-              backgroundColor: 'rgb(56, 109, 118)',
-              color: '#fff',
-              borderRadius: '0.75rem',
-              width: '100%',
-              padding: '1rem 1.5rem',
-              fontSize: '1.125rem',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              marginTop: '1.5rem',
-              boxShadow: '0 20px 60px -30px rgba(56,109,118,0.8)',
-              transition: 'box-shadow 0.2s, background 0.2s',
-            }}
-            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
-            title={!resolved ? t('priceNotLoaded') : undefined}
-            onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
-            onMouseOut={e => (e.currentTarget.style.backgroundColor = 'rgb(56, 109, 118)')}
-          >
-            <ShoppingCart size={20} />
-            {t('addToBasket')}
-          </button>
+          <div className="mt-6 flex flex-col gap-3">
+            <button
+              onClick={handleAddToCart}
+              disabled={product.stockInKg <= 0 || !selectedWeight || !resolved}
+              style={{
+                backgroundColor: 'rgb(56, 109, 118)',
+                color: '#fff',
+                borderRadius: '0.75rem',
+                width: '100%',
+                padding: '1rem 1.5rem',
+                fontSize: '1.125rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 20px 60px -30px rgba(56,109,118,0.8)',
+                transition: 'box-shadow 0.2s, background 0.2s',
+              }}
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
+              title={!resolved ? t('priceNotLoaded') : undefined}
+              onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
+              onMouseOut={e => (e.currentTarget.style.backgroundColor = 'rgb(56, 109, 118)')}
+            >
+              <ShoppingCart size={20} />
+              {t('addToBasket')}
+            </button>
+
+            <div className="w-full">
+              <StripeElementsProvider>
+                <ProductQuickBuy
+                  product={product}
+                  selectedWeight={selectedWeight}
+                  selectedWeightId={selectedEntry.productPriceId}
+                  selectedRoast={selectedRoast}
+                  selectedGrind={selectedGrind}
+                  quantity={quantity}
+                  currentPrice={currentPrice}
+                  isPriceAvailable={isPriceAvailable}
+                  hasValidSelection={hasValidSelection}
+                />
+              </StripeElementsProvider>
+            </div>
+          </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">

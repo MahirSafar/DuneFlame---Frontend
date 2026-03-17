@@ -23,7 +23,7 @@ export default function Rewards({ rewards }: RewardsProps) {
         {/* Header */}
         <div className={`flex items-center gap-3 mb-6 ${isArabic ? "flex-row-reverse" : ""}`}>
           <div className="p-3">
-            <Image src="/logo.svg" alt="Flame Points" width={56} height={56} />
+          <Image src="/logo.svg" alt="Flame Points" width={56} height={56} quality={60} />
           </div>
           <div>
             <h3 className="text-lg font-bold uppercase" style={{ color: '#2b1b13' }}>{t("flamePoints")}</h3>

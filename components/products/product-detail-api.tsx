@@ -8,7 +8,7 @@ import { useCurrency } from "@/lib/currency-context";
 import { getAvailableWeights, resolvePrice, type ProductWithPricing } from "@/lib/currency-utils";
 import { FormattedPrice } from "@/components/currency/formatted-price";
 import { EMPTY_GUID } from "@/lib/cart-store";
-import { handleBuyNow, getProductCode } from "@/lib/services/payments";
+import { handleBuyNow } from "@/lib/services/payments";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProductDetailApi({ product }: { product: ProductResponse }) {
@@ -41,8 +41,11 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
   const handleBuyNowClick = async () => {
     try {
       setIsLoading(true);
-      const productCode = getProductCode(product.name);
-      await handleBuyNow(productCode, quantity);
+      const productPriceId = product.availablePrices?.[0]?.productPriceId;
+      if (!productPriceId) {
+        throw new Error("No pricing available for this product");
+      }
+      await handleBuyNow(product.id, productPriceId, quantity);
     } catch (error) {
       toast({
         title: "Error",

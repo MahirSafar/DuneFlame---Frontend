@@ -230,7 +230,7 @@ export default function AdminProductListPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.2em] text-accent/80">Dashboard</p>
-            <h1 className="text-4xl font-bold text-primary dark:text-secondary mt-2">Products</h1>
+            <h1 className="text-4xl font-bold text-primary dark:text-secondary mt-2">Coffee</h1>
             <p className="text-muted-foreground mt-1">Manage your coffee catalog</p>
           </div>
           <Button
@@ -266,7 +266,7 @@ export default function AdminProductListPage() {
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
               <AlertCircle className="size-12 mb-4 opacity-20" />
-              <p className="text-lg font-medium">No products found</p>
+              <p className="text-lg font-medium">No coffee found</p>
               <p className="text-sm">
                 {searchTerm ? "Try adjusting your search" : "Add your first product to get started"}
               </p>
@@ -276,7 +276,7 @@ export default function AdminProductListPage() {
               <Table>
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-border/60 hover:bg-transparent">
-                    <TableHead>Product</TableHead>
+                    <TableHead>Coffee</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Stock</TableHead>
                     <TableHead>Price</TableHead>
@@ -326,7 +326,7 @@ export default function AdminProductListPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="glass-dark dark:glass border-border/60">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Product?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Coffee?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete <span className="font-semibold text-foreground">{productToDelete?.name}</span>?
               This action cannot be undone.

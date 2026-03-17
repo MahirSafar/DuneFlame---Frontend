@@ -7,10 +7,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   const messages = (await import(`../../../messages/${locale}.json`)).default
-  const meta = messages.metadata?.products
+  const meta = messages.metadata?.coffee || messages.metadata?.products
 
   return {
-    title: meta?.title,
-    description: meta?.description,
+    title: meta?.title || "Best Coffee – Duneflame",
+    description: meta?.description || "Premium coffee from Duneflame",
   }
 }

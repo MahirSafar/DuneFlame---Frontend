@@ -8,7 +8,7 @@ import { useCartStore } from "@/lib/cart-store"
 import { useCurrency } from "@/lib/currency-context"
 import { getImageUrl } from "@/lib/utils"
 import { useAuthStore } from "@/lib/auth-store"
-import { setApiClientLocale } from "@/lib/api-client"
+import { setApiClientLocale } from "@/lib/axios"
 import { FormattedPrice } from "@/components/currency/formatted-price"
 import { CartExpressCheckout } from "@/components/cart/cart-express-checkout"
 import { StripeElementsProvider } from "@/components/payment/stripe-elements-provider"
@@ -50,7 +50,7 @@ export default function CartSummary() {
       <div className="glass rounded-xl p-12 text-center">
         <p className="text-muted-foreground text-lg mb-6">{t('cart.empty')}</p>
         <Link
-          href="/products"
+          href="/coffee"
           className="inline-block px-6 py-3 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-lg transition-smooth"
         >
           {t('cart.continueShoppping')}
@@ -65,7 +65,7 @@ export default function CartSummary() {
         {items.map((item, index) => (
           <Link
             key={`${item.variantKey || item.id}-${index}`}
-            href={`/product/${item.slug || item.id}`}
+            href={`/coffee/${item.slug || item.id}`}
             className="glass rounded-xl p-3 md:p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4 group hover:shadow-lg transition-smooth"
           >
             <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
@@ -166,7 +166,7 @@ export default function CartSummary() {
 
         <div className="flex flex-col md:flex-row gap-2 md:gap-4">
           <Link
-            href="/products"
+            href="/coffee"
             className="flex-1 px-3 md:px-6 py-2 md:py-3 border border-border hover:bg-muted rounded-lg transition-smooth text-center font-semibold text-xs md:text-base"
           >
             {t('cart.continueShoppping')}

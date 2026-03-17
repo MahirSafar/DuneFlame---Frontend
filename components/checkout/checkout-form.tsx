@@ -3,12 +3,11 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { useRouter } from "@/i18n/routing"
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
-import { loadStripe } from "@stripe/stripe-js"
 import { useLocale, useTranslations } from "next-intl"
 import { MapPin, Package, AlertCircle, Loader2 } from "lucide-react"
 import { useCartStore, getItemPrice } from "@/lib/cart-store"
 import { useCurrency } from "@/lib/currency-context"
-import { apiFetch, setTokens, setApiClientLocale } from "@/lib/api-client"
+import { apiFetch, setTokens, setApiClientLocale } from "@/lib/axios"
 import { basketService } from "@/lib/services/basket"
 import { getProduct } from "@/lib/services/products"
 import { useAuthStore } from "@/lib/auth-store"
@@ -28,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { getGlobalStripeInstance } from "@/lib/stripe-global"
 
 interface ShippingAddress {
   street: string
@@ -66,7 +66,7 @@ interface City {
 const GCC_COUNTRY_CODES = ["AE", "SA", "KW", "QA", "BH", "OM"]
 
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-const stripePromise = stripeKey ? loadStripe(stripeKey) : null
+const stripePromise = stripeKey ? getGlobalStripeInstance() : null
 
 if (!stripePromise) {
 }

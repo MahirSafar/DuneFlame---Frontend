@@ -283,7 +283,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                         }
                       }}
                       className={cn(
-                        "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm shadow-xs transition-all duration-200 hover:border-accent hover:scale-[1.02]",
+                        "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm shadow-xs transform-gpu will-change-transform transition-all duration-200 hover:border-accent hover:scale-[1.02]",
                         isActive 
                           ? "border-accent bg-accent/10 shadow-md scale-[1.02]" 
                           : "border-border bg-background",

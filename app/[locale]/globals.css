@@ -481,33 +481,24 @@
 }
 
 /* ========================================
-   CUSTOM SCROLLBAR STYLES
+   SCROLLBAR STYLES (LIGHTWEIGHT)
    ======================================== */
-::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-  background: var(--dune-sand);
-  border-radius: 8px;
-}
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, var(--flame-apricot) 0%, var(--flame-caramel) 100%);
-  border-radius: 8px;
-  border: 2px solid var(--dune-paper);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, var(--flame-caramel) 0%, var(--flame-red) 100%);
-}
-::-webkit-scrollbar-track {
-  background: var(--dune-paper);
-  border-radius: 8px;
+* {
+  scrollbar-width: thin;
 }
 
-/* Firefox */
-/* 
-body {
-  background: rgb(253, 250, 247);
-} */
-html {
-  scrollbar-width: thin;
-  scrollbar-color: var(--flame-caramel) var(--dune-paper);
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, hsl(var(--muted-foreground)) 40%, transparent);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
