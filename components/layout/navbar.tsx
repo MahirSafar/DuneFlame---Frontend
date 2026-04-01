@@ -102,7 +102,7 @@ export default function Navbar() {
               width={96}
               height={96}
               quality={60}
-              className="w-6 sm:w-9 md:w-10 h-6 sm:h-9 md:h-10 rounded-full group-hover:scale-110 transition-smooth"
+              className="w-8 sm:w-10 md:w-12 h-8 sm:h-10 md:h-12 rounded-full group-hover:scale-110 transition-smooth"
               style={{ display: "block" }}
             />
           </Link>

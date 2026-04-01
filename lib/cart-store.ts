@@ -1,6 +1,5 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { basketService, BasketItem } from "./services/basket"
@@ -61,7 +60,6 @@ interface CartStore {
   syncGuestItemsToAuthenticatedBasket: () => Promise<void>
   total: (currency?: CurrencyType) => number
   getItemPrice: (item: CartItem, currency: CurrencyType) => number
-  rehydrate: () => void // For manual hydration after skipHydration
 }
 
 const getItemKey = (item: Pick<CartItem, "id" | "variantKey">) => item.variantKey || item.id
@@ -285,12 +283,6 @@ export const useCartStore = create<CartStore>()(
 
   getItemPrice: (item: CartItem, currency: CurrencyType) => getItemPrice(item, currency),
 
-  rehydrate: () => {
-    // No longer needed - Zustand handles hydration automatically
-    // This method is kept for backward compatibility
-    useCartStore.persist.rehydrate()
-  },
-
   syncGuestItemsToAuthenticatedBasket: async () => {
     const { items } = get()
     const { user, userBasketId } = useAuthStore.getState()
@@ -356,35 +348,3 @@ export const useCartStore = create<CartStore>()(
     }
   )
 )
-
-/**
- * Safe cart store hook for use in client components
- * Prevents hydration mismatches by ensuring state is only read after mount
- */
-export function useSafeCartStore() {
-  const [isMounted, setIsMounted] = useState(false)
-  
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-  
-  // Return a proxy that returns safe defaults during SSR
-  if (!isMounted) {
-    return {
-      items: [],
-      isLoading: false,
-      addItem: () => {},
-      removeItem: () => {},
-      updateQuantity: () => {},
-      clearCart: () => {},
-      clearGuestData: () => {},
-      loadBasket: async () => {},
-      syncGuestItemsToAuthenticatedBasket: async () => {},
-      total: () => 0,
-      getItemPrice: () => 0,
-      rehydrate: () => {},
-    } as CartStore
-  }
-  
-  return useCartStore()
-}

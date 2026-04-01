@@ -10,7 +10,7 @@ import { ArrowLeft, MapPin, Package, CreditCard, CheckCircle, Loader2, XCircle }
 import { getOrderById } from '@/lib/services/orders'
 import { getProduct } from '@/lib/services/products'
 import { useAuthStore } from '@/lib/auth-store'
-import { setTokens, setApiClientLocale } from '@/lib/axios'
+import { setApiClientLocale } from '@/lib/axios'
 
 const TEAL_COLOR = '#1F6F78'
 
@@ -31,13 +31,6 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  // Set tokens from auth store
-  useEffect(() => {
-    if (accessToken && refreshToken) {
-      setTokens({ accessToken, refreshToken })
-    }
-  }, [accessToken, refreshToken])
 
   // Ensure locale is set in API client before any requests
   useEffect(() => {

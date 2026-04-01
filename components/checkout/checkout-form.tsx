@@ -1,13 +1,13 @@
 "use client"
 
-import { useCallback, useEffect, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { useRouter } from "@/i18n/routing"
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
 import { useLocale, useTranslations } from "next-intl"
 import { MapPin, Package, AlertCircle, Loader2 } from "lucide-react"
 import { useCartStore, getItemPrice } from "@/lib/cart-store"
 import { useCurrency } from "@/lib/currency-context"
-import { apiFetch, setTokens, setApiClientLocale } from "@/lib/axios"
+import { apiFetch, setApiClientLocale } from "@/lib/axios"
 import { basketService } from "@/lib/services/basket"
 import { getProduct } from "@/lib/services/products"
 import { useAuthStore } from "@/lib/auth-store"
@@ -15,6 +15,8 @@ import { getMyRewards } from "@/lib/services/rewards"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { PhoneInput } from "react-international-phone"
+import "react-international-phone/style.css"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getImageUrl } from "@/lib/utils"
@@ -28,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { getGlobalStripeInstance } from "@/lib/stripe-global"
+import { CartUpsell } from "@/components/cart/cart-upsell"
 
 interface ShippingAddress {
   street: string
@@ -96,6 +99,8 @@ function PaymentContent({
   const isZeroAmount = orderTotal <= 0
 
   const handlePayNow = async () => {
+    if (isProcessing || (!isZeroAmount && !isPaymentElementReady)) return; // STRICT LOCK
+
     // For zero-amount orders, finalize without Stripe
     if (isZeroAmount) {
       setIsProcessing(true)
@@ -190,18 +195,24 @@ function PaymentContent({
     }
   }
 
+  // MEMOIZED: PaymentElement options to prevent unnecessary re-mounts
+  const paymentElementOptions = useMemo(() => ({
+    layout: 'tabs' as const,
+  }), [])
+
+  // MEMOIZED: onReady callback to prevent function recreation on every render
+  const handleReady = useCallback(() => {
+    setIsPaymentElementReady(true)
+  }, [])
+
   return (
     <div className="space-y-4 w-full">
       {/* Only render PaymentElement for paid orders */}
       {!isZeroAmount && (
         <div className="w-full overflow-x-hidden">
           <PaymentElement
-            options={{
-              layout: 'tabs',
-            }}
-            onReady={() => {
-              setIsPaymentElementReady(true)
-            }}
+            options={paymentElementOptions}
+            onReady={handleReady}
           />
         </div>
       )}
@@ -273,6 +284,12 @@ function StripePaymentModal({
     }
   }, [open, clientSecret, orderTotal])
 
+  // MEMOIZED: Elements options to prevent unnecessary re-initialization
+  const elementsOptions = useMemo(() => ({
+    clientSecret: clientSecret || "",
+    appearance: { theme: "stripe" as const },
+  }), [clientSecret])
+
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!isProcessing && !val) onClose() }}>
       <DialogContent className="w-[95vw] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -303,10 +320,7 @@ function StripePaymentModal({
             {undefined}
             <Elements
               stripe={stripePromise}
-              options={{
-                clientSecret: clientSecret,
-                appearance: { theme: "stripe" as const },
-              }}
+              options={elementsOptions}
             >
               <PaymentContent
                 onClose={onClose}
@@ -331,9 +345,16 @@ function StripePaymentModal({
 export default function CheckoutForm() {
   const router = useRouter()
   const items = useCartStore((state) => state.items)
-  const total = useCartStore((state) => state.total)
+  const getCartTotal = useCartStore((state) => state.total)
   const { currency } = useCurrency()
-  const { user, accessToken, refreshToken } = useAuthStore()
+  // CRITICAL: Use selectors to subscribe ONLY to primitive values, not entire objects
+  // This prevents re-renders when other auth state (like user.role, user.email in auth updates) changes
+  const accessToken = useAuthStore((state) => state.accessToken)
+  const refreshToken = useAuthStore((state) => state.refreshToken)
+  const userId = useAuthStore((state) => state.user?.id)
+  const userFirstName = useAuthStore((state) => state.user?.firstName)
+  const userLastName = useAuthStore((state) => state.user?.lastName)
+  const userEmail = useAuthStore((state) => state.user?.email)
   const locale = useLocale()
   const t = useTranslations("checkout")
   const isArabic = locale === "ar"
@@ -344,9 +365,9 @@ export default function CheckoutForm() {
     state: "",
     postalCode: "",
     country: "",
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    email: user?.email || "",
+    firstName: userFirstName || "",
+    lastName: userLastName || "",
+    email: userEmail || "",
     phoneNumber: "",
   })
 
@@ -368,14 +389,11 @@ export default function CheckoutForm() {
   const [rewardBalance, setRewardBalance] = useState<number>(0)
   const [usePoints, setUsePoints] = useState(false)
   const [isLoadingRewards, setIsLoadingRewards] = useState(false)
+  const [stripeResetKey, setStripeResetKey] = useState(0)
+
+  const isSubmittingRef = useRef(false)
 
   const isGuest = !accessToken
-
-  useEffect(() => {
-    if (accessToken && refreshToken) {
-      setTokens({ accessToken, refreshToken })
-    }
-  }, [accessToken, refreshToken])
 
   // Restore selected country from localStorage after login
   useEffect(() => {
@@ -391,7 +409,7 @@ export default function CheckoutForm() {
         }
       }
     }
-  }, [accessToken, selectedCountryId])
+  }, [accessToken])  // Only depend on accessToken - let the condition prevent re-entry
 
   // Save selected country to localStorage when it changes
   useEffect(() => {
@@ -401,59 +419,55 @@ export default function CheckoutForm() {
   }, [selectedCountryId])
 
   // Fetch user's reward balance on component mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const fetchRewardBalance = async () => {
-      if (!user) return // Only fetch if user is logged in
+      if (!userId) return // Only fetch if user is logged in
 
       setIsLoadingRewards(true)
       try {
         const rewards = await getMyRewards()
-        setRewardBalance(rewards.stats.balance)
+        const balance = rewards?.stats?.balance || 0
+        // PREVENT INFINITE LOOP: Only update if balance actually changed
+        setRewardBalance(prev => prev === balance ? prev : balance)
       } catch (error: any) {
         // Silently handle session expired errors (expected after token expiry)
         if (error?.message === "Session expired") {
-          setRewardBalance(0)
+          setRewardBalance(prev => prev === 0 ? prev : 0)
           return
         }
-        setRewardBalance(0)
+        setRewardBalance(prev => prev === 0 ? prev : 0)
       } finally {
         setIsLoadingRewards(false)
       }
     }
 
     fetchRewardBalance()
-  }, [user])
+  }, [userId])
 
   // Pre-fill form with logged-in user data if available
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (user) {
-      setShippingAddress((prev) => ({
-        ...prev,
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        email: user.email || "",
-      }))
+    if (userFirstName || userLastName || userEmail) {
+      setShippingAddress((prev) => {
+        const f = userFirstName || ""
+        const l = userLastName || ""
+        const e = userEmail || ""
+        // PREVENT INFINITE STATE LOOP: Bail out if already identical
+        if (prev.firstName === f && prev.lastName === l && prev.email === e) return prev
+        return { ...prev, firstName: f, lastName: l, email: e }
+      })
     }
-  }, [user])
-
-  useEffect(() => {
-    if (isGuest) {
-      const prefilledName = [shippingAddress.firstName, shippingAddress.lastName].filter(Boolean).join(" ")
-      if (prefilledName && !guestFullName) {
-        setGuestFullName(prefilledName)
-      }
-    } else {
-      setGuestStep(1)
-      setGuestFullName("")
-    }
-  }, [isGuest, shippingAddress.firstName, shippingAddress.lastName, guestFullName])
+  }, [userFirstName, userLastName, userEmail])
 
   // Ensure locale is set in API client before fetching products
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setApiClientLocale(locale)
   }, [locale])
 
   // Refresh product names when locale changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const refreshProductNames = async () => {
       const currentItems = useCartStore.getState().items
@@ -561,10 +575,13 @@ export default function CheckoutForm() {
     } finally {
       setIsLoadingCountries(false)
     }
-  }, [selectedCountryId, t])
+  }, [t])
 
+  // Fetch supported countries on mount
   useEffect(() => {
     fetchCountries()
+    // Do NOT return a cleanup function that resets clientSecret or orderId here!
+    // The component unmount cleanup should only happen when leaving the checkout page entirely.
   }, [fetchCountries])
 
   // Auto-fetch cities when country is selected/restored
@@ -578,7 +595,7 @@ export default function CheckoutForm() {
         setCities([])
       }
     }
-  }, [selectedCountryId, countries, fetchCities])
+  }, [selectedCountryId, countries.length, fetchCities])
 
   const handleCountryChange = (countryId: string) => {
     setSelectedCountryId(countryId)
@@ -696,117 +713,31 @@ export default function CheckoutForm() {
       
 
       // Determine consistent basketId for entire function
-      let basketId: string
+      let basketId: string = "";
       
-      // v17 KEY FIX: Check for accessToken ONLY (not user?.id) - indicates authenticated state
-      // user object may be null during hydration/page reload even with valid token
-      const isAuthenticated = !!authState.accessToken
+      const isAuthenticated = !!authState.accessToken;
       
       if (isAuthenticated) {
-        // FOR AUTHENTICATED USERS: NEVER use guest_ ID - ALWAYS fetch UUID from backend
-        
-        // v16 CRITICAL: Retry logic with backend sync wait
-        let userBasketId: string | null = null;
-        let retryCount = 0;
-        const maxRetries = 3;
-        
-        // Keep retrying until we get a valid UUID (not guest_)
-        while (retryCount < maxRetries && !userBasketId) {
-          retryCount++;
-          
-          if (retryCount > 1) {
-            setPaymentError("Finalizing your secure basket...");
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-          
-          const candidateId = await authState.fetchAndStoreBasketId();
-          
-          if (candidateId && !candidateId.startsWith("guest_")) {
-            // Valid UUID received
-            userBasketId = candidateId;
-          } else if (candidateId?.startsWith("guest_")) {
-          } else {
-          }
-        }
-        
-        // After 3 retries, if still no UUID, redirect to cart
-        if (!userBasketId) {
-          setPaymentError("Your basket is being prepared. Please refresh your cart and try again.");
-          setIsInitializingPayment(false);
-          
-          // Redirect to cart page
-          setTimeout(() => {
-            router.push("/cart");
-          }, 2000);
-          return;
-        }
-        
-        basketId = userBasketId;
-        
-        // Validate basketId is UUID format (final sanity check)
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(basketId)) {
-          throw new Error("Invalid basket ID. Please go back to your cart and try again.");
-        }
-        
-        setPaymentError(null);  // Clear "Finalizing..." message
-      } else {
-        // For guests, generate ONCE and reuse throughout
-        basketId = "guest_" + Math.random().toString(36).substring(2, 11);
-      }
-
-
-      // STEP 1: FORCE SYNC - Sync current store items to Backend (Redis) BEFORE order creation
-      if (currentItems.length > 0) {
-        try {
-          const basketItems = currentItems.map((item) => ({
-            productId: item.id,
-            productPriceId: item.productPriceId,
-            productName: item.name,
-            slug: item.slug,
-            price: item.priceUsed ?? item.price,
-            quantity: item.quantity,
-            imageUrl: item.imageUrl || "",
-            weightLabel: item.selectedWeightLabel || item.weightLabel || "Standard",
-            grams: item.grams || 0,
-            roastLevelId: item.roastLevelId || "00000000-0000-0000-0000-000000000000",
-            roastLevelName: item.selectedRoast || item.roastLevelName || "Original",
-            grindTypeId: item.grindTypeId || "00000000-0000-0000-0000-000000000000",
-            grindTypeName: item.selectedGrind || item.grindTypeName || "Whole Bean",
-          }))
-
-
-          // Force sync to Backend
-          await basketService.updateBasket({
-            id: basketId,
-            items: basketItems,
-            currencyCode: currency.toUpperCase(),
-          })
-
-        } catch (syncError) {
-          throw new Error(t("failedSyncBasket"))
+        // For authenticated users, retrieve from store or fetch fresh
+        basketId = authState.userBasketId || authState.user?.id || "";
+        if (!basketId) {
+          basketId = await authState.fetchAndStoreBasketId() || "";
         }
       } else {
-        throw new Error(t("emptyBasket"))
+        // For guests, retrieve from localStorage or generate new
+        basketId = localStorage.getItem("guestBasketId") || `guest_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+        localStorage.setItem("guestBasketId", basketId);
       }
-
-      // STEP 2: RE-VALIDATE basketId 1 second before payment (ensure latest UUID for authenticated)
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For authenticated users, force-refresh basketId one more time
-      if (isAuthenticated) {
-        const freshBasketId = await authState.fetchAndStoreBasketId();
-        
-        if (freshBasketId && !freshBasketId.startsWith("guest_")) {
-          basketId = freshBasketId;
-        } else {
-        }
+      if (!basketId) {
+        throw new Error("Could not secure a basket ID");
       }
 
-      // STEP 3: Create order with same consistent basketId
 
-      // v17: AGGRESSIVE - Force populate user data in checkout payload
-      // Get FRESH user data directly from Zustand store
+      // STEP 1: Create order with basketId
+      // Backend will fetch current basket state from Redis natively
+      
+      // Populate user data in checkout payload from Zustand store
       const freshAuthState = useAuthStore.getState();
       const freshUser = freshAuthState.user;
       
@@ -868,9 +799,9 @@ export default function CheckoutForm() {
 
       // STEP 3: Check if payment is zero (rewards cover everything)
       // Calculate order total to determine if Stripe is needed
-      const subtotal = total(currency)
+      const subtotal = getCartTotal(currency)
       const selectedCountry = countries.find((country) => country.id === selectedCountryId)
-      const rateObj = selectedCountry?.shippingRates.find((r) =>
+      const rateObj = selectedCountry?.shippingRates?.find((r) =>
         String(r.currency).toUpperCase() === currency.toUpperCase()
       )
       
@@ -940,7 +871,6 @@ export default function CheckoutForm() {
       // Set the raw clientSecret directly without any manipulation
       setClientSecret(clientSecretValue)
       setIsPaymentModalOpen(true)
-      setSuccessMessage(t("orderCreatedSuccess"))
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to start checkout process"
       setPaymentError(message)
@@ -953,26 +883,54 @@ export default function CheckoutForm() {
 
   const handleContinueToPayment = async (e: FormEvent) => {
     e.preventDefault()
-    setPaymentError(null)
+    // STRICT SYNCHRONOUS LOCK
+    if (isSubmittingRef.current || isInitializingPayment || (isGuest && guestStep === 1)) return;
+    
+    isSubmittingRef.current = true;
+    try {
+      setPaymentError(null)
 
-    if (isGuest && guestStep === 1) {
-      if (validateGuestStepOne()) {
-        setGuestStep(2)
+      if (isGuest && guestStep === 1) {
+        if (validateGuestStepOne()) {
+          setGuestStep(2)
+        }
+        return
       }
-      return
-    }
 
-    if (validateForm()) {
-      await initializePayment()
+      if (validateForm()) {
+        await initializePayment()
+      }
+    } finally {
+      // Release the lock slightly after to prevent rapid bounce-backs
+      setTimeout(() => { isSubmittingRef.current = false; }, 500);
     }
   }
 
-  const subtotal = total(currency)
+  // DRAFT ORDER PATTERN: Modal close simply resets UI state
+  // Order stays in "Pending" status in database - no cancellation
+  const handleModalClose = () => {
+    setIsPaymentModalOpen(false)
+    setIsInitializingPayment(false)
+
+    if (orderId) {
+      // Clean up state
+      setOrderId(null)
+      setClientSecret(null)
+      
+      // CRITICAL: Increment the key to forcefully destroy and recreate the Stripe modal component
+      // This ensures Stripe instance cleanup without reloading the page
+      setStripeResetKey(prev => prev + 1)
+      
+      setPaymentError("Payment was cancelled. You can update your cart or try again.")
+    }
+  }
+
+  const subtotal = getCartTotal(currency)
   const selectedCountry = countries.find((country) => country.id === selectedCountryId)
   const selectedCountryCode = selectedCountry?.code || ""
   const isRegionCountry = selectedCountryCode === "AE" || selectedCountryCode === "KW"
   // Find rate that matches current currency
-  const rateObj = selectedCountry?.shippingRates.find((r) =>
+  const rateObj = selectedCountry?.shippingRates?.find((r) =>
     String(r.currency).toUpperCase() === currency.toUpperCase()
   )
   
@@ -1060,14 +1018,15 @@ export default function CheckoutForm() {
                         <label htmlFor="phoneNumber" className="text-sm font-medium">
                           {t("phone")}
                         </label>
-                        <Input
-                          id="phoneNumber"
-                          type="tel"
-                          placeholder="+1 (555) 123-4567"
+                        <PhoneInput
+                          defaultCountry="ae"
                           value={shippingAddress.phoneNumber || ""}
-                          onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                          aria-invalid={!!errors.phoneNumber}
-                          className={`${errors.phoneNumber ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
+                          onChange={(phone) => handleInputChange("phoneNumber", phone)}
+                          className="flex"
+                          inputClassName={`flex h-10 w-full rounded-r-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78] disabled:cursor-not-allowed disabled:opacity-50 ${errors.phoneNumber ? "border-destructive" : ""}`}
+                          countrySelectorStyleProps={{
+                            buttonClassName: `h-10 rounded-l-md rounded-r-none border border-input border-r-0 bg-background px-3 hover:bg-accent hover:text-accent-foreground ${errors.phoneNumber ? "border-destructive" : ""}`
+                          }}
                         />
                         {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber}</p>}
                       </div>
@@ -1188,8 +1147,8 @@ export default function CheckoutForm() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <label htmlFor="postalCode" className="text-sm font-medium">
-                              {t("postalCode")}
+                            <label htmlFor="postalCode" className="text-sm font-medium flex items-center">
+                              {t("postalCode")} <span className="text-muted-foreground font-normal text-xs ml-1">(Optional)</span>
                             </label>
                             <Input
                               id="postalCode"
@@ -1227,14 +1186,15 @@ export default function CheckoutForm() {
                             <label htmlFor="phoneNumber" className="text-sm font-medium">
                               {t("phone")}
                             </label>
-                            <Input
-                              id="phoneNumber"
-                              type="tel"
-                              placeholder="+1 (555) 123-4567"
+                            <PhoneInput
+                              defaultCountry="ae"
                               value={shippingAddress.phoneNumber || ""}
-                              onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                              aria-invalid={!!errors.phoneNumber}
-                              className={`${errors.phoneNumber ? "border-destructive" : ""} focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78]`}
+                              onChange={(phone) => handleInputChange("phoneNumber", phone)}
+                              className="flex"
+                              inputClassName={`flex h-10 w-full rounded-r-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f6f78]/50 focus-visible:border-[#1f6f78] disabled:cursor-not-allowed disabled:opacity-50 ${errors.phoneNumber ? "border-destructive" : ""}`}
+                              countrySelectorStyleProps={{
+                                buttonClassName: `h-10 rounded-l-md rounded-r-none border border-input border-r-0 bg-background px-3 hover:bg-accent hover:text-accent-foreground ${errors.phoneNumber ? "border-destructive" : ""}`
+                              }}
                             />
                             {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber}</p>}
                           </div>
@@ -1285,6 +1245,9 @@ export default function CheckoutForm() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Cart Upsell Recommendation */}
+              <CartUpsell countryCode={selectedCountryCode} />
+
               {/* Cart Items */}
               <div className="space-y-4 max-h-100 overflow-y-auto">
                 {items.map((item) => (
@@ -1367,7 +1330,7 @@ export default function CheckoutForm() {
                 </div>
 
                 {/* Reward Points Toggle */}
-                {user && rewardBalance > 0 && (
+                {userId && rewardBalance > 0 && (
                   <div className="space-y-2 py-3 border-t border-border">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -1381,12 +1344,12 @@ export default function CheckoutForm() {
                           htmlFor="usePoints"
                           className="text-sm font-medium cursor-pointer flex-1"
                         >
-                          {t("usePoints", { points: rewardBalance.toFixed(2) })}
+                          {t("usePoints", { points: (rewardBalance || 0).toFixed(2) })}
                         </label>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground ml-7">
-                      {t("pointsAvailable", { points: rewardBalance.toFixed(2) })}
+                      {t("pointsAvailable", { points: (rewardBalance || 0).toFixed(2) })}
                     </p>
                   </div>
                 )}
@@ -1419,8 +1382,9 @@ export default function CheckoutForm() {
         </div>
       </div>
       <StripePaymentModal
+        key={stripeResetKey}
         open={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
+        onClose={handleModalClose}
         clientSecret={clientSecret}
         orderId={orderId}
         orderTotal={orderTotal}

@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import axios, { setAxiosAuthToken, setTokens, apiFetch } from "./axios";
+import axios, { setAxiosAuthToken, apiFetch } from "./axios";
 import { getErrorMessage } from "./utils";
 import { useCartStore } from "./cart-store";
 import { basketService } from "./services/basket";
@@ -128,7 +128,6 @@ export const useAuthStore = create<AuthState>()(
         // 1. TƏHLÜKƏSİZLİK: Tokenləri və yaddaşı DƏRHAL silirik ki, backend-ə gedən
         // "səbəti boşalt" (clearCart) sorğusu anonim getsin və sənin şəxsi profilini silməsin!
         set({ user: null, accessToken: null, refreshToken: null, userBasketId: null });
-        setTokens(null); 
         setAxiosAuthToken(null);
         
         if (typeof window !== "undefined") {
@@ -168,7 +167,6 @@ export const useAuthStore = create<AuthState>()(
           }
           
           set({ accessToken, refreshToken, userBasketId: userBasketId || null, user });
-          setTokens({ accessToken, refreshToken });
           setAxiosAuthToken(accessToken);
           
           // If token exists but user is null, fetch user data from backend
@@ -183,9 +181,7 @@ export const useAuthStore = create<AuthState>()(
         // 1. Update Zustand store state
         set({ accessToken, refreshToken });
         
-        setTokens({ accessToken, refreshToken });
-        
-        // 3. Update axios headers for axios instance
+        // 2. Update axios headers for axios instance
         setAxiosAuthToken(accessToken);
         
         // 4. Persist to localStorage

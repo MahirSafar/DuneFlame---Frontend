@@ -12,6 +12,7 @@ import { setApiClientLocale } from "@/lib/axios"
 import { FormattedPrice } from "@/components/currency/formatted-price"
 import { CartExpressCheckout } from "@/components/cart/cart-express-checkout"
 import { StripeElementsProvider } from "@/components/payment/stripe-elements-provider"
+import { CartUpsell } from "@/components/cart/cart-upsell"
 
 export default function CartSummary() {
   const t = useTranslations()
@@ -61,6 +62,8 @@ export default function CartSummary() {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <CartUpsell />
+      
       <div className="space-y-3 md:space-y-4">
         {items.map((item, index) => (
           <Link

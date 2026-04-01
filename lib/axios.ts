@@ -20,10 +20,12 @@ const instance = axios.create({
 // Request interceptor with currency and auth headers
 instance.interceptors.request.use(
   (config) => {
-    // Add auth token
-    const token = useAuthStore.getState().accessToken;
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Add auth token (ONLY on client - SSR safe)
+    if (typeof window !== "undefined") {
+      const token = useAuthStore.getState().accessToken;
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
 
     // Add currency header - ALWAYS reads from latest storage value
@@ -63,6 +65,22 @@ const processQueue = (error: any = null) => {
   failedQueue = [];
 };
 
+/**
+ * Determine correct login redirect URL based on current pathname
+ * Admin routes → /admin/login
+ * Customer routes → /login (routing handles locale)
+ */
+function getLoginRedirectUrl(): string {
+  if (typeof window === "undefined") return "/login";
+  const pathname = window.location.pathname;
+  // If admin path, redirect to admin login
+  if (pathname.includes("/admin")) {
+    return "/admin/login";
+  }
+  // Otherwise, redirect to customer login
+  return "/login";
+}
+
 // Response interceptor with refresh token logic
 instance.interceptors.response.use(
   (res) => res,
@@ -84,10 +102,10 @@ instance.interceptors.response.use(
 
       // Skip if already retried
       if (originalRequest._retry) {
-        toast.error("Session expired. Please login again.");
-        useAuthStore.getState().logout();
-        if (window.location.pathname !== "/admin/login") {
-          window.location.href = "/admin/login";
+        if (typeof window !== "undefined") {
+          toast.error("Session expired. Please login again.");
+          useAuthStore.getState().logout();
+          window.location.href = getLoginRedirectUrl();
         }
         return Promise.reject(err);
       }
@@ -98,9 +116,11 @@ instance.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then(() => {
-            const newToken = useAuthStore.getState().accessToken;
-            if (newToken && originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            if (typeof window !== "undefined") {
+              const newToken = useAuthStore.getState().accessToken;
+              if (newToken && originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              }
             }
             return instance(originalRequest);
           })
@@ -113,6 +133,13 @@ instance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
+      // SSR safety: Only proceed with refresh if we're on the client
+      if (typeof window === "undefined") {
+        isRefreshing = false;
+        processQueue(new Error("No Zustand state available on server"));
+        return Promise.reject(err);
+      }
+
       const { accessToken, refreshToken } = useAuthStore.getState();
 
       if (!refreshToken || !accessToken) {
@@ -120,9 +147,7 @@ instance.interceptors.response.use(
         processQueue(new Error("No tokens available"));
         toast.error("Session expired. Please login again.");
         useAuthStore.getState().logout();
-        if (window.location.pathname !== "/admin/login") {
-          window.location.href = "/admin/login";
-        }
+        window.location.href = getLoginRedirectUrl();
         return Promise.reject(err);
       }
 
@@ -137,7 +162,9 @@ instance.interceptors.response.use(
 
         // AWAIT the store update to ensure localStorage write completes
         // This guarantees tokens are on disk BEFORE the retry request fires
-        await useAuthStore.getState().setTokens(newTokens.accessToken, newTokens.refreshToken);
+        if (typeof window !== "undefined") {
+          await useAuthStore.getState().setTokens(newTokens.accessToken, newTokens.refreshToken);
+        }
       
 
         // Update the failed request with the new token
@@ -161,10 +188,10 @@ instance.interceptors.response.use(
         });
         processQueue(refreshError);
         isRefreshing = false;
-        toast.error("Session expired. Please login again.");
-        useAuthStore.getState().logout();
-        if (window.location.pathname !== "/admin/login") {
-          window.location.href = "/admin/login";
+        if (typeof window !== "undefined") {
+          toast.error("Session expired. Please login again.");
+          useAuthStore.getState().logout();
+          window.location.href = getLoginRedirectUrl();
         }
         return Promise.reject(refreshError);
       }
@@ -232,23 +259,6 @@ export async function apiFetch<T>(
     apiError.data = error?.response?.data;
     throw apiError;
   }
-}
-
-// Helper functions for token management (kept for backward compatibility)
-let accessToken: string | null = null;
-let refreshToken: string | null = null;
-
-export function getAccessToken(): string | null {
-  return accessToken;
-}
-
-export function getRefreshToken(): string | null {
-  return refreshToken;
-}
-
-export function setTokens(tokens: { accessToken: string; refreshToken: string } | null) {
-  accessToken = tokens?.accessToken ?? null;
-  refreshToken = tokens?.refreshToken ?? null;
 }
 
 export function setApiClientCurrency(currency: string) {

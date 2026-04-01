@@ -4,8 +4,6 @@ import React, { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/routing";
 import toast from "react-hot-toast";
-import { setTokens } from "@/lib/axios";
-import { setAxiosAuthToken } from "@/lib/axios";
 import { useAuthStore } from "@/lib/auth-store";
 import { useCartStore } from "@/lib/cart-store";
 import { Loader2 } from "lucide-react";
@@ -25,36 +23,31 @@ export default function GoogleCallbackPage() {
       return;
     }
 
-    try {
-      setTokens({ accessToken, refreshToken });
-      setAxiosAuthToken(accessToken);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("df_tokens", JSON.stringify({ accessToken, refreshToken }));
-      }
+    // Wrap async logic in internal function (React useEffect cannot be directly async)
+    async function processLogin(token: string, refresh: string) {
+      try {
+        // CRITICAL FIX: Save tokens directly to Zustand store (not dummy axios helper)
+        // This ensures Axios interceptor can read the token correctly
+        await useAuthStore.getState().setTokens(token, refresh);
 
-      // STEP 0: Immediately fetch basketId with the token (no need to wait for state)
-      const fetchAndStoreBasketId = useAuthStore.getState().fetchAndStoreBasketId;
-      fetchAndStoreBasketId(accessToken); // Fire and forget - use provided token to fetch basket
+        // STEP 0: Fetch basketId with the token and await it
+        await useAuthStore.getState().fetchAndStoreBasketId(token);
 
-      // If backend returned user info, try to parse and set in store
-      if (userParam) {
-        try {
-          const user = JSON.parse(decodeURIComponent(userParam));
-          useAuthStore.setState({ user, accessToken, refreshToken });
-        } catch {
-          // ignore parse errors
-          useAuthStore.setState({ accessToken, refreshToken });
+        // If backend returned user info, try to parse and set in store
+        if (userParam) {
+          try {
+            const user = JSON.parse(decodeURIComponent(userParam));
+            useAuthStore.setState({ user });
+          } catch {
+            // ignore parse errors
+          }
         }
-      } else {
-        useAuthStore.setState({ accessToken, refreshToken });
-      }
 
-      // Clear guest data before loading the authenticated basket
-      const { clearGuestData } = useCartStore.getState();
-      clearGuestData();
+        // Clear guest data before loading the authenticated basket
+        const { clearGuestData } = useCartStore.getState();
+        clearGuestData();
 
-      // STEP 1: Load authenticated user's basket
-      (async () => {
+        // STEP 1: Load authenticated user's basket
         try {
           const authState = useAuthStore.getState();
           if (!authState.user) {
@@ -76,11 +69,14 @@ export default function GoogleCallbackPage() {
           toast.success("Successfully logged in with Google");
           setTimeout(() => router.replace("/dashboard"), 700);
         }
-      })();
-    } catch (e) {
-      toast.error("Failed to process Google login");
-      router.replace("/auth/login");
+      } catch (e) {
+        toast.error("Failed to process Google login");
+        router.replace("/auth/login");
+      }
     }
+
+    // Call the async function with tokens
+    processLogin(accessToken, refreshToken);
   }, [searchParams, router]);
 
   return (
