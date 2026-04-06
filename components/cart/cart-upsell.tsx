@@ -46,6 +46,18 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
 
   const handleAddField = () => {
     if (recommendation) {
+      const numericWeight = parseInt(recommendation.weightLabel.replace(/\D/g, '')) || 250;
+      
+      const mappedPrices = recommendation.availablePrices 
+        ? Object.entries(recommendation.availablePrices).map(([cur, pr]) => ({
+            currencyCode: cur,
+            price: pr,
+            grams: numericWeight,
+            weightLabel: recommendation.weightLabel,
+            productPriceId: recommendation.productPriceId
+          }))
+        : [];
+
       addItem(
         {
           id: recommendation.productId,
@@ -59,6 +71,12 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
           selectedWeightLabel: recommendation.weightLabel,
           selectedRoast: "Original",
           selectedGrind: "Whole Bean",
+          grams: numericWeight,
+          selectedWeight: numericWeight,
+          product: { 
+            id: recommendation.productId, 
+            availablePrices: mappedPrices 
+          } as any,
         },
         isAuthenticated
       )
@@ -67,7 +85,7 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
   }
 
   return (
-    <div className="glass rounded-xl p-4 md:p-5 flex flex-col gap-3 md:gap-4 mb-6 relative overflow-hidden border border-border bg-gradient-to-b from-white/60 to-transparent">
+    <div className="glass rounded-xl p-4 md:p-5 flex flex-col gap-3 md:gap-4 mb-6 relative overflow-hidden border border-border bg-linear-to-b from-white/60 to-transparent">
       
       <div className="flex flex-col gap-2 relative z-10">
         <div className="flex justify-between items-start text-sm font-semibold mb-1">

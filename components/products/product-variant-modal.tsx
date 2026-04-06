@@ -192,6 +192,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
       price: currentPrice,
       weightLabel: resolved.weightLabel || `${resolved.grams}g`,
       grams: resolved.grams,
+      selectedWeight: resolved.grams,
       roastLevelName: selectedRoast,
       roastLevelId: roastLevelId || EMPTY_GUID,
       grindTypeName: selectedGrind,

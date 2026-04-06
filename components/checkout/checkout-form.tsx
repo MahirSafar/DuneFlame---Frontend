@@ -782,6 +782,16 @@ export default function CheckoutForm() {
       } else {
       }
 
+      // STEP 0.5: Just-In-Time Sync
+      // Ensure the backend Redis cache actually holds the basket items before OrderService tries to read them.
+      await apiFetch("/basket", {
+        method: "POST",
+        body: JSON.stringify({
+          id: basketId,
+          items: currentItems,
+        }),
+      });
+
 
       const orderResponse = await apiFetch<{ id: string; clientSecret?: string }>("/orders", {
         method: "POST",

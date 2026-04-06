@@ -15,6 +15,7 @@ export interface RecommendationResponse {
     price: number;
     currencyCode: string;
     weightLabel: string;
+    availablePrices?: Record<string, number>;
   };
 }
 
