@@ -15,7 +15,14 @@ export default function GoogleCallbackPage() {
   useEffect(() => {
     const accessToken = searchParams.get("accessToken");
     const refreshToken = searchParams.get("refreshToken");
-    const userParam = searchParams.get("user");
+    const hasOrdersStr = searchParams.get("hasOrders");
+    const hasOrders = hasOrdersStr === "true";
+    
+    const idParam = searchParams.get("userId");
+    const emailParam = searchParams.get("email");
+    const firstNameParam = searchParams.get("firstName");
+    const lastNameParam = searchParams.get("lastName");
+    const rolesParam = searchParams.get("roles");
 
     if (!accessToken || !refreshToken) {
       toast.error("Google login failed: missing tokens");
@@ -33,14 +40,17 @@ export default function GoogleCallbackPage() {
         // STEP 0: Fetch basketId with the token and await it
         await useAuthStore.getState().fetchAndStoreBasketId(token);
 
-        // If backend returned user info, try to parse and set in store
-        if (userParam) {
-          try {
-            const user = JSON.parse(decodeURIComponent(userParam));
-            useAuthStore.setState({ user });
-          } catch {
-            // ignore parse errors
-          }
+        // If backend returned user info, try to reconstruct and set in store
+        if (idParam && emailParam) {
+          const userObj = {
+            id: idParam,
+            email: emailParam,
+            firstName: firstNameParam || "",
+            lastName: lastNameParam || "",
+            roles: rolesParam ? rolesParam.split(",") : ["Customer"],
+            hasOrders: hasOrders
+          };
+          useAuthStore.setState({ user: userObj as any });
         }
 
         // Clear guest data before loading the authenticated basket
@@ -52,6 +62,12 @@ export default function GoogleCallbackPage() {
           const authState = useAuthStore.getState();
           if (!authState.user) {
             await authState.fetchUser();
+          }
+
+          // Ensure hasOrders flag from URL is applied to the user object in the store
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser) {
+            useAuthStore.setState({ user: { ...currentUser, hasOrders } });
           }
 
           try {

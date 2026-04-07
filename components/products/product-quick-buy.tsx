@@ -93,7 +93,15 @@ export function ProductQuickBuy({
         }
 
         // Create a single-item basket for quick buy
-        const displayAmount = Math.round(currentPrice * quantity * 100) // in cents
+        const auth = useAuthStore.getState()
+        const isFirstOrder = !!auth.accessToken && auth.user?.hasOrders === false
+        
+        const rawAmount = currentPrice * quantity
+        const discountAmount = isFirstOrder ? rawAmount * 0.1 : 0
+        const finalAmount = rawAmount - discountAmount
+        
+        const displayAmount = Math.round(finalAmount * 100) // in cents
+        const rawDisplayAmount = Math.round(rawAmount * 100)
 
         const subtotalLabel = t("checkout.subtotal") || "Subtotal"
         const shippingLabel = t("checkout.shipping") || "Shipping"
@@ -103,17 +111,27 @@ export function ProductQuickBuy({
           ? [
               {
                 label: product.name,
-                amount: displayAmount,
+                amount: rawDisplayAmount,
               },
             ]
           : []
 
         const displayItems = [
           ...itemLines,
-          { label: subtotalLabel, amount: displayAmount },
-          { label: shippingLabel, amount: 0 },
-          { label: totalLabel, amount: displayAmount },
+          { label: subtotalLabel, amount: rawDisplayAmount }
         ]
+        
+        if (isFirstOrder) {
+          // Stripe expects positive amounts. Submitting a negative amount might cause an error.
+          // Apple Pay ignores `displayItems` math, it only trusts `total`. However, to be safe from API crashes,
+          // we simply don't add the discount as a separate line item if it causes a crash, or we show it in the label.
+          displayItems.push({ label: (t("checkout.welcomeDiscount") || "Welcome Discount") + " (-10%)", amount: 0 })
+        }
+        
+        displayItems.push(
+          { label: shippingLabel, amount: 0 },
+          { label: totalLabel, amount: displayAmount }
+        )
 
 
         const pr = stripe.paymentRequest({
@@ -154,11 +172,11 @@ export function ProductQuickBuy({
         pr.on("shippingaddresschange", async (event) => {
           const updateDetails = await handleShippingAddressChange({
             address: event.shippingAddress,
-            subtotalAmount: displayAmount,
+            subtotalAmount: rawDisplayAmount, // Need to make sure this is raw subtotal if hook also applies discount
             baseItems: itemLines,
             currencyCode: currency.toUpperCase(),
           })
-          event.updateWith(updateDetails)
+          event.updateWith(updateDetails as Stripe.PaymentRequestUpdateDetails)
         })
 
         // Handle payment method

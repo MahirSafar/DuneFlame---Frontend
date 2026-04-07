@@ -74,18 +74,35 @@ export const getItemPrice = (item: CartItem, currency: CurrencyType): number => 
 
 const syncWithBackend = async (items: CartItem[]) => {
   try {
-    const { user, userBasketId } = useAuthStore.getState()
+    const auth = useAuthStore.getState()
+    const isAuthenticated = !!auth.accessToken
     
     // Determine basketId - prefer userBasketId from authentication (set after Google login)
-    let basketId: string | undefined = undefined
-    if (user?.id) {
-      basketId = userBasketId || user.id;
-    } else {
-      const storedGuestId = typeof window !== "undefined" ? localStorage.getItem("guestBasketId") : null
-      basketId = storedGuestId ?? undefined
+    let basketId: string | undefined = auth.userBasketId || auth.user?.id || undefined
+
+    // CRITICAL FIX: If authenticated but missing basketId, fetch it before syncing
+    if (isAuthenticated && !basketId) {
+      try {
+        const fetchedId = await auth.fetchAndStoreBasketId()
+        if (fetchedId) basketId = fetchedId
+      } catch (error) {
+        console.error("[CartStore] Failed to fetch basket ID for sync", error)
+      }
+    }
+
+    // Fallback for guests
+    if (!isAuthenticated && !basketId) {
+      if (typeof window !== "undefined") {
+        basketId = localStorage.getItem("guestBasketId") || undefined
+        if (!basketId) {
+          basketId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+          localStorage.setItem("guestBasketId", basketId)
+        }
+      }
     }
 
     if (!basketId) {
+      console.warn("[CartStore] Aborting sync: No basket ID could be resolved.")
       return
     }
 

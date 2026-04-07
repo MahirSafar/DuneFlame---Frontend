@@ -15,6 +15,7 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   roles: string[];
+  hasOrders?: boolean;
 }
 
 interface AuthState {
@@ -208,9 +209,13 @@ export const useAuthStore = create<AuthState>()(
           });
           
           if (response) {
-            set({ user: response });
+            const normalizedUser = {
+              ...response,
+              id: response.id || (response as any).userId || (response as any).UserId
+            };
+            set({ user: normalizedUser as any });
             if (typeof window !== "undefined") {
-              localStorage.setItem("df_user_object", JSON.stringify(response));
+              localStorage.setItem("df_user_object", JSON.stringify(normalizedUser));
             }
             
             // YENİ ƏLAVƏ: Səhifə yenilənəndə və ya Google ilə girəndə səbəti avtomatik yüklə

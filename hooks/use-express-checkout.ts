@@ -36,6 +36,8 @@ export function useExpressCheckout() {
 
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<ExpressCheckoutError | null>(null)
+  const [countries, setCountries] = useState<Country[]>([])
+  const [allowedCountryCodes, setAllowedCountryCodes] = useState<string[]>([])
 
   /**
    * PURE API: Fetch all available countries and their shipping rates
@@ -43,6 +45,9 @@ export function useExpressCheckout() {
   const fetchCountries = useCallback(async (): Promise<Country[]> => {
     try {
       const data = await apiFetch<Country[]>("/shipping/countries")
+      setCountries(data)
+      const codes = data.map(c => c.code).filter(Boolean) as string[]
+      setAllowedCountryCodes(codes.length > 0 ? codes : ["AE", "AZ"])
       return data
     } catch (err) {
       const errorMsg = t("failedLoadCountries") || "Failed to load countries"
@@ -199,6 +204,135 @@ export function useExpressCheckout() {
   /**
    * PURE API: Create an Express Checkout order
    */
+  const handleShippingAddressChange = useCallback(
+    async (params: {
+      address: any
+      subtotalAmount: number
+      baseItems: any[]
+      currencyCode: string
+    }) => {
+      const { address, subtotalAmount, baseItems, currencyCode } = params
+      const matchedCountry = countries.find(
+        (c) => c.code?.toUpperCase() === (address?.country || "").toUpperCase()
+      )
+
+      if (!matchedCountry) {
+        return {
+          status: "invalid_shipping_address",
+          shippingOptions: [],
+          displayItems: [
+            ...baseItems,
+            { label: t("checkout.subtotal") || "Subtotal", amount: subtotalAmount },
+            { label: t("expressCheckout.totalLabel") || "Total", amount: subtotalAmount },
+          ],
+          total: {
+            label: t("expressCheckout.totalLabel") || "Total",
+            amount: subtotalAmount,
+            pending: false,
+          },
+        }
+      }
+
+      const city =
+        address?.city?.trim() ||
+        address?.locality?.trim() ||
+        address?.town?.trim() ||
+        address?.administrativeArea?.trim() ||
+        ""
+
+      const countryCode = address?.country || "AE"
+      const shippingResponse = await calculateShipping({
+        countryCode,
+        city,
+        currencyCode,
+        subtotalAmount,
+      })
+
+      const statusValue = shippingResponse?.status?.toLowerCase()
+      const statusOk =
+        !statusValue ||
+        statusValue === "available" ||
+        statusValue === "success" ||
+        statusValue === "ok"
+
+      const price = shippingResponse?.shippingPrice ?? (shippingResponse as any)?.shippingCost
+      const hasValidPrice = typeof price === "number"
+      const isExplicitlyUnavailable = shippingResponse?.available === false
+
+      if (isExplicitlyUnavailable || (!hasValidPrice && !statusOk)) {
+        return {
+          status: "invalid_shipping_address",
+          shippingOptions: [],
+          displayItems: [
+            ...baseItems,
+            { label: t("checkout.subtotal") || "Subtotal", amount: subtotalAmount },
+            { label: t("expressCheckout.totalLabel") || "Total", amount: subtotalAmount },
+          ],
+          total: {
+            label: t("expressCheckout.totalLabel") || "Total",
+            amount: subtotalAmount,
+            pending: false,
+          },
+        }
+      }
+
+      const auth = useAuthStore.getState()
+      const isFirstOrder = !!auth.accessToken && auth.user?.hasOrders === false
+      const subtotalDiscount = isFirstOrder ? Math.round(subtotalAmount * 0.1) : 0
+
+      const estimatedDays =
+        shippingResponse.estimatedDays ||
+        shippingResponse.estimatedDeliveryDays ||
+        shippingResponse.deliveryDays ||
+        ""
+
+      const shippingAmount = Math.round((price || 0) * 100)
+      const computedTotal = subtotalAmount - subtotalDiscount + shippingAmount
+
+      const options = [
+        {
+          id: `${matchedCountry.id}-calculated`,
+          label: t("shipping.standard") || "Shipping",
+          detail: estimatedDays ? `${estimatedDays}` : "",
+          amount: shippingAmount,
+        },
+      ]
+
+      const displayItemsFinal = [
+        ...baseItems,
+        { label: t("checkout.subtotal") || "Subtotal", amount: subtotalAmount },
+      ]
+
+      if (subtotalDiscount > 0) {
+        displayItemsFinal.push({
+           label: t("checkout.welcomeDiscount") || "Welcome Discount (10%)",
+           // Apple Pay & Google Pay display items usually don't support negative.
+           // However, if it must be a positive line item representing a subtraction
+           // or if it throws, use Positive, it's just a display item. 
+           // Standard Google Pay expects positive values for all items.
+           // Wait, actually, Stripe PaymentRequestItem amount CAN be negative in SOME browsers but it's risky. 
+           // We'll supply the computedTotal as the final `total` amount. The items just explain it visually.
+           // If we just skip adding it to `displayItems`, the total will just be less. Let's just adjust the total directly.
+           amount: subtotalDiscount, 
+        })
+      }
+
+      displayItemsFinal.push({ label: t("checkout.shipping") || "Shipping", amount: shippingAmount })
+      
+      return {
+        status: "success",
+        shippingOptions: options,
+        displayItems: displayItemsFinal,
+        total: {
+          label: t("expressCheckout.totalLabel") || "Total",
+          amount: computedTotal,
+          pending: false,
+        }
+      }
+    },
+    [countries, calculateShipping, t]
+  )
+
   const createOrder = useCallback(
     async (
       basketId: string,
@@ -300,7 +434,11 @@ export function useExpressCheckout() {
           (sum, item) => sum + getItemPrice(item, currency) * item.quantity,
           0
         )
-        const totalWithShipping = orderTotal + shippingCost
+        const auth = useAuthStore.getState()
+        const isFirstOrder = !!auth.accessToken && auth.user?.hasOrders === false
+        const discountAmount = isFirstOrder ? orderTotal * 0.1 : 0
+
+        const totalWithShipping = (orderTotal - discountAmount) + shippingCost
 
         // 3. Handle zero-cost orders (rewards covering full amount)
         if (totalWithShipping <= 0) {
@@ -442,6 +580,8 @@ export function useExpressCheckout() {
     // State
     isProcessing,
     error,
+    countries,
+    allowedCountryCodes,
 
     // Pure API functions
     fetchCountries,
@@ -451,6 +591,7 @@ export function useExpressCheckout() {
     // Helper functions
     mapShippingAddress,
     getActiveBasketId,
+    handleShippingAddressChange,
 
     // Payment handling
     completePayment,

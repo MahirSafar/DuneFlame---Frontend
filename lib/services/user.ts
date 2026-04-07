@@ -12,6 +12,7 @@ export interface UserProfile {
   avatarUrl?: string;
   dateOfBirth?: string; // ISO Date
   phone?: string;
+  hasOrders?: boolean;
 }
 
 export interface UpdateProfileRequest {

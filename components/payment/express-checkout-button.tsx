@@ -10,6 +10,7 @@ import { useCurrency } from "@/lib/currency-context"
 import { useCartStore } from "@/lib/cart-store"
 import { getItemPrice } from "@/lib/cart-store"
 import { Loader2 } from "lucide-react"
+import { useAuthStore } from "@/lib/auth-store"
 
 interface ExpressCheckoutButtonProps {
   onSuccess: (orderId: string) => void
@@ -65,6 +66,7 @@ export function ExpressCheckoutButton({
     fetchCountries: hookFetchCountries,
     calculateShipping,
     completePayment,
+    handleShippingAddressChange: hookHandleShippingAddressChange,
   } = useExpressCheckout()
 
   // Fetch countries on mount
@@ -134,11 +136,18 @@ export function ExpressCheckoutButton({
         // Calculate subtotal from cart (CRITICAL: never use total() function from store)
         const cartState = useCartStore.getState()
         const { items: currentItems, getItemPrice } = cartState
+        const auth = useAuthStore.getState()
+        const isFirstOrder = !!auth.accessToken && auth.user?.hasOrders === false
+        
         const subtotalInDollars = currentItems.reduce(
           (sum, item) => sum + getItemPrice(item, currency) * item.quantity,
           0
         )
-        const subtotalAmount = Math.round(subtotalInDollars * 100) // Convert to cents
+        const discountInDollars = isFirstOrder ? subtotalInDollars * 0.1 : 0
+        const finalSubtotalInDollars = subtotalInDollars - discountInDollars
+        
+        const rawSubtotalAmount = Math.round(subtotalInDollars * 100) // Convert to cents
+        const subtotalAmount = Math.round(finalSubtotalInDollars * 100) // Convert to cents
 
         // Build initial display items
         const itemLines: Stripe.PaymentRequestItem[] =
@@ -153,10 +162,18 @@ export function ExpressCheckoutButton({
 
         const displayItems = buildDisplayItems(
           itemLines,
-          subtotalAmount,
+          rawSubtotalAmount, // Show raw subtotal
           0, // Initial shipping
-          subtotalAmount
+          subtotalAmount // Adjusted total
         )
+        
+        if (isFirstOrder) {
+          // Splice discount indicator before total
+          displayItems.splice(displayItems.length - 2, 0, {
+            label: (t("checkout.welcomeDiscount") || "Welcome Discount") + " (-10%)",
+            amount: 0
+          })
+        }
 
         // Create PaymentRequest
         const pr = stripe.paymentRequest({
@@ -195,134 +212,25 @@ export function ExpressCheckoutButton({
          */
         pr.on("shippingaddresschange", async (event) => {
           try {
-            const shippingAddress = event.shippingAddress as any
-
-            // Find matching country
-            const matchedCountry = countries.find(
-              (c) =>
-                c.code?.toUpperCase() ===
-                (shippingAddress?.country || "").toUpperCase()
-            )
-
-            if (!matchedCountry) {
-              setComponentError(
-                t("countryNotSupported") || "This country is not supported"
-              )
+            const updateDetails = await hookHandleShippingAddressChange({
+              address: event.shippingAddress,
+              subtotalAmount: rawSubtotalAmount, // send raw subtotal, hook will subtract discount
+              baseItems: itemLines,
+              currencyCode: currency.toUpperCase()
+            })
+            
+            // Re-apply component state from hook payload
+            if (updateDetails.shippingOptions && updateDetails.shippingOptions.length > 0) {
+              setShippingOptions(updateDetails.shippingOptions as ShippingOption[])
+              setSelectedShippingId(updateDetails.shippingOptions[0].id)
+              setShippingAvailable(true)
+              setComponentError(null)
+            } else {
               setShippingAvailable(false)
-              event.updateWith({
-                status: "invalid_shipping_address",
-                shippingOptions: [],
-                displayItems: buildDisplayItems(
-                  itemLines,
-                  subtotalAmount,
-                  0,
-                  subtotalAmount
-                ),
-                total: {
-                  label: t("expressCheckout.totalLabel") || "Total",
-                  amount: subtotalAmount,
-                  pending: false,
-                },
-              })
-              return
+              setComponentError("Shipping not available")
             }
 
-            // Extract city from address (try multiple conventions)
-            const city =
-              shippingAddress?.city?.trim() ||
-              shippingAddress?.locality?.trim() ||
-              shippingAddress?.town?.trim() ||
-              shippingAddress?.administrativeArea?.trim() ||
-              ""
-
-            // Calculate shipping cost
-            const countryCode = shippingAddress?.country || "AE"
-            const shippingResponse = await calculateShipping({
-              countryCode,
-              city,
-              currencyCode: currency.toUpperCase(),
-              subtotalAmount,
-            })
-
-            const statusValue = shippingResponse?.status?.toLowerCase()
-            const statusOk =
-              !statusValue ||
-              statusValue === "available" ||
-              statusValue === "success" ||
-              statusValue === "ok"
-
-            const price =
-              shippingResponse?.shippingPrice ??
-              (shippingResponse as any)?.shippingCost
-            const hasValidPrice = typeof price === "number"
-            const isExplicitlyUnavailable = shippingResponse?.available === false
-
-            // Check if shipping is available
-            if (isExplicitlyUnavailable || (!hasValidPrice && !statusOk)) {
-              setComponentError(
-                shippingResponse?.message ||
-                  t("shipping.not_available") ||
-                  "Shipping not available for this location"
-              )
-              setShippingAvailable(false)
-              event.updateWith({
-                status: "invalid_shipping_address",
-                shippingOptions: [],
-                displayItems: buildDisplayItems(
-                  itemLines,
-                  subtotalAmount,
-                  0,
-                  subtotalAmount
-                ),
-                total: {
-                  label: t("expressCheckout.totalLabel") || "Total",
-                  amount: subtotalAmount,
-                  pending: false,
-                },
-              })
-              return
-            }
-
-            // Calculate final totals with shipping
-            const shippingAmount = Math.round((price || 0) * 100)
-            const computedTotal = subtotalAmount + shippingAmount
-
-            const estimatedDays =
-              shippingResponse.estimatedDays ||
-              shippingResponse.estimatedDeliveryDays ||
-              shippingResponse.deliveryDays ||
-              ""
-
-            const options: ShippingOption[] = [
-              {
-                id: `${matchedCountry.id}-calculated`,
-                label: t("shipping.standard") || "Shipping",
-                detail: estimatedDays ? `${estimatedDays}` : "",
-                amount: shippingAmount,
-              },
-            ]
-
-            setShippingOptions(options)
-            setSelectedShippingId(options[0].id)
-            setComponentError(null)
-            setShippingAvailable(true)
-
-            // Update payment request with shipping details
-            event.updateWith({
-              status: "success",
-              shippingOptions: options,
-              displayItems: buildDisplayItems(
-                itemLines,
-                subtotalAmount,
-                shippingAmount,
-                computedTotal
-              ),
-              total: {
-                label: t("expressCheckout.totalLabel") || "Total",
-                amount: computedTotal,
-                pending: false,
-              },
-            })
+            event.updateWith(updateDetails as Stripe.PaymentRequestUpdateDetails)
           } catch (err) {
             console.error("[Express Checkout] Shipping calculation failed:", err)
             setComponentError(
@@ -334,7 +242,7 @@ export function ExpressCheckoutButton({
               shippingOptions: [],
               displayItems: buildDisplayItems(
                 itemLines,
-                subtotalAmount,
+                rawSubtotalAmount,
                 0,
                 subtotalAmount
               ),

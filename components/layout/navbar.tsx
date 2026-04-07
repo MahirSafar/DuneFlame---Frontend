@@ -21,6 +21,19 @@ export default function Navbar() {
   const t = useTranslations('common.nav')
   const tFooter = useTranslations('common.footer')
   const lastScrollY = useRef(0)
+  const [activeBannerIndex, setActiveBannerIndex] = useState(0)
+
+  const bannerMessages = [
+    tFooter('freeShippingBanner'),
+    "🎉 10% Welcome Discount on your first order!"
+  ]
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveBannerIndex((prev) => (prev + 1) % bannerMessages.length)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [bannerMessages.length])
 
   // Load basket from backend when user logs in
   useEffect(() => {
@@ -82,10 +95,22 @@ export default function Navbar() {
       {/* Free Shipping Note */}
       {isHidden && (
         <div
-          className="w-full text-center py-2 text-sm font-semibold transition-opacity duration-300 animate-in fade-in z-60 fixed top-0 left-0"
+          className="w-full text-center text-sm font-semibold transition-opacity duration-300 animate-in fade-in z-60 fixed top-0 left-0 overflow-hidden h-9"
           style={{ backgroundColor: "#2b1b13", color: "white" }}
         >
-          {tFooter('freeShippingBanner')}
+          <div
+            className="flex flex-col transition-transform duration-500 ease-in-out w-full"
+            style={{ transform: `translateY(-${activeBannerIndex * 36}px)` }}
+          >
+            {bannerMessages.map((msg, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-center w-full h-9 px-4 shrink-0"
+              >
+                {msg}
+              </div>
+            ))}
+          </div>
         </div>
       )}
       <nav 
@@ -102,7 +127,7 @@ export default function Navbar() {
               width={96}
               height={96}
               quality={60}
-              className="w-8 sm:w-10 md:w-12 h-8 sm:h-10 md:h-12 rounded-full group-hover:scale-110 transition-smooth"
+              className="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 object-contain group-hover:scale-110 transition-smooth"
               style={{ display: "block" }}
             />
           </Link>

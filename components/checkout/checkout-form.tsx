@@ -355,6 +355,7 @@ export default function CheckoutForm() {
   const userFirstName = useAuthStore((state) => state.user?.firstName)
   const userLastName = useAuthStore((state) => state.user?.lastName)
   const userEmail = useAuthStore((state) => state.user?.email)
+  const hasOrders = useAuthStore((state) => state.user?.hasOrders)
   const locale = useLocale()
   const t = useTranslations("checkout")
   const isArabic = locale === "ar"
@@ -824,7 +825,12 @@ export default function CheckoutForm() {
         shipping = 0
       }
       
-      const subtotalWithShipping = subtotal + shipping
+      const currentAuthState = useAuthStore.getState();
+      const isFirstOrder = !isGuest && !!userId && currentAuthState.user?.hasOrders === false;
+      const welcomeDiscount = isFirstOrder ? subtotal * 0.10 : 0;
+      const subtotalAfterWelcome = subtotal - welcomeDiscount;
+      
+      const subtotalWithShipping = subtotalAfterWelcome + shipping
       const rewardDiscount = usePoints ? Math.min(rewardBalance, subtotalWithShipping) : 0
       const calculatedOrderTotal = subtotalWithShipping - rewardDiscount
       const isZeroPayment = calculatedOrderTotal <= 0
@@ -955,7 +961,11 @@ export default function CheckoutForm() {
     shipping = 0
   }
   
-  const subtotalWithShipping = subtotal + shipping
+  const isFirstOrder = !isGuest && !!userId && hasOrders === false;
+  const welcomeDiscount = isFirstOrder ? subtotal * 0.10 : 0;
+  const subtotalAfterWelcome = subtotal - welcomeDiscount;
+  
+  const subtotalWithShipping = subtotalAfterWelcome + shipping
   
   // Calculate reward discount
   const rewardDiscount = usePoints ? Math.min(rewardBalance, subtotalWithShipping) : 0
@@ -1299,6 +1309,21 @@ export default function CheckoutForm() {
 
               {/* Price Breakdown */}
               <div className="space-y-3">
+                {/* 1. Subtotal */}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("subtotal")}</span>
+                  <FormattedPrice amount={subtotal} />
+                </div>
+
+                {/* 2. Welcome Discount */}
+                {welcomeDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-[rgb(31,111,120)] font-medium">
+                    <span>Welcome Discount (10%)</span>
+                    <span className="text-green-600">-<FormattedPrice amount={welcomeDiscount} /></span>
+                  </div>
+                )}
+
+                {/* 3. Shipping */}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
                     {t("shipping")} {shippingAddress.country && `(${shippingAddress.country})`}
@@ -1332,12 +1357,6 @@ export default function CheckoutForm() {
 
                 {/* Divider */}
                 <div className="border-t border-border" />
-
-                {/* Subtotal with Shipping */}
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">{t("subtotal")}</span>
-                  <FormattedPrice amount={subtotalWithShipping} />
-                </div>
 
                 {/* Reward Points Toggle */}
                 {userId && rewardBalance > 0 && (
