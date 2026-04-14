@@ -19,7 +19,7 @@ const instance = axios.create({
 
 // Request interceptor with currency and auth headers
 instance.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // Add auth token (ONLY on client - SSR safe)
     if (typeof window !== "undefined") {
       const token = useAuthStore.getState().accessToken;
@@ -28,9 +28,25 @@ instance.interceptors.request.use(
       }
     }
 
-    // Add currency header - ALWAYS reads from latest storage value
-    const currency = getCurrencyFromStorage();
+    // Add currency header
+    let currency = "AED";
+    if (typeof window === "undefined") {
+      try {
+        const { cookies } = await import("next/headers");
+        const cookieStore = await cookies();
+        currency = cookieStore.get("NEXT_CURRENCY")?.value || "AED";
+      } catch (e) {
+        // Fallback to AED on error
+      }
+    } else {
+      const match = document.cookie.match(/(^| )NEXT_CURRENCY=([^;]+)/);
+      if (match) {
+        currency = match[2];
+      }
+    }
+
     if (config.headers) {
+      config.headers["Currency"] = currency;
       config.headers["X-Currency"] = currency;
     }
 

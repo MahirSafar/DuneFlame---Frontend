@@ -86,7 +86,7 @@ export default function ProductsPage() {
         // Calculate min/max prices from fetched products, filtered by current currency
         if (result.items.length > 0) {
           const allPrices = result.items.flatMap(p => 
-            p.availablePrices?.filter(ap => ap.currencyCode === currency)?.map(ap => ap.price) || []
+            p.variants?.map(v => v.price) || []
           );
           if (allPrices.length > 0) {
             const min = Math.floor(Math.min(...allPrices));
@@ -96,7 +96,7 @@ export default function ProductsPage() {
           } else {
             // Fallback: try to get ALL prices regardless of currency
             const allPricesFallback = result.items.flatMap(p => 
-              p.availablePrices?.map(ap => ap.price) || []
+              p.variants?.map(v => v.price) || []
             );
             if (allPricesFallback.length > 0) {
               const min = Math.floor(Math.min(...allPricesFallback));

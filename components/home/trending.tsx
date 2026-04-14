@@ -13,7 +13,7 @@ async function getTrendingProducts() {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dune-flame-backend-180239181668.me-central1.run.app';
     const res = await fetch(`${baseUrl}/api/v1/products?pageNumber=1&pageSize=4`, {
-      next: { revalidate: 3600 }
+      next: { revalidate: 1800 }
     });
     
     if (!res.ok) {

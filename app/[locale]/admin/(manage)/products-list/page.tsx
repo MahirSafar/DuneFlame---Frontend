@@ -127,10 +127,10 @@ export default function AdminProductListPage() {
 
   // Get minimum price
   const getMinPrice = (product: AdminProductResponse): number => {
-    if (!product.availablePrices || product.availablePrices.length === 0) {
+    if (!product.variants || product.variants.length === 0) {
       return 0;
     }
-    return Math.min(...product.availablePrices.map((p) => p.price));
+    return Math.min(...product.variants.map((p) => p.price));
   };
 
   // Render product row
@@ -138,7 +138,7 @@ export default function AdminProductListPage() {
     const minPrice = getMinPrice(product);
     const mainImage = getMainImage(product);
     const stockColor =
-      product.stockInKg === 0
+      (product.variants?.[0]?.stockQuantity || 0) === 0
         ? "bg-destructive/10 text-destructive"
         : "bg-green-500/10 text-green-600";
 
@@ -178,7 +178,7 @@ export default function AdminProductListPage() {
         {/* Stock */}
         <TableCell>
           <Badge className={stockColor}>
-            {product.stockInKg} kg
+            {(product.variants?.[0]?.stockQuantity || 0)} kg
           </Badge>
         </TableCell>
 

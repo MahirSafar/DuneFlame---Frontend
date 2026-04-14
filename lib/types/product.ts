@@ -21,11 +21,17 @@ export interface ProductImageDto {
 }
 
 export interface ProductPriceDto {
-  productPriceId: string;
+  productVariantId: string;
   weightLabel: string;
   grams: number;
   price: number;
   currencyCode: string;
+}
+
+export interface ProductTranslationDto {
+  languageCode: string;
+  name: string;
+  description: string;
 }
 
 export interface FlavourNoteDto {
@@ -35,22 +41,43 @@ export interface FlavourNoteDto {
   translations?: { languageCode: string; name: string }[];
 }
 
+export interface ProductCoffeeProfileDto {
+  originId: string | null;
+  originName: string | null;
+  roastLevelNames: string[];
+  grindTypeNames: string[];
+  roastLevelIds: string[];
+  grindTypeIds: string[];
+  flavourNotes: FlavourNoteDto[];
+}
+
+export interface VariantOptionDto {
+  attributeName: string;
+  value: string;
+}
+
+export interface VariantDto {
+  id: string;
+  sku: string;
+  price: number;
+  prices?: { currencyCode: string; price: number }[];
+  stockQuantity: number | null;
+  options: VariantOptionDto[];
+}
+
 export interface Product {
   id: string;
   name: string;
   slug: string;
   description: string;
-  stockInKg: number;
   isActive: boolean;
   categoryId: string;
   categoryName: string;
-  originId: string | null;
-  originName: string | null;
-  roastLevelIds: string[];
-  grindTypeIds: string[];
-  flavourNotes: FlavourNoteDto[];
-  activePrice: ProductPriceDto | null;
-  otherAvailableCurrencies: ProductPriceDto[];
+  translations: ProductTranslationDto[];
+  coffeeProfile: ProductCoffeeProfileDto | null;
+  variants: VariantDto[];
+  createdAt: string;
+  updatedAt: string | null;
   images: ProductImageDto[];
 }
 
@@ -64,18 +91,16 @@ export interface ProductPage {
 /**
  * AdminProductResponse type definition
  */
-export interface AdminProductResponse extends Product {
-  availablePrices: ProductPriceDto[];
-}
+export type AdminProductResponse = Product;
 
 /**
  * Minimum price helper
  */
 export function getMinPrice(product: AdminProductResponse): number {
-  if (!product.availablePrices || product.availablePrices.length === 0) {
+  if (!product.variants || product.variants.length === 0) {
     return 0;
   }
-  return Math.min(...product.availablePrices.map((p) => p.price));
+  return Math.min(...product.variants.map((v) => v.price));
 }
 
 /**

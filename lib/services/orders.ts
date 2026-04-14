@@ -28,10 +28,14 @@ export interface PagedResult<T> {
 
 export interface OrderItem {
   id: string;
-  productId: string;
+  orderId: string;
+  productVariantId: string;
   productName: string;
   unitPrice: number;
   quantity: number;
+  currencyCode: string;
+  selectedRoastLevelName?: string;
+  selectedGrindTypeName?: string;
 }
 
 export interface Order {

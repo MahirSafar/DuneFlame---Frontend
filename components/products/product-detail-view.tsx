@@ -9,7 +9,6 @@ import type { ProductResponse } from "@/lib/services/products"
 import { useAddToCart } from "@/hooks/use-add-to-cart"
 import { getImageUrl } from "@/lib/utils"
 import { useCurrency } from "@/hooks/use-currency"
-import { getAvailableWeights, resolvePrice, type ProductWithPricing } from "@/lib/currency-utils"
 import { FormattedPrice } from "@/components/currency/formatted-price"
 import { EMPTY_GUID } from "@/lib/cart-store"
 import { ProductQuickBuy } from "@/components/products/product-quick-buy"
@@ -37,42 +36,47 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
 
   // Get translated product name with fallback to default
   const productName = useMemo(() => {
-    const translation = product.nameTranslations?.find(tr => tr.languageCode === locale)
-      || product.nameTranslations?.find(tr => tr.languageCode === 'en')
+    const translation = product.translations?.find(tr => tr.languageCode === locale)
+      || product.translations?.find(tr => tr.languageCode === 'en')
     return translation?.name || product.name
   }, [product, locale])
 
   // Get translated product description with fallback to default
   const productDescription = useMemo(() => {
-    const translation = product.descriptionTranslations?.find(tr => tr.languageCode === locale)
-      || product.descriptionTranslations?.find(tr => tr.languageCode === 'en')
+    const translation = product.translations?.find(tr => tr.languageCode === locale)
+      || product.translations?.find(tr => tr.languageCode === 'en')
     return translation?.description || product.description
   }, [product, locale])
   const [selectedImageId, setSelectedImageId] = useState<string | undefined>(
     product.images?.find((image) => image.isMain)?.id || product.images?.[0]?.id,
   )
-  const [selectedWeight, setSelectedWeight] = useState<number | undefined>(undefined)
+  // Default weight: replace with variant selection
+  const variants = product.variants || [];
+  const defaultVariant = variants[0];
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(defaultVariant?.id || "");
+
+  useEffect(() => {
+    if (variants.length > 0 && (!selectedVariantId || !variants.find(v => v.id === selectedVariantId))) {
+      setSelectedVariantId(variants[0].id);
+    }
+  }, [variants, selectedVariantId]);
+
+  const selectedVariant = useMemo(() => variants.find(v => v.id === selectedVariantId) || defaultVariant, [selectedVariantId, variants, defaultVariant]);
+  
   const [selectedRoast, setSelectedRoast] = useState<string>("")
   const [selectedGrind, setSelectedGrind] = useState<string>("")
 
   // Initialize defaults when product loads
   useEffect(() => {
     if (product) {
-      // Default weight: smallest available or first from availablePrices
-      const weights = getAvailableWeights(product as unknown as ProductWithPricing)
-      const defaultWeight = weights[0] ?? product.availablePrices?.[0]?.grams
-      setSelectedWeight(defaultWeight)
       // Default attributes
-      if (product.roastLevelNames?.length) setSelectedRoast(product.roastLevelNames[0])
-      if (product.grindTypeNames?.length) setSelectedGrind(product.grindTypeNames[0])
+      if (product.coffeeProfile?.roastLevelNames?.length) setSelectedRoast(product.coffeeProfile.roastLevelNames[0])
+      if (product.coffeeProfile?.grindTypeNames?.length) setSelectedGrind(product.coffeeProfile.grindTypeNames[0])
     }
   }, [product])
 
-
-
-  // Handler for weight selection (grams-based)
-  const handleWeightSelect = (grams: number) => {
-    setSelectedWeight(grams)
+  const handleVariantSelect = (id: string) => {
+    setSelectedVariantId(id)
   }
 
   const mainImage = useMemo(
@@ -88,33 +92,27 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
 
   const galleryImages = useMemo(() => product.images?.filter((img) => img.imageUrl) ?? [], [product.images])
 
-  // Resolve current price using backend-compatible helper
-  const resolved = useMemo(() => {
-    const result = resolvePrice(product as unknown as ProductWithPricing, currency, selectedWeight)
-    return result
-  }, [product, currency, selectedWeight])
-
   const selectedRoastIndex = useMemo(
-    () => product.roastLevelNames?.indexOf(selectedRoast) ?? -1,
-    [product.roastLevelNames, selectedRoast],
+    () => product.coffeeProfile?.roastLevelNames?.indexOf(selectedRoast) ?? -1,
+    [product.coffeeProfile, selectedRoast],
   )
 
   const selectedGrindIndex = useMemo(
-    () => product.grindTypeNames?.indexOf(selectedGrind) ?? -1,
-    [product.grindTypeNames, selectedGrind],
+    () => product.coffeeProfile?.grindTypeNames?.indexOf(selectedGrind) ?? -1,
+    [product.coffeeProfile, selectedGrind],
   )
 
   const selectedRoastId = useMemo(
-    () => (selectedRoastIndex >= 0 ? product.roastLevelIds?.[selectedRoastIndex] : EMPTY_GUID),
-    [product.roastLevelIds, selectedRoastIndex],
+    () => (selectedRoastIndex >= 0 ? product.coffeeProfile?.roastLevelIds?.[selectedRoastIndex] : EMPTY_GUID),
+    [product.coffeeProfile, selectedRoastIndex],
   )
 
   const selectedGrindId = useMemo(
-    () => (selectedGrindIndex >= 0 ? product.grindTypeIds?.[selectedGrindIndex] : EMPTY_GUID),
-    [product.grindTypeIds, selectedGrindIndex],
+    () => (selectedGrindIndex >= 0 ? product.coffeeProfile?.grindTypeIds?.[selectedGrindIndex] : EMPTY_GUID),
+    [product.coffeeProfile, selectedGrindIndex],
   )
 
-  const currentPrice = resolved?.price ?? 0
+  const currentPrice = selectedVariant?.prices?.find((p: any) => p.currencyCode === currency)?.price ?? selectedVariant?.price ?? 0
 
   const productJsonLd = useMemo(() => {
     const offerCurrency = (currency || "USD").toUpperCase()
@@ -129,15 +127,15 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
         "@type": "Offer",
         priceCurrency: offerCurrency,
         price: currentPrice,
-        availability: product.stockInKg > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        availability: (selectedVariant?.stockQuantity ?? 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       },
       // Reflect currently selected options so rich results stay aligned with UI state.
       additionalProperty: [
-        selectedWeight
+        selectedVariant
           ? {
               "@type": "PropertyValue",
-              name: "Weight",
-              value: formatWeight(selectedWeight),
+              name: "Variant",
+              value: selectedVariant.sku,
             }
           : null,
         selectedRoast
@@ -156,38 +154,24 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           : null,
       ].filter(Boolean),
     }
-  }, [currency, currentPrice, mainImage, product.stockInKg, productDescription, productName, selectedGrind, selectedRoast, selectedWeight])
+  }, [currency, currentPrice, mainImage, selectedVariant, productDescription, productName, selectedGrind, selectedRoast, selectedVariantId])
   
-  // DEBUG: Log if price resolution failed
-  if (!resolved) {
-  }
-
-  // Determine productPriceId and labels for add-to-cart
-  const selectedEntry = useMemo(() => {
-    const legacy = product.availablePrices?.find((p) => p.grams === selectedWeight)
-    return {
-      productPriceId: resolved?.productPriceId || legacy?.productPriceId || "",
-      grams: selectedWeight,
-      weightLabel: resolved?.weightLabel || legacy?.weightLabel,
-    }
-  }, [resolved, selectedWeight, product.availablePrices])
-
   const handleAddToCart = () => {
     addToCart(product, quantity, {
-      productPriceId: selectedEntry.productPriceId, // CRITICAL: Pass the GUID
+      productVariantId: selectedVariant?.id || "",
+      prices: selectedVariant?.prices || [],
       price: currentPrice,
-      weightLabel: selectedEntry.weightLabel,
-      grams: selectedEntry.grams,
-      selectedWeight: selectedWeight,  // CRITICAL: Pass selected weight in grams
+      sku: selectedVariant?.sku || "",
+      attributes: selectedVariant?.options?.map(o => `${o.attributeName}: ${o.value}`) || [],
       roastLevelId: selectedRoastId || EMPTY_GUID,
       roastLevelName: selectedRoast,
       grindTypeId: selectedGrindId || EMPTY_GUID,
       grindTypeName: selectedGrind,
-      variantKey: `${product.id}-${selectedEntry.productPriceId}-${selectedRoastId}-${selectedGrindId}`,
+      imageUrl: mainImage || undefined,
     })
   }
 
-  const hasValidSelection = Boolean(selectedWeight && selectedEntry.productPriceId)
+  const hasValidSelection = Boolean(selectedVariant)
   const isPriceAvailable = currentPrice > 0
 
   return (
@@ -234,7 +218,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
         )}
 
         <div className="absolute right-6 bottom-6 z-20 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs text-white backdrop-blur">
-          {product.stockInKg > 0 ? t('detail.inStock') : t('detail.limitedStock')}
+          {(selectedVariant?.stockQuantity ?? 0) > 0 ? t('detail.inStock') : t('detail.limitedStock')}
         </div>
 
         {galleryImages.length > 1 && (
@@ -267,7 +251,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
             {/* Removed category badge span as requested */}
             <div className="flex items-center gap-2">
               <Leaf size={14} className="text-accent" />
-              <span>{product.originName || "DuneFlame Reserve"}</span>
+                <span>{product.coffeeProfile?.originName || "DuneFlame Reserve"}</span>
             </div>
           </div>
 
@@ -282,62 +266,56 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           <div className="glass rounded-2xl border border-white/5 p-4 space-y-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('weight')}</p>
             <div className="grid grid-cols-2 gap-2">
-              {(getAvailableWeights(product as unknown as ProductWithPricing)).map((grams) => {
-                const label = product.availablePrices?.find(p => p.grams === grams)?.weightLabel ?? formatWeight(grams)
-                // CRITICAL: Resolve price for THIS currency and weight combination
-                const priceForWeight = resolvePrice(product as unknown as ProductWithPricing, currency, grams)?.price ?? 0
-                return (
-                  <button
-                    key={grams}
-                    onClick={() => {
-                      handleWeightSelect(grams)
-                    }}
-                    className={`flex flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:border-espresso-brown ${
-                      selectedWeight === grams ? "border-espresso-brown bg-espresso-brown/10" : "border-white/10"
-                    }`}
-                  >
-                    <span className="font-semibold text-espresso-brown dark:text-espresso-brown">{label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="glass rounded-2xl border border-white/5 p-4 space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('roastLevel')}</p>
-            <div className="flex flex-wrap gap-2">
-              {(product.roastLevelNames || []).map((name) => (
-                <button
-                  key={name}
-                  onClick={() => setSelectedRoast(name)}
-                  className={`rounded-full px-3 py-1 text-sm transition border ${
-                    selectedRoast === name ? "border-[#2b1b13] bg-[#2b1b13]/10 text-[#2b1b13]" : "border-transparent text-[#2b1b13] dark:text-[#2b1b13]"
-                  }`}
-                >
-                  {name}
-                </button>
-              ))}
+                {product.variants?.map((variant) => {
+                  const label = variant.options?.find(o => o.attributeName.toLowerCase() === 'weight')?.value || variant.sku;
+                  return (
+                    <button
+                      key={variant.id}
+                      onClick={() => handleVariantSelect(variant.id)}
+                      className={`flex flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:border-espresso-brown ${
+                        selectedVariantId === variant.id ? "border-espresso-brown bg-espresso-brown/10" : "border-white/10"
+                      }`}
+                    >
+                      <span className="font-semibold text-espresso-brown dark:text-espresso-brown">{label}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('grindType')}</p>
-            <div className="flex flex-wrap gap-2">
-              {(product.grindTypeNames || []).map((name) => (
-                <button
-                  key={name}
-                  onClick={() => setSelectedGrind(name)}
-                  className={`rounded-full px-3 py-1 text-sm transition border ${
-                    selectedGrind === name ? "border-[#2b1b13] bg-[#2b1b13]/10 text-[#2b1b13]" : "border-transparent text-[#2b1b13] dark:text-[#2b1b13]"
-                  }`}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+            {product.coffeeProfile && (
+              <div className="glass rounded-2xl border border-white/5 p-4 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('roastLevel')}</p>
+                <div className="flex flex-wrap gap-2">
+                  {(product.coffeeProfile.roastLevelNames || []).map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => setSelectedRoast(name)}
+                      className={`rounded-full px-3 py-1 text-sm transition border ${
+                        selectedRoast === name ? "border-[#2b1b13] bg-[#2b1b13]/10 text-[#2b1b13]" : "border-transparent text-[#2b1b13] dark:text-[#2b1b13]"
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-lg">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('grindType')}</p>
+                <div className="flex flex-wrap gap-2">
+                  {(product.coffeeProfile.grindTypeNames || []).map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => setSelectedGrind(name)}
+                      className={`rounded-full px-3 py-1 text-sm transition border ${
+                        selectedGrind === name ? "border-[#2b1b13] bg-[#2b1b13]/10 text-[#2b1b13]" : "border-transparent text-[#2b1b13] dark:text-[#2b1b13]"
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <p className="text-sm text-muted-foreground">
                 {currentPrice > 0 ? t('craftedForMornings') : t('selectWeightAndCurrency')}
@@ -372,7 +350,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           <div className="mt-6 flex flex-col gap-3">
             <button
               onClick={handleAddToCart}
-              disabled={product.stockInKg <= 0 || !selectedWeight || !resolved}
+              disabled={(selectedVariant?.stockQuantity ?? 0) <= 0 || !selectedVariant}
               style={{
                 backgroundColor: 'rgb(56, 109, 118)',
                 color: '#fff',
@@ -389,7 +367,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                 transition: 'box-shadow 0.2s, background 0.2s',
               }}
               className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
-              title={!resolved ? t('priceNotLoaded') : undefined}
+
               onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
               onMouseOut={e => (e.currentTarget.style.backgroundColor = 'rgb(56, 109, 118)')}
             >
@@ -401,8 +379,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
               <StripeElementsProvider>
                 <ProductQuickBuy
                   product={product}
-                  selectedWeight={selectedWeight}
-                  selectedWeightId={selectedEntry.productPriceId}
+                    selectedVariantId={selectedVariantId}
                   selectedRoast={selectedRoast}
                   selectedGrind={selectedGrind}
                   quantity={quantity}
@@ -424,7 +401,6 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
               {t('sustainableSourcing')}
             </span>
           </div>
-        </div>
       </motion.div>
     </motion.section>
   )

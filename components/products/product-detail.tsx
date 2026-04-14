@@ -32,7 +32,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         <div>
           <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="text-accent font-semibold text-sm uppercase tracking-wider mb-2">{product.originName || 'Origin'}</p>
+              <p className="text-accent font-semibold text-sm uppercase tracking-wider mb-2">{product.coffeeProfile?.originName || 'Origin'}</p>
               <h1 className="text-4xl font-bold text-primary dark:text-secondary">{product.name}</h1>
             </div>
             <button
@@ -64,18 +64,18 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">Roast Level</p>
-                <p className="font-semibold text-[#2b1b13] dark:text-[#2b1b13]">{product.roastLevelNames?.[0] || 'N/A'}</p>
+                <p className="font-semibold text-[#2b1b13] dark:text-[#2b1b13]">{product.coffeeProfile?.roastLevelNames?.[0] || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">Grind Type</p>
-                <p className="font-semibold text-[#2b1b13] dark:text-[#2b1b13]">{product.grindTypeNames?.[0] || 'N/A'}</p>
+                <p className="font-semibold text-[#2b1b13] dark:text-[#2b1b13]">{product.coffeeProfile?.grindTypeNames?.[0] || 'N/A'}</p>
               </div>
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-semibold uppercase mb-2">Flavor Notes</p>
               <div className="flex flex-wrap gap-2">
-                {Array.isArray(product.flavourNotes) && product.flavourNotes.length > 0
-                  ? product.flavourNotes.map((note: any) => {
+                {Array.isArray(product.coffeeProfile?.flavourNotes) && product.coffeeProfile?.flavourNotes.length > 0
+                  ? product.coffeeProfile?.flavourNotes.map((note: any) => {
                       const translation = note.translations?.find((tr: any) => tr.languageCode === locale)
                         || note.translations?.find((tr: any) => tr.languageCode === 'en');
                       return (
@@ -93,7 +93,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         {/* Purchase Section */}
         <div className="glass rounded-xl p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-3xl font-bold text-primary dark:text-secondary">${product.availablePrices?.[0]?.price || 'N/A'}</span>
+            <span className="text-3xl font-bold text-primary dark:text-secondary">${product.variants?.[0]?.price || 'N/A'}</span>
             <span className="text-sm text-muted-foreground">In Stock</span>
           </div>
 
@@ -110,7 +110,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 +
               </button>
             </div>
-            <span className="text-lg font-semibold text-accent">${((product.availablePrices?.[0]?.price || 0) * quantity).toFixed(2)}</span>
+            <span className="text-lg font-semibold text-accent">${((product.variants?.[0]?.price || 0) * quantity).toFixed(2)}</span>
           </div>
 
           <button

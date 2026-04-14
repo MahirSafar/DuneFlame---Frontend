@@ -16,8 +16,7 @@ import type { ProductResponse } from "@/lib/services/products"
 
 interface ProductQuickBuyProps {
   product: ProductResponse
-  selectedWeight: number | undefined
-  selectedWeightId: string
+  selectedVariantId: string
   selectedRoast: string
   selectedGrind: string
   quantity?: number
@@ -33,8 +32,7 @@ interface ProductQuickBuyProps {
  */
 export function ProductQuickBuy({
   product,
-  selectedWeight,
-  selectedWeightId,
+  selectedVariantId,
   selectedRoast,
   selectedGrind,
   quantity = 1,
@@ -76,7 +74,7 @@ export function ProductQuickBuy({
       !containerRef.current ||
       !hasValidSelection ||
       !isPriceAvailable ||
-      !selectedWeight
+      !selectedVariantId
     ) {
       if (containerRef.current && (!hasValidSelection || !isPriceAvailable)) {
         containerRef.current.style.display = "none"
@@ -189,29 +187,20 @@ export function ProductQuickBuy({
             // 1. Create temporary basket for this single product
             const basketId = user?.id || "guest_" + Math.random().toString(36).substring(2, 11)
 
-            // 2. Find Roast and Grind IDs
-            const roastIndex = product.roastLevelNames?.indexOf(selectedRoast) ?? -1
-            const roastLevelId = roastIndex >= 0 ? product.roastLevelIds?.[roastIndex] : EMPTY_GUID
-
-            const grindIndex = product.grindTypeNames?.indexOf(selectedGrind) ?? -1
-            const grindTypeId = grindIndex >= 0 ? product.grindTypeIds?.[grindIndex] : EMPTY_GUID
+            // 2. Find Variant
+            const variant = product.variants?.find((v) => v.id === selectedVariantId)
+            const imageUrl = product.images?.[0]?.imageUrl || ""
 
             // 3. Create product variant item
             const basketItems = [
               {
                 productId: product.id,
-                productPriceId: selectedWeightId,
+                productVariantId: selectedVariantId,
                 productName: product.name,
                 slug: product.slug,
                 price: currentPrice,
                 quantity,
-                imageUrl: product.images?.[0]?.imageUrl || "",
-                weightLabel: `${selectedWeight}g`,
-                grams: selectedWeight,
-                roastLevelId,
-                roastLevelName: selectedRoast,
-                grindTypeId,
-                grindTypeName: selectedGrind,
+                imageUrl,
               },
             ]
 
@@ -407,10 +396,9 @@ export function ProductQuickBuy({
     currency,
     hasValidSelection,
     isPriceAvailable,
-    selectedWeight,
+    selectedVariantId,
     product,
     currentPrice,
-    selectedWeightId,
     selectedRoast,
     selectedGrind,
     quantity,

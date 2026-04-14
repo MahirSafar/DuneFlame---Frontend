@@ -36,11 +36,11 @@ export async function generateMetadata({
   }
 
   const translatedName =
-    product.nameTranslations?.find((t) => t.languageCode === locale)?.name ||
+    product.translations?.find((t) => t.languageCode === locale)?.name ||
     product.name ||
     "DuneFlame Coffee"
   const translatedDescription =
-    product.descriptionTranslations?.find((t) => t.languageCode === locale)?.description ||
+    product.translations?.find((t) => t.languageCode === locale)?.description ||
     product.description ||
     "Premium Specialty Coffee by DuneFlame"
 
@@ -94,7 +94,7 @@ export default async function ProductPage({
   }
 
   return (
-    <main className="min-h-screen flex flex-col bg-gradient-to-b from-background to-background/70">
+    <main className="min-h-screen flex flex-col bg-linear-to-b from-background to-background/70">
       <Navbar />
       <div className="flex-1">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

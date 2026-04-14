@@ -3,7 +3,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { basketService, BasketItem } from "./services/basket"
-import { resolvePrice, type ProductWithPricing, type CurrencyType } from "./currency-utils"
+import { type ProductWithPricing, type CurrencyType } from "./currency-utils"
 import type { ProductResponse } from "./services/products"
 import { getProduct } from "./services/products"
 import { useAuthStore } from "./auth-store"
@@ -12,40 +12,37 @@ export const EMPTY_GUID = "00000000-0000-0000-0000-000000000000"
 
 export function generateVariantKey(
   productId: string,
-  priceId?: string,
+  variantId?: string,
   roastId?: string,
   grindId?: string
 ): string {
   // Strict normalization: force strings, lowercase, and trim
   const normalizedProductId = String(productId ?? "").toLowerCase().trim()
-  const normalizedPriceId = String(priceId ?? "").toLowerCase().trim()
+  const normalizedVariantId = String(variantId ?? "").toLowerCase().trim()
   const normalizedRoastId = String(roastId ?? EMPTY_GUID).toLowerCase().trim()
   const normalizedGrindId = String(grindId ?? EMPTY_GUID).toLowerCase().trim()
-  return `${normalizedProductId}-${normalizedPriceId}-${normalizedRoastId}-${normalizedGrindId}`
+  return `${normalizedProductId}-${normalizedVariantId}-${normalizedRoastId}-${normalizedGrindId}`
 }
 
 export interface CartItem {
   id: string
-  productPriceId: string
+  productId: string
+  productVariantId: string
   slug: string
   name: string
   price: number
+  prices?: { currencyCode: string; price: number }[]
   quantity: number
-  imageUrl: string
+  imageUrl?: string
+  sku: string
+  attributes: string[]
   variantKey?: string
-  weightLabel?: string
-  grams?: number
-  roastLevelId?: string
   roastLevelName?: string
-  grindTypeId?: string
   grindTypeName?: string
+  roastLevelId?: string
+  grindTypeId?: string
   cartItemId?: string
-  selectedWeightLabel?: string
-  selectedRoast?: string
-  selectedGrind?: string
-  priceUsed?: number
   product?: ProductResponse | ProductWithPricing
-  selectedWeight?: number
 }
 
 interface CartStore {
@@ -65,11 +62,7 @@ interface CartStore {
 const getItemKey = (item: Pick<CartItem, "id" | "variantKey">) => item.variantKey || item.id
 
 export const getItemPrice = (item: CartItem, currency: CurrencyType): number => {
-  if (item.product && item.selectedWeight !== undefined) {
-    const resolved = resolvePrice(item.product, currency, item.selectedWeight)
-    if (resolved?.price) return resolved.price
-  }
-  return item.priceUsed ?? item.price ?? 0
+  return item.prices?.find((p: any) => p.currencyCode === currency)?.price ?? item.price ?? 0
 }
 
 const syncWithBackend = async (items: CartItem[]) => {
@@ -112,19 +105,17 @@ const syncWithBackend = async (items: CartItem[]) => {
     } else {
       const basketItems: BasketItem[] = items.map((item) => ({
         id: item.cartItemId,
-        productId: item.id,
-        productPriceId: item.productPriceId,
+        productId: item.productId,
+        productVariantId: item.productVariantId,
         productName: item.name,
         slug: item.slug,
-        price: item.priceUsed ?? item.price,
+        price: item.price,
         quantity: item.quantity,
         imageUrl: item.imageUrl || "",
-        weightLabel: item.selectedWeightLabel || item.weightLabel || "Standard",
-        grams: item.grams || 0,
-        roastLevelId: item.roastLevelId || EMPTY_GUID,
-        roastLevelName: item.selectedRoast || item.roastLevelName || "Original",
-        grindTypeId: item.grindTypeId || EMPTY_GUID,
-        grindTypeName: item.selectedGrind || item.grindTypeName || "Whole Bean",
+        roastLevelId: item.roastLevelId,
+        roastLevelName: item.roastLevelName,
+        grindTypeId: item.grindTypeId,
+        grindTypeName: item.grindTypeName,
       }))
       
       // Send to backend with basketId in URL
@@ -146,7 +137,7 @@ export const useCartStore = create<CartStore>()(
 
       addItem: (item, isAuthenticated = false) =>
         set((state) => {
-          const variantKey = generateVariantKey(item.id, item.productPriceId, item.roastLevelId, item.grindTypeId)
+          const variantKey = generateVariantKey(item.productId, item.productVariantId, item.roastLevelId, item.grindTypeId)
           const itemWithKey = { ...item, variantKey }
 
           const existingItemIndex = state.items.findIndex((si) => si.variantKey === variantKey)
@@ -245,10 +236,8 @@ export const useCartStore = create<CartStore>()(
         .filter((item) => Boolean(item.slug))
         .map(async (item) => {
           const productId = (item.productId || "").toLowerCase().trim()
-          const productPriceId = (item.productPriceId || "").toLowerCase().trim()
-          const roastLevelId = (item.roastLevelId || EMPTY_GUID).toLowerCase().trim()
-          const grindTypeId = (item.grindTypeId || EMPTY_GUID).toLowerCase().trim()
-          const variantKey = generateVariantKey(productId, productPriceId, roastLevelId, grindTypeId)
+          const productVariantId = (item.productVariantId || "").toLowerCase().trim()
+          const variantKey = generateVariantKey(productId, productVariantId)
 
           // Debug log for server-loaded items and generated key
           try {
@@ -261,27 +250,24 @@ export const useCartStore = create<CartStore>()(
           }
 
           return {
-            id: productId,
-            productPriceId: productPriceId,
-            name: item.productName,
+            id: productId, // maintain id backwards compatibility if needed, or align with productId
+            productId: productId,
+            productVariantId: productVariantId,
+            name: item.productName || productData?.name || "Unknown",
             slug: item.slug!,
             price: item.price,
+            prices: productData?.variants?.find((v: any) => v.id === productVariantId)?.prices || [],
             quantity: item.quantity,
             imageUrl: item.imageUrl,
+            sku: "",
+            attributes: productData?.variants?.find((v: any) => v.id === productVariantId)?.options?.map((o: any) => `${o.attributeName}: ${o.value}`) || ["250g"],
             variantKey,
             cartItemId: item.id,
-            weightLabel: item.weightLabel,
-            grams: item.grams,
-            roastLevelId,
-            roastLevelName: item.roastLevelName,
-            grindTypeId,
-            grindTypeName: item.grindTypeName,
-            selectedWeightLabel: item.weightLabel,
-            selectedRoast: item.roastLevelName,
-            selectedGrind: item.grindTypeName,
-            priceUsed: item.price,
             product: productData,
-            selectedWeight: item.grams,
+            roastLevelId: item.roastLevelId,
+            roastLevelName: item.roastLevelName,
+            grindTypeId: item.grindTypeId,
+            grindTypeName: item.grindTypeName,
           }
         })
 
@@ -331,22 +317,19 @@ export const useCartStore = create<CartStore>()(
       // Convert current local items to BasketItem format
       const basketItems: BasketItem[] = itemsToSync.map((item) => ({
         id: item.cartItemId,
-        productId: item.id,
-        productPriceId: item.productPriceId,
-        productName: item.name,
-        slug: item.slug,
-        price: item.priceUsed ?? item.price,
-        quantity: item.quantity,
-        imageUrl: item.imageUrl || "",
-        weightLabel: item.selectedWeightLabel || item.weightLabel || "Standard",
-        grams: item.grams || 0,
-        roastLevelId: item.roastLevelId || EMPTY_GUID,
-        roastLevelName: item.selectedRoast || item.roastLevelName || "Original",
-        grindTypeId: item.grindTypeId || EMPTY_GUID,
-        grindTypeName: item.selectedGrind || item.grindTypeName || "Whole Bean",
-      }))
-      
-      // Send guest items to authenticated user's basket
+          productId: item.productId,
+          productVariantId: item.productVariantId,
+          productName: item.name,
+          slug: item.slug,
+          price: item.price,
+          quantity: item.quantity,
+          imageUrl: item.imageUrl || "",
+          roastLevelId: item.roastLevelId,
+          roastLevelName: item.roastLevelName,
+          grindTypeId: item.grindTypeId,
+          grindTypeName: item.grindTypeName,
+        }))
+
       await basketService.updateBasket({
         id: basketId,
         items: basketItems,

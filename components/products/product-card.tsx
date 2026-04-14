@@ -53,27 +53,16 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   const hasImage = Boolean(mainImage)
 
   const productUrl = product.slug ? `/coffee/${product.slug}` : `/coffee/${product.id}`
-  const defaultWeight = useMemo(() => {
-    const weights = getAvailableWeights(product as unknown as ProductWithPricing)
-    if (weights.length) return weights[0]
-    return product.availablePrices?.[0]?.grams
-  }, [product])
-
-  const resolved = useMemo(() => {
-    const result = resolvePrice(product as unknown as ProductWithPricing, currency, defaultWeight ?? undefined);
-    if (!result) {
-    }
-    return result;
-  }, [product, currency, defaultWeight])
+  const defaultVariant = product.variants?.[0]
   
   // Bulletproof: Always have a valid number for display
-  const displayPrice = resolved?.price ?? 0;
+  const displayPrice = defaultVariant?.prices?.find((p: any) => p.currencyCode === currency)?.price ?? defaultVariant?.price ?? 0;
   const isPriceAvailable = displayPrice > 0;
   
   let flavorNotes = t('products.card.signature');
-  if (Array.isArray(product.flavourNotes) && product.flavourNotes.length > 0) {
+  if (product.coffeeProfile && Array.isArray(product.coffeeProfile.flavourNotes) && product.coffeeProfile.flavourNotes.length > 0) {
     // Try to get translation for current locale, fallback to English, then fallback to name
-    flavorNotes = product.flavourNotes
+    flavorNotes = product.coffeeProfile.flavourNotes
       .map(note => {
         const translation = note.translations?.find(tr => tr.languageCode === locale)
           || note.translations?.find(tr => tr.languageCode === 'en');
@@ -81,7 +70,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
       })
       .join(", ");
   }
-  const origin = product.originName || product.categoryName || "DuneFlame"
+  const origin = product.coffeeProfile?.originName || product.categoryName || "DuneFlame"
 
   const openModal = (e: React.MouseEvent) => {
     e.preventDefault()

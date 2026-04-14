@@ -37,26 +37,18 @@ export interface ProductImageDto {
 
 export interface ProductResponse {
   id: string;
-  slug: string;
   name: string;
+  slug: string;
   description: string;
-  nameTranslations?: Array<{ languageCode: string; name: string }>;
-  descriptionTranslations?: Array<{ languageCode: string; description: string }>;
-  stockInKg: number;
   isActive: boolean;
   categoryId: string;
   categoryName: string;
-  originName?: string;
-  originId?: string;
-  availablePrices: ProductPriceDto[];
-  roastLevelNames: string[];
-  roastLevelIds: string[];
-  grindTypeNames: string[];
-  grindTypeIds: string[];
+  translations: Array<{ languageCode: string; name: string; description: string }>;
+  coffeeProfile: import("@/lib/types/product").ProductCoffeeProfileDto | null;
+  variants: import("@/lib/types/product").VariantDto[];
   createdAt: string;
   updatedAt?: string;
   images: ProductImageDto[];
-  flavourNotes?: FlavourNoteDto[];
 }
 
 export interface RoastLevel {
@@ -185,15 +177,8 @@ export async function getAdminProducts(params: ProductQuery = {}): Promise<{ ite
   
   const items: Product[] = response.items.map((item) => ({
     ...item,
-    activePrice: null,
-    otherAvailableCurrencies: [],
-    availablePrices: item.availablePrices,
-    images: item.images,
-    roastLevelNames: item.roastLevelNames,
-    grindTypeNames: item.grindTypeNames,
-    roastLevelIds: item.roastLevelIds,
-    grindTypeIds: item.grindTypeIds,
-  }));
+    images: item.images || [],
+  })) as unknown as Product[];
   
   return {
     items,

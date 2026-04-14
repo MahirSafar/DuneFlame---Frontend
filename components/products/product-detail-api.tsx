@@ -18,34 +18,28 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
   const { currency } = useCurrency();
   const { toast } = useToast();
   
-  // Get default weight
-  const availableWeights = getAvailableWeights(product);
-  const defaultWeight = availableWeights[0] ?? product.availablePrices?.[0]?.grams ?? 250;
-  
   // Get price for display
-  const displayPrice = resolvePrice(product as unknown as ProductWithPricing, currency, defaultWeight)?.price ?? 0;
+  const displayPrice = product.variants?.[0]?.price ?? 0;
 
   const mainImage = product.images?.find((i) => i.isMain)?.imageUrl || product.images?.[0]?.imageUrl;
 
   const handleAddToCart = () => {
     addToCart(product, quantity, {
-      productPriceId: product.availablePrices?.[0]?.productPriceId,
+      productVariantId: product.variants?.[0]?.id || "",
       price: displayPrice,
-      selectedWeight: defaultWeight,
-      weightLabel: `${defaultWeight}g`,
-      roastLevelId: EMPTY_GUID,
-      grindTypeId: EMPTY_GUID,
+      sku: product.variants?.[0]?.sku || "",
+      attributes: [],
     });
   };
 
   const handleBuyNowClick = async () => {
     try {
       setIsLoading(true);
-      const productPriceId = product.availablePrices?.[0]?.productPriceId;
-      if (!productPriceId) {
+      const productVariantId = product.variants?.[0]?.id;
+      if (!productVariantId) {
         throw new Error("No pricing available for this product");
       }
-      await handleBuyNow(product.id, productPriceId, quantity);
+      await handleBuyNow(product.id, productVariantId, quantity);
     } catch (error) {
       toast({
         title: "Error",
@@ -64,7 +58,7 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
             // eslint-disable-next-line @next/next/no-img-element
             <img src={mainImage} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900 dark:to-orange-900" />
+            <div className="absolute inset-0 bg-linear-to-br from-amber-100 to-orange-100 dark:from-amber-900 dark:to-orange-900" />
           )}
           <div className="relative text-8xl">☕</div>
         </div>
@@ -119,7 +113,7 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
 
           <button
             onClick={handleAddToCart}
-            disabled={product.stockInKg <= 0 || isLoading}
+            disabled={(product.variants?.[0]?.stockQuantity ?? 0) <= 0 || isLoading}
             className="w-full px-6 py-3 bg-accent hover:bg-accent/90 disabled:opacity-70 text-accent-foreground font-bold rounded-lg transition-smooth flex items-center justify-center gap-2 glow-accent"
           >
             <ShoppingCart size={20} />
@@ -128,7 +122,7 @@ export default function ProductDetailApi({ product }: { product: ProductResponse
 
           <button
             onClick={handleBuyNowClick}
-            disabled={product.stockInKg <= 0 || isLoading}
+            disabled={(product.variants?.[0]?.stockQuantity ?? 0) <= 0 || isLoading}
             className="w-full px-6 py-3 bg-primary hover:bg-primary/90 disabled:opacity-70 text-primary-foreground font-bold rounded-lg transition-smooth flex items-center justify-center gap-2"
           >
             <Zap size={20} />

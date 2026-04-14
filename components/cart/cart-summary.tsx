@@ -77,10 +77,10 @@ export default function CartSummary() {
                 <img
                   src={getImageUrl(item.imageUrl) || ""}
                   alt={item.name}
-                  className="w-16 md:w-20 h-16 md:h-20 object-cover rounded-lg flex-shrink-0"
+                  className="w-16 md:w-20 h-16 md:h-20 object-cover rounded-lg shrink-0"
                 />
               ) : (
-                <div className="w-16 md:w-20 h-16 md:h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg flex items-center justify-center text-xl md:text-2xl flex-shrink-0">
+                <div className="w-16 md:w-20 h-16 md:h-20 bg-linear-to-br from-amber-100 to-orange-100 rounded-lg flex items-center justify-center text-xl md:text-2xl shrink-0">
                   ☕
                 </div>
               )}
@@ -93,19 +93,19 @@ export default function CartSummary() {
                 
                 {/* Selected Attributes Display - FORCED */}
                 <div className="text-xs text-muted-foreground mt-1 md:mt-2 flex flex-wrap gap-1 md:gap-2">
-                  {item.selectedWeightLabel && (
+                    {item.attributes?.map(attr => (
+                      <span key={attr} className="bg-gray-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-gray-200 text-xs">
+                        {attr}
+                      </span>
+                    ))}
+                  {item.roastLevelName && (
                     <span className="bg-gray-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-gray-200 text-xs">
-                      {t('common.weight')}: {item.selectedWeightLabel}
+                      {t('common.roast')}: {item.roastLevelName}
                     </span>
                   )}
-                  {item.selectedRoast && (
+                  {item.grindTypeName && (
                     <span className="bg-gray-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-gray-200 text-xs">
-                      {t('common.roast')}: {item.selectedRoast}
-                    </span>
-                  )}
-                  {item.selectedGrind && (
-                    <span className="bg-gray-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-gray-200 text-xs">
-                      {t('common.grind')}: {item.selectedGrind}
+                      {t('common.grind')}: {item.grindTypeName}
                     </span>
                   )}
                 </div>
@@ -149,7 +149,7 @@ export default function CartSummary() {
                 }}
                 className="p-1.5 md:p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-smooth"
               >
-                <Trash2 size={16} className="md:w-[18px] md:h-[18px]" />
+                <Trash2 size={16} className="md:w-4.5 md:h-4.5" />
               </button>
             </div>
           </Link>

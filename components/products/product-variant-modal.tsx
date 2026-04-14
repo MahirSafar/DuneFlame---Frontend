@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAddToCart } from "@/hooks/use-add-to-cart"
 import { useCurrency } from "@/hooks/use-currency"
-import { resolvePrice, getAvailableWeights, type ProductWithPricing } from "@/lib/currency-utils"
 import { FormattedPrice } from "@/components/currency/formatted-price"
 import type { ProductResponse } from "@/lib/services/products"
 import { cn, getImageUrl } from "@/lib/utils"
@@ -32,48 +31,23 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
 
   // State to hold the full product data (with IDs)
   const [fullProduct, setFullProduct] = useState<ProductResponse>(product)
-  const [selectedWeight, setSelectedWeight] = useState<number | undefined>()
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(product.variants?.[0]?.id || "")
   
-  // Initialize from unified source instead of only availablePrices
-  const initialAllPrices = [
-    (product as any).activePrice,
-    ...((product as any).otherAvailableCurrencies || []),
-    ...(product.availablePrices || []),
-  ].filter(Boolean)
-  const initialPrice = initialAllPrices[0]
-  
-  const [selectedWeightId, setSelectedWeightId] = useState<string>(initialPrice?.productPriceId || "")
-  const [selectedWeightLabel, setSelectedWeightLabel] = useState<string>(initialPrice?.weightLabel || "")
-  const [selectedRoast, setSelectedRoast] = useState<string>(product.roastLevelNames?.[0] || "")
-  const [selectedGrind, setSelectedGrind] = useState<string>(product.grindTypeNames?.[0] || "")
+  const [selectedRoast, setSelectedRoast] = useState<string>(product.coffeeProfile?.roastLevelNames?.[0] || "")
+  const [selectedGrind, setSelectedGrind] = useState<string>(product.coffeeProfile?.grindTypeNames?.[0] || "")
 
-
+  const selectedVariant = useMemo(() => fullProduct.variants?.find(v => v.id === selectedVariantId) || fullProduct.variants?.[0], [selectedVariantId, fullProduct.variants]);
 
   useEffect(() => {
     if (!isOpen) return
 
-
-    // Set default weight ONLY on first open (when selectedWeight is undefined)
-    const availableWeights = getAvailableWeights(fullProduct as unknown as ProductWithPricing)
-    if (availableWeights.length > 0 && selectedWeight === undefined) {
-      const defaultWeightNum = Number(availableWeights[0])
-      setSelectedWeight(defaultWeightNum)
-      
-      // Also set default ID and Label from unified source
-      const allPrices = [
-        (fullProduct as any).activePrice,
-        ...((fullProduct as any).otherAvailableCurrencies || []),
-        ...(fullProduct.availablePrices || []),
-      ].filter(Boolean)
-      const defaultWeightObj = allPrices.find((p) => Number(p.grams) === defaultWeightNum)
-      if (defaultWeightObj) {
-        setSelectedWeightId(defaultWeightObj.productPriceId || "")
-        setSelectedWeightLabel(defaultWeightObj.weightLabel || `${defaultWeightNum}g`)
-      }
+    // Set default variant if not set
+    if (!selectedVariantId && fullProduct.variants?.[0]) {
+      setSelectedVariantId(fullProduct.variants[0].id)
     }
 
     // Check if product data is incomplete (missing IDs)
-    const hasIncompleteData = !product.roastLevelIds || product.roastLevelIds.length === 0 || !product.grindTypeIds || product.grindTypeIds.length === 0
+    const hasIncompleteData = !product.coffeeProfile?.roastLevelIds || product.coffeeProfile?.roastLevelIds.length === 0 || !product.coffeeProfile?.grindTypeIds || product.coffeeProfile?.grindTypeIds.length === 0
 
     if (hasIncompleteData && product.slug) {
       // Fetch full product details
@@ -81,52 +55,23 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
         .then(({ getProduct }) => getProduct(product.slug))
         .then((data) => {
           setFullProduct(data)
-          // Only reset weight if it hasn't been set yet
-          const weights = getAvailableWeights(data as unknown as ProductWithPricing)
-          if (weights.length > 0 && selectedWeight === undefined) {
-            const firstWeight = Number(weights[0])
-            setSelectedWeight(firstWeight)
-            
-            // Use unified price source
-            const dataAllPrices = [
-              (data as any).activePrice,
-              ...((data as any).otherAvailableCurrencies || []),
-              ...(data.availablePrices || []),
-            ].filter(Boolean)
-            const firstWeightObj = dataAllPrices.find((p) => Number(p.grams) === firstWeight)
-            if (firstWeightObj) {
-              setSelectedWeightId(firstWeightObj.productPriceId || "")
-              setSelectedWeightLabel(firstWeightObj.weightLabel || `${firstWeight}g`)
-            }
+          if (!selectedVariantId && data.variants?.[0]) {
+            setSelectedVariantId(data.variants[0].id)
           }
           // Always set roast and grind from fetched data (user hasn't selected these yet)
-          setSelectedRoast(data.roastLevelNames?.[0] || "")
-          setSelectedGrind(data.grindTypeNames?.[0] || "")
+          setSelectedRoast(data.coffeeProfile?.roastLevelNames?.[0] || "")
+          setSelectedGrind(data.coffeeProfile?.grindTypeNames?.[0] || "")
         })
         .catch((err) => console.error("❌ MODAL: Failed to fetch full product:", err))
     } else {
       // Data is complete, use as-is with unified source
       setFullProduct(product)
-      const weights = getAvailableWeights(product as unknown as ProductWithPricing)
-      if (weights.length > 0 && selectedWeight === undefined) {
-        const firstWeight = Number(weights[0])
-        setSelectedWeight(firstWeight)
-        
-        // Use unified price source
-        const productAllPrices = [
-          (product as any).activePrice,
-          ...((product as any).otherAvailableCurrencies || []),
-          ...(product.availablePrices || []),
-        ].filter(Boolean)
-        const firstWeightObj = productAllPrices.find((p) => Number(p.grams) === firstWeight)
-        if (firstWeightObj) {
-          setSelectedWeightId(firstWeightObj.productPriceId || "")
-          setSelectedWeightLabel(firstWeightObj.weightLabel || `${firstWeight}g`)
-        }
+      if (!selectedVariantId && product.variants?.[0]) {
+        setSelectedVariantId(product.variants[0].id)
       }
       // Always set roast and grind from product data (user hasn't selected these yet)
-      setSelectedRoast(product.roastLevelNames?.[0] || "")
-      setSelectedGrind(product.grindTypeNames?.[0] || "")
+      setSelectedRoast(product.coffeeProfile?.roastLevelNames?.[0] || "")
+      setSelectedGrind(product.coffeeProfile?.grindTypeNames?.[0] || "")
     }
   }, [isOpen, product])
 
@@ -136,68 +81,45 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
   )
   const mainImage = mainImageRaw ? getImageUrl(mainImageRaw) : null
 
-  // UNIFIED PRICE SOURCE: Combine all price variants from all sources (just like resolvePrice does)
-  const allPriceVariants = useMemo(() => {
-    const combined = [
-      (fullProduct as any).activePrice,
-      ...((fullProduct as any).otherAvailableCurrencies || []),
-      ...(fullProduct.availablePrices || []),
-    ].filter(Boolean)
-    
-    return combined
-  }, [fullProduct])
-
-  // STRICT PRICE RESOLUTION: Use resolvePrice with currency + weight
-  const resolved = useMemo(() => {
-    const result = resolvePrice(fullProduct as unknown as ProductWithPricing, currency, selectedWeight)
-    return result
-  }, [fullProduct, currency, selectedWeight])
-
-  const currentPrice = resolved?.price ?? 0
+  // STRICT PRICE RESOLUTION: Use resolved price from variant based on selectedVariantId
+  const currentPrice = selectedVariant?.prices?.find((p: any) => p.currencyCode === currency)?.price ?? selectedVariant?.price ?? 0
   const isPriceAvailable = currentPrice > 0
 
-  // Compute display price based on current selected weight (fallback for old logic)
-  const selectedWeightObj = useMemo(
-    () => fullProduct.availablePrices?.find((option) => option.productPriceId === selectedWeightId),
-    [fullProduct.availablePrices, selectedWeightId],
-  )
-
-  const hasValidSelection = Boolean(resolved && selectedRoast && selectedGrind)
+  const hasValidSelection = Boolean(selectedVariant && selectedRoast && selectedGrind)
 
   const handleAddToCart = () => {
-    if (!hasValidSelection || !resolved) {
+    if (!hasValidSelection || !selectedVariant) {
       toast.error(t('products.detail.selectWeight'))
       return
     }
-    if (!fullProduct || !fullProduct.roastLevelIds || fullProduct.roastLevelIds.length === 0 || !fullProduct.grindTypeIds || fullProduct.grindTypeIds.length === 0) {
+    if (!fullProduct || !fullProduct.coffeeProfile?.roastLevelIds || fullProduct.coffeeProfile?.roastLevelIds.length === 0 || !fullProduct.coffeeProfile?.grindTypeIds || fullProduct.coffeeProfile?.grindTypeIds.length === 0) {
       toast.error(t('common.actions.loading'))
       return
     }
 
-    // 1. Use resolved price and productPriceId from strict resolution
-    const productPriceId = resolved.productPriceId || selectedWeightId
+    // 1. Use resolved price and productVariantId from strict resolution
+    const productVariantId = selectedVariant.id
 
     // 2. Find Roast ID by Name using API keys
-    const roastIndex = fullProduct.roastLevelNames?.indexOf(selectedRoast) ?? -1
-    const roastLevelId = roastIndex >= 0 ? fullProduct.roastLevelIds?.[roastIndex] : EMPTY_GUID
+    const roastIndex = fullProduct.coffeeProfile?.roastLevelNames?.indexOf(selectedRoast) ?? -1
+    const roastLevelId = roastIndex >= 0 ? fullProduct.coffeeProfile?.roastLevelIds?.[roastIndex] : EMPTY_GUID
 
     // 3. Find Grind ID by Name using API keys
-    const grindIndex = fullProduct.grindTypeNames?.indexOf(selectedGrind) ?? -1
-    const grindTypeId = grindIndex >= 0 ? fullProduct.grindTypeIds?.[grindIndex] : EMPTY_GUID
+    const grindIndex = fullProduct.coffeeProfile?.grindTypeNames?.indexOf(selectedGrind) ?? -1
+    const grindTypeId = grindIndex >= 0 ? fullProduct.coffeeProfile?.grindTypeIds?.[grindIndex] : EMPTY_GUID
 
 
     // 4. Send EVERYTHING to addToCart (including real GUIDs)
     addToCart(fullProduct, 1, {
-      productPriceId,
+      productVariantId,
+      prices: selectedVariant?.prices || [],
       price: currentPrice,
-      weightLabel: resolved.weightLabel || `${resolved.grams}g`,
-      grams: resolved.grams,
-      selectedWeight: resolved.grams,
+      sku: selectedVariant?.sku || "",
+      attributes: selectedVariant?.options?.map(o => `${o.attributeName}: ${o.value}`) || [],
       roastLevelName: selectedRoast,
       roastLevelId: roastLevelId || EMPTY_GUID,
       grindTypeName: selectedGrind,
       grindTypeId: grindTypeId || EMPTY_GUID,
-      variantKey: `${fullProduct.id}-${productPriceId}-${roastLevelId}-${grindTypeId}`,
       imageUrl: mainImageRaw || "",
     })
 
@@ -229,7 +151,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
           <div className="space-y-5">
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {fullProduct.originName && <Badge variant="outline">{fullProduct.originName}</Badge>}
+                {fullProduct.coffeeProfile?.originName && <Badge variant="outline">{fullProduct.coffeeProfile?.originName}</Badge>}
                 {/* Removed category badge as requested */}
               </div>
               <h3 className="text-lg sm:text-2xl font-bold text-primary dark:text-secondary uppercase">{fullProduct.name}</h3>
@@ -246,62 +168,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
             <div className="space-y-3">
               <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{t('common.weight')}</Label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {getAvailableWeights(fullProduct as unknown as ProductWithPricing).map((grams) => {
-                  // Resolve price for this specific weight
-                  const weightResolved = resolvePrice(fullProduct as unknown as ProductWithPricing, currency, grams)
-                  const weightPrice = weightResolved?.price ?? 0
-                  const weightLabel = weightResolved?.weightLabel || `${grams}g`
-                  
-                  // STRICT Type-safe comparison for active state - FORCE Number on both sides
-                  const gramsNum = Number(grams)
-                  const selectedNum = Number(selectedWeight)
-                  const isActive = selectedNum === gramsNum
-                  
-                  
-                  return (
-                    <button
-                      key={grams}
-                      type="button"
-                      onClick={() => {
-                        const numWeight = Number(grams)
-                        
-                        setSelectedWeight(numWeight)
-                        
-                        // Use unified price source instead of only availablePrices
-                        const weightObj = allPriceVariants.find((p) => Number(p.grams) === numWeight)
-                        
-                        if (weightObj) {
-                          setSelectedWeightLabel(weightObj.weightLabel || `${numWeight}g`)
-                          setSelectedWeightId(weightObj.productPriceId || "")
-                        } else {
-                          console.error("[Modal] Available variants:", allPriceVariants.map(p => ({ 
-                            grams: p.grams, 
-                            gramsType: typeof p.grams,
-                            numGrams: Number(p.grams),
-                            matches: Number(p.grams) === numWeight,
-                            currency: p.currency || p.currencyCode,
-                          })))
-                        }
-                      }}
-                      className={cn(
-                        "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm shadow-xs transform-gpu will-change-transform transition-all duration-200 hover:border-accent hover:scale-[1.02]",
-                        isActive 
-                          ? "border-accent bg-accent/10 shadow-md scale-[1.02]" 
-                          : "border-border bg-background",
-                      )}
-                    >
-                      <div className={cn(
-                        "h-4 w-4 rounded-full border-2 transition-colors flex items-center justify-center",
-                        isActive ? "border-accent bg-accent" : "border-muted-foreground"
-                      )}>
-                        {isActive && <div className="h-2 w-2 rounded-full bg-white" />}
-                      </div>
-                      <div className="flex flex-col text-left">
-                        <span className="font-semibold">{weightLabel}</span>
-                      </div>
-                    </button>
-                  )
-                })}
+                {fullProduct.variants?.map((variant: any) => { const label = variant.options?.find((o: any) => o.attributeName.toLowerCase() === "weight")?.value || variant.sku; return ( <button key={variant.id} onClick={() => setSelectedVariantId(variant.id)} className={cn("flex flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:border-espresso-brown", selectedVariantId === variant.id ? "border-espresso-brown bg-espresso-brown/10" : "border-white/10")} > <span className="font-semibold text-espresso-brown dark:text-espresso-brown">{label}</span> </button> ) })}
               </div>
             </div>
 
@@ -313,7 +180,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                     <SelectValue placeholder={t('products.detail.selectRoast')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {fullProduct.roastLevelNames?.map((name) => (
+                    {fullProduct.coffeeProfile?.roastLevelNames?.map((name) => (
                       <SelectItem key={name} value={name}>
                         {name}
                       </SelectItem>
@@ -329,7 +196,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                     <SelectValue placeholder={t('products.detail.selectGrind')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {fullProduct.grindTypeNames?.map((name) => (
+                    {fullProduct.coffeeProfile?.grindTypeNames?.map((name) => (
                       <SelectItem key={name} value={name}>
                         {name}
                       </SelectItem>
@@ -350,8 +217,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                   <StripeElementsProvider>
                     <ProductQuickBuy
                       product={fullProduct}
-                      selectedWeight={selectedWeight}
-                      selectedWeightId={selectedWeightId}
+                      selectedVariantId={selectedVariantId}
                       selectedRoast={selectedRoast}
                       selectedGrind={selectedGrind}
                       currentPrice={currentPrice}

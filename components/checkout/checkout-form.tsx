@@ -396,6 +396,15 @@ export default function CheckoutForm() {
 
   const isGuest = !accessToken
 
+  // Secure Checkout: Re-verify intent currency 
+  useEffect(() => {
+    if (clientSecret) {
+      setClientSecret(null)
+      setIsPaymentModalOpen(false)
+      // Force users to re-invoke payment when currency state shifts underneath Stripe Elements
+    }
+  }, [currency])
+
   // Restore selected country from localStorage after login
   useEffect(() => {
     if (accessToken && !selectedCountryId && typeof window !== "undefined") {
@@ -1273,7 +1282,7 @@ export default function CheckoutForm() {
                 {items.map((item) => (
                   <div
                     key={
-                      item.variantKey || `${item.id}-${item.productPriceId}-${item.roastLevelId}-${item.grindTypeId}`
+                      item.variantKey || `${item.id}-${item.productVariantId}-${item.roastLevelId}-${item.grindTypeId}`
                     }
                     className={`flex gap-4 ${isArabic ? "flex-row-reverse" : ""}`}
                   >

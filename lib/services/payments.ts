@@ -28,13 +28,13 @@ function getRedirectUrls(): { successUrl: string; cancelUrl: string } {
  * Accepts product ID and price ID directly - no frontend mapping needed
  * 
  * @param productId - The product ID from database
- * @param productPriceId - The product price ID for the variant/weight
+ * @param productVariantId - The product price ID for the variant/weight
  * @param quantity - Quantity to purchase
  * @returns Session ID for Stripe redirect
  */
 export async function createCheckoutSession(
   productId: string,
-  productPriceId: string,
+  productVariantId: string,
   quantity: number = 1
 ): Promise<string> {
   const { successUrl, cancelUrl } = getRedirectUrls();
@@ -45,7 +45,7 @@ export async function createCheckoutSession(
       method: "POST",
       body: JSON.stringify({
         productId,
-        productPriceId,
+        productVariantId,
         quantity,
         successUrl,
         cancelUrl,
@@ -97,16 +97,16 @@ export async function redirectToStripeCheckout(sessionId: string): Promise<void>
  * Creates a checkout session and redirects to Stripe
  * 
  * @param productId - The product ID from database
- * @param productPriceId - The product price ID for the variant/weight
+ * @param productVariantId - The product price ID for the variant/weight
  * @param quantity - Quantity to purchase
  */
 export async function handleBuyNow(
   productId: string,
-  productPriceId: string,
+  productVariantId: string,
   quantity: number = 1
 ): Promise<void> {
   try {
-    const sessionId = await createCheckoutSession(productId, productPriceId, quantity);
+    const sessionId = await createCheckoutSession(productId, productVariantId, quantity);
     await redirectToStripeCheckout(sessionId);
   } catch (error) {
     throw error;

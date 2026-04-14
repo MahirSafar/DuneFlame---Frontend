@@ -1,10 +1,11 @@
 "use client"
 
 import { useCartRecommendation } from "@/hooks/use-cart-recommendation"
-import { useCartStore } from "@/lib/cart-store"
+import { useCartStore, type CartItem, EMPTY_GUID } from "@/lib/cart-store"
 import { useAuthStore } from "@/lib/auth-store"
 import { Progress } from "@/components/ui/progress"
 import { FormattedPrice } from "@/components/currency/formatted-price"
+import { useCurrency } from "@/lib/currency-context"
 import { Plus, CheckCircle2 } from "lucide-react"
 import { getImageUrl } from "@/lib/utils"
 import { useEffect } from "react"
@@ -14,6 +15,7 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
   const addItem = useCartStore((state) => state.addItem)
   const items = useCartStore((state) => state.items) // Səbətdəki məhsulları izləyirik
   const isAuthenticated = !!useAuthStore((state) => state.accessToken)
+  const { currency } = useCurrency()
 
   // Guard: Hide immediately if country is chosen and not UAE
   if (countryCode && countryCode !== "AE") {
@@ -33,6 +35,8 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
   const isFreeShippingMet = currentSubtotal >= targetThreshold
   const progressPercent = isFreeShippingMet ? 100 : Math.min((currentSubtotal / targetThreshold) * 100, 100)
 
+  const recommendationDisplayPrice = recommendation?.availablePrices?.[currency.toUpperCase()] ?? recommendation?.availablePrices?.[currency.toLowerCase()] ?? recommendation?.price ?? 0;
+
   // Əgər limit keçilibsə və biz "Təbriklər" mesajını göstərmək istəmiriksə, bunu `return null` edə bilərik.
   // Amma hələlik göstəririk:
   if (isFreeShippingMet) {
@@ -50,34 +54,31 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
       
       const mappedPrices = recommendation.availablePrices 
         ? Object.entries(recommendation.availablePrices).map(([cur, pr]) => ({
-            currencyCode: cur,
+            currencyCode: cur.toUpperCase(),
             price: pr,
             grams: numericWeight,
             weightLabel: recommendation.weightLabel,
-            productPriceId: recommendation.productPriceId
+            productVariantId: recommendation.productVariantId
           }))
         : [];
 
       addItem(
         {
           id: recommendation.productId,
-          productPriceId: recommendation.productPriceId,
-          slug: recommendation.name.toLowerCase().replace(/[\s\W-]+/g, '-'),
+          productVariantId: recommendation.productVariantId,
+          slug: recommendation.slug,
           name: recommendation.name,
           price: recommendation.price,
+          prices: mappedPrices,
           quantity: 1,
           imageUrl: recommendation.imageUrl,
-          weightLabel: recommendation.weightLabel,
-          selectedWeightLabel: recommendation.weightLabel,
-          selectedRoast: "Original",
-          selectedGrind: "Whole Bean",
-          grams: numericWeight,
-          selectedWeight: numericWeight,
-          product: { 
-            id: recommendation.productId, 
-            availablePrices: mappedPrices 
-          } as any,
-        },
+          sku: "",
+          attributes: [recommendation.weightLabel || "250g"],
+          roastLevelId: EMPTY_GUID,
+          roastLevelName: "Original",
+          grindTypeId: EMPTY_GUID,
+          grindTypeName: "Whole Bean",
+        } as unknown as CartItem,
         isAuthenticated
       )
       fetchRecommendation() // Səbətə atandan sonra yenidən hesabla
@@ -119,14 +120,14 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
               </div>
             )}
             
-            <div className="flex flex-col min-w-0 pr-2">
+          <div className="flex flex-col min-w-0 pr-2">
               <span className="text-xs font-semibold text-primary truncate">
                 {recommendation.name}
               </span>
               <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
                 <span>{recommendation.weightLabel}</span>
                 <span className="px-1">•</span>
-                <FormattedPrice amount={recommendation.price} className="font-bold text-accent" />
+                <FormattedPrice amount={recommendationDisplayPrice} className="font-bold text-accent" />
               </div>
             </div>
           </div>

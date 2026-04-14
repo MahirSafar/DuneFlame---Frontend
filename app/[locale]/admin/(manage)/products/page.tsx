@@ -44,6 +44,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -92,9 +93,13 @@ const PAGE_SIZE = 10
 
 interface WeightPrice {
   weightId: string
+  variantId?: string
   currencyCode: string
+  priceId?: string
   enabled: boolean
   price: string
+  sku?: string
+  optionId?: string
 }
 
 type SiloEditFormState = {
@@ -102,13 +107,24 @@ type SiloEditFormState = {
   nameAr: string;
   descriptionEn: string;
   descriptionAr: string;
+  enTranslationId?: string;
+  arTranslationId?: string;
   stockInKg: string;
   categoryId: string;
   originId: string;
+  isActive: boolean;
+  coffeeProfileId?: string;
+  rowVersion?: string; // For concurrency
   selectedRoasts: string[];
   selectedGrinds: string[];
   weightPrices: WeightPrice[];
-  flavourNotes: { nameEn: string; nameAr: string }[];
+  flavourNotes: { 
+    id?: string; 
+    nameEn: string; 
+    nameAr: string; 
+    enTranslationId?: string; 
+    arTranslationId?: string; 
+  }[];
 }
 
 const emptySiloForm: SiloEditFormState = {
@@ -116,9 +132,14 @@ const emptySiloForm: SiloEditFormState = {
   nameAr: "",
   descriptionEn: "",
   descriptionAr: "",
+  enTranslationId: undefined,
+  arTranslationId: undefined,
   stockInKg: "",
   categoryId: "",
   originId: "",
+  isActive: true,
+  coffeeProfileId: undefined,
+  rowVersion: undefined,
   selectedRoasts: [],
   selectedGrinds: [],
   weightPrices: [],
@@ -263,8 +284,40 @@ export default function AdminProductsPage() {
     }
   }
 
-  const handleOpenCreate = () => {
-    router.push('/admin/products/create');
+  const handleOpenCreate = async () => {
+    setLoadingProduct(true);
+    try {
+      const currentMasterData = await fetchMasterDataForEdit();
+      
+      const initialWeightPrices: WeightPrice[] = [];
+      if (currentMasterData) {
+        const weightAttribute = currentMasterData.attributes?.find(a => a.name.toLowerCase() === 'weight');
+        weightAttribute?.values?.forEach((weightVal) => {
+          ["USD", "AED"].forEach((curr) => {
+            initialWeightPrices.push({
+              weightId: weightVal.id,
+              currencyCode: curr,
+              enabled: false,
+              price: "",
+            });
+          });
+        });
+      }
+
+      setSelectedProduct(null);
+      resetSiloForm();
+      
+      setSiloFormState(prev => ({
+        ...prev,
+        weightPrices: initialWeightPrices
+      }));
+      
+      setSheetOpen(true);
+    } catch (err) {
+      toast.error("Failed to initialize create form");
+    } finally {
+      setLoadingProduct(false);
+    }
   }
 
   // View product details in modal
@@ -301,17 +354,24 @@ const handleOpenEdit = async (productId: string) => {
     const weightPrices: WeightPrice[] = [];
 
     if (currentMasterData) {
-      currentMasterData.weights.forEach((weight) => {
+      const weightAttribute = currentMasterData.attributes?.find(a => a.name.toLowerCase() === 'weight');
+      weightAttribute?.values?.forEach((weightVal) => {
         ["USD", "AED"].forEach((curr) => {
-          const existing = allPrices.find(
-            (price) => price.grams === weight.grams && price.currencyCode === curr
+          const existingVariant = p.variants?.find((v: any) => 
+            v.options?.some((o: any) => o.value === weightVal.value)
           );
+          const existing = existingVariant?.prices?.find((pr: any) => pr.currencyCode === curr);
+          const existingOption = existingVariant?.options?.find((o: any) => o.value === weightVal.value);
 
           weightPrices.push({
-            weightId: weight.id,
+            weightId: weightVal.id,
+            variantId: existingVariant?.id || existingVariant?.Id,
             currencyCode: curr,
+            priceId: existing?.id || existing?.Id,
             enabled: !!existing,
             price: existing ? existing.price.toString() : "",
+            sku: existingVariant?.sku,
+            optionId: existingOption?.id || existingOption?.Id,
           });
         });
       });
@@ -323,22 +383,38 @@ const handleOpenEdit = async (productId: string) => {
       nameAr: arTrans?.name || "",
       descriptionEn: enTrans?.description || p.description || "",
       descriptionAr: arTrans?.description || "",
-      stockInKg: String(p.stockInKg || "0"),
+      enTranslationId: enTrans?.id || enTrans?.Id,
+      arTranslationId: arTrans?.id || arTrans?.Id,
+      stockInKg: String(p.variants?.[0]?.stockQuantity || p.stockInKg || "0"),
       categoryId: p.categoryId || "",
-      originId: p.originId || "",
-      selectedRoasts: p.roastLevelIds || [],
-      selectedGrinds: p.grindTypeIds || [],
+      originId: p.coffeeProfile?.originId || "",
+      isActive: p.isActive !== undefined ? p.isActive : true,
+      coffeeProfileId: p.coffeeProfile?.id || undefined,
+      rowVersion: p.rowVersion || p.RowVersion || undefined, // Extract concurrency token
+      selectedRoasts: p.coffeeProfile?.roastLevelIds || [],
+      selectedGrinds: p.coffeeProfile?.grindTypeIds || [],
       weightPrices,
       flavourNotes:
-        p.flavourNotes?.map((fn: any) => ({
+        p.coffeeProfile?.flavourNotes?.map((fn: any) => ({
+          id: fn.id || fn.Id,
           nameEn:
             fn.translations?.find(
               (t: any) => (t.languageCode || t.LanguageCode) === "en"
             )?.name || fn.name || "",
+          enTranslationId: fn.translations?.find(
+            (t: any) => (t.languageCode || t.LanguageCode) === "en"
+          )?.id || fn.translations?.find(
+            (t: any) => (t.languageCode || t.LanguageCode) === "en"
+          )?.Id,
           nameAr:
             fn.translations?.find(
               (t: any) => (t.languageCode || t.LanguageCode) === "ar"
             )?.name || "",
+          arTranslationId: fn.translations?.find(
+            (t: any) => (t.languageCode || t.LanguageCode) === "ar"
+          )?.id || fn.translations?.find(
+            (t: any) => (t.languageCode || t.LanguageCode) === "ar"
+          )?.Id,
         })) || [],
     });
 
@@ -372,10 +448,26 @@ const handleOpenEdit = async (productId: string) => {
 
   // --- Image Logic ---
   const handleFileSelect = (files: File[]) => {
-    const imageFiles = files.filter((file) => file.type.startsWith("image"))
-    setSelectedFiles((prev) => [...prev, ...imageFiles])
-    const newPreviews = imageFiles.map((file) => URL.createObjectURL(file))
-    setPreviewUrls((prev) => [...prev, ...newPreviews])
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    const validFiles: File[] = [];
+
+    files.forEach((file) => {
+      if (!file.type.startsWith("image")) {
+        toast.error(`${file.name} is not an image.`);
+        return;
+      }
+      if (file.size > maxSize) {
+        toast.error(`${file.name} exceeds the 5MB limit.`);
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    if (validFiles.length > 0) {
+      setSelectedFiles((prev) => [...prev, ...validFiles]);
+      const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
+      setPreviewUrls((prev) => [...prev, ...newPreviews]);
+    }
   }
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -460,7 +552,7 @@ const handleOpenEdit = async (productId: string) => {
     setIsSubmitting(true);
 
     try {
-      // Validation
+      // 1. Validation
       if (!siloFormState.nameEn.trim()) {
         toast.error("Product name (EN) is required");
         return;
@@ -473,29 +565,37 @@ const handleOpenEdit = async (productId: string) => {
         toast.error("Please select a category");
         return;
       }
+
+      // Check Category Type (Coffee vs Non-Coffee)
+      const selectedCategory = categories.find(c => c.id === siloFormState.categoryId) as any;
+      const isCoffee = selectedCategory?.isCoffeeCategory === true || selectedCategory?.name?.toLowerCase().includes('bean') || selectedCategory?.name?.toLowerCase().includes('coffee');
+
+      if (isCoffee) {
+        if (siloFormState.selectedRoasts.length === 0) {
+          toast.error("Please select at least one roast level for coffee");
+          return;
+        }
+        if (siloFormState.selectedGrinds.length === 0) {
+          toast.error("Please select at least one grind type for coffee");
+          return;
+        }
+      } else {
+        // Enforce clearing coffee fields if not a coffee category
+        siloFormState.originId = "";
+        siloFormState.selectedRoasts = [];
+        siloFormState.selectedGrinds = [];
+        siloFormState.flavourNotes = [];
+      }
+
       if (!siloFormState.stockInKg || parseFloat(siloFormState.stockInKg) <= 0) {
         toast.error("Stock in KG must be greater than 0");
         return;
       }
-      if (siloFormState.selectedRoasts.length === 0) {
-        toast.error("Please select at least one roast level");
-        return;
-      }
-      if (siloFormState.selectedGrinds.length === 0) {
-        toast.error("Please select at least one grind type");
-        return;
-      }
 
-      // Build prices array (multi-currency)
-      const prices = siloFormState.weightPrices
-        .filter((wp) => wp.enabled && wp.price && parseFloat(wp.price) > 0)
-        .map((wp) => ({
-          productWeightId: wp.weightId,
-          price: parseFloat(wp.price),
-          currencyCode: wp.currencyCode,
-        }));
+      const validWeightPrices = siloFormState.weightPrices
+        .filter((wp) => wp.enabled && wp.price && parseFloat(wp.price) > 0);
 
-      if (prices.length === 0) {
+      if (validWeightPrices.length === 0) {
         toast.error("Please enable at least one weight/currency with a valid price");
         return;
       }
@@ -505,76 +605,168 @@ const handleOpenEdit = async (productId: string) => {
         return;
       }
 
-      // Build FormData (PascalCase keys for backend)
+      // Group weightPrices by weightId to form variants
+      const variantsByWeight = validWeightPrices.reduce((acc, wp) => {
+        if (!acc[wp.weightId]) acc[wp.weightId] = [];
+        acc[wp.weightId].push(wp);
+        return acc;
+      }, {} as Record<string, typeof validWeightPrices>);
+
+      // Build FormData
       const formData = new FormData();
-      // Translations array
+      
+      if (selectedProduct) {
+        formData.append("Id", selectedProduct.id);
+        
+        // Concurrency token for updates
+        if (siloFormState.rowVersion) {
+          formData.append("RowVersion", siloFormState.rowVersion);
+        }
+      }
+
+      formData.append("Name", siloFormState.nameEn);
+      formData.append("Description", siloFormState.descriptionEn);
+      formData.append("CategoryId", siloFormState.categoryId);
+      
+      // MUST explicitly stringify booleans for FormData
+      formData.append("IsActive", String(siloFormState.isActive));
+
+      // Translations format: Explicit translations array
+      if (siloFormState.enTranslationId) {
+        formData.append("Translations[0].Id", siloFormState.enTranslationId);
+      }
       formData.append("Translations[0].LanguageCode", "en");
       formData.append("Translations[0].Name", siloFormState.nameEn);
       formData.append("Translations[0].Description", siloFormState.descriptionEn);
+      if (siloFormState.arTranslationId) {
+        formData.append("Translations[1].Id", siloFormState.arTranslationId);
+      }
       formData.append("Translations[1].LanguageCode", "ar");
-      formData.append("Translations[1].Name", siloFormState.nameAr);
-      formData.append("Translations[1].Description", siloFormState.descriptionAr);
-      // Fallback fields
-      formData.append("Name", siloFormState.nameEn);
-      formData.append("Description", siloFormState.descriptionEn);
-      formData.append("StockInKg", siloFormState.stockInKg);
-      formData.append("CategoryId", siloFormState.categoryId);
-      if (siloFormState.originId) {
-        formData.append("OriginId", siloFormState.originId);
+      formData.append("Translations[1].Name", siloFormState.nameAr || siloFormState.nameEn);
+      formData.append("Translations[1].Description", siloFormState.descriptionAr || siloFormState.descriptionEn);
+
+      // Coffee & Non-Coffee conditional fields
+      if (isCoffee) {
+        if (siloFormState.coffeeProfileId && siloFormState.coffeeProfileId.trim() !== "") {
+          formData.append("CoffeeProfile.Id", siloFormState.coffeeProfileId);
+        }
+        if (siloFormState.originId && siloFormState.originId.trim() !== "") {
+          formData.append("OriginId", siloFormState.originId);
+        }
+        siloFormState.selectedRoasts.forEach((id) => {
+          formData.append("RoastLevelIds", id);
+        });
+        siloFormState.selectedGrinds.forEach((id) => {
+          formData.append("GrindTypeIds", id);
+        });
+      } else {
+        // Non-Coffee
+        // Guid? in .NET fails binding if empty string is sent, so we omit appending OriginId entirely.
+        // RoastLevelIds & GrindTypeIds are also omitted safely.
       }
 
-      // Append roast level IDs
-      siloFormState.selectedRoasts.forEach((id) => {
-        formData.append("RoastLevelIds", id);
-      });
+      // Variants & Multi-Currency
+      let variantIndex = 0;
+      Object.keys(variantsByWeight).forEach((weightId) => {
+        const variantGroup = variantsByWeight[weightId];
+        
+        // Find existing variantId and sku
+        const existingVariantId = variantGroup.find(wp => wp.variantId)?.variantId;
+        const existingSku = variantGroup.find(wp => wp.sku)?.sku;
+        const existingOptionId = variantGroup.find(wp => wp.optionId)?.optionId;
 
-      // Append grind type IDs
-      siloFormState.selectedGrinds.forEach((id) => {
-        formData.append("GrindTypeIds", id);
-      });
-
-      // Append prices (multi-currency)
-      prices.forEach((p, index) => {
-        formData.append(`Prices[${index}].ProductWeightId`, p.productWeightId);
-        formData.append(`Prices[${index}].Price`, p.price.toString());
-        formData.append(`Prices[${index}].CurrencyCode`, p.currencyCode);
-      });
-
-      // Append Flavour Notes (Dad notlarını bazaya göndərmək üçün)
-      siloFormState.flavourNotes.forEach((note, index) => {
-        const enName = note.nameEn?.trim();
-        const arName = note.nameAr?.trim();
-
-        if (enName) {
-          formData.append(`FlavourNotes[${index}].Name`, enName);
-          formData.append(`FlavourNotes[${index}].DisplayOrder`, (index + 1).toString());
-          formData.append(`FlavourNotes[${index}].Translations[0].LanguageCode`, "en");
-          formData.append(`FlavourNotes[${index}].Translations[0].Name`, enName);
-          formData.append(`FlavourNotes[${index}].Translations[1].LanguageCode`, "ar");
-          formData.append(`FlavourNotes[${index}].Translations[1].Name`, arName || enName);
+        if (existingVariantId && existingVariantId.trim() !== "") {
+          formData.append(`Variants[${variantIndex}].Id`, existingVariantId);
         }
+
+        const skuBase = existingSku || `${siloFormState.nameEn.replace(/\s+/g, '-').slice(0,10).toUpperCase()}-${weightId.slice(0,4)}`;
+        
+        formData.append(`Variants[${variantIndex}].Sku`, skuBase);
+        
+        // Parse stock safely as number, stringified for form
+        const parsedStock = Number(parseFloat(siloFormState.stockInKg).toFixed(2));
+        formData.append(`Variants[${variantIndex}].StockQuantity`, parsedStock.toString());
+        
+        // Single Option to signify the weight ID
+        if (existingOptionId && existingOptionId.trim() !== "") {
+          formData.append(`Variants[${variantIndex}].Options[0].Id`, existingOptionId);
+        }
+        formData.append(`Variants[${variantIndex}].Options[0].ProductAttributeValueId`, weightId);
+
+        // Append multi-currency prices inside Variant
+        variantGroup.forEach((wp, priceIdx) => {
+          if (wp.priceId && wp.priceId.trim() !== "") {
+            formData.append(`Variants[${variantIndex}].Prices[${priceIdx}].Id`, wp.priceId);
+          }
+          formData.append(`Variants[${variantIndex}].Prices[${priceIdx}].CurrencyCode`, wp.currencyCode);
+          
+          // Parse price securely to number, then stringify
+          const parsedPrice = Number(parseFloat(wp.price).toFixed(2));
+          formData.append(`Variants[${variantIndex}].Prices[${priceIdx}].Price`, parsedPrice.toString());
+        });
+
+        variantIndex++;
       });
+
+      // Append Flavour Notes (CLEAN MAPPING)
+      if (isCoffee) {
+        siloFormState.flavourNotes.forEach((note, index) => {
+          const enName = note.nameEn?.trim();
+          const arName = note.nameAr?.trim();
+
+          if (enName) {
+            if (note.id && note.id.trim() !== "") {
+              formData.append(`FlavourNotes[${index}].Id`, note.id);
+            }
+            // Note root name (usually English)
+            formData.append(`FlavourNotes[${index}].Name`, enName);
+            formData.append(`FlavourNotes[${index}].DisplayOrder`, Number(index + 1).toString());
+            
+            if (note.enTranslationId) {
+              formData.append(`FlavourNotes[${index}].Translations[0].Id`, note.enTranslationId);
+            }
+            formData.append(`FlavourNotes[${index}].Translations[0].LanguageCode`, "en");
+            formData.append(`FlavourNotes[${index}].Translations[0].Name`, enName);
+            
+            if (note.arTranslationId) {
+              formData.append(`FlavourNotes[${index}].Translations[1].Id`, note.arTranslationId);
+            }
+            formData.append(`FlavourNotes[${index}].Translations[1].LanguageCode`, "ar");
+            formData.append(`FlavourNotes[${index}].Translations[1].Name`, arName || enName);
+          }
+        });
+      }
 
       // Handle image management for edit mode
       if (selectedProduct) {
         deletedImageIds.forEach((id) => {
-          formData.append("deletedImageIds", id);
+          formData.append("DeletedImageIds", id);
         });
         if (mainImageId) {
-          formData.append("setMainImageId", mainImageId);
+          formData.append("SetMainImageId", mainImageId);
         }
       }
 
       // Append new images
       if (selectedFiles.length > 0) {
-        const filesToSend = [...selectedFiles];
-        const mainFile = filesToSend[mainImageIndex];
-        const otherFiles = filesToSend.filter((_, idx) => idx !== mainImageIndex);
-        const sortedFiles = [mainFile, ...otherFiles];
-        sortedFiles.forEach((file) => {
-          formData.append("images", file);
+        // Reorder files so the selected main image is at index 0 for creation,
+        // because backend implicitly sets the first image as main if MainImageIndex isn't supported.
+        let filesToAppend = [...selectedFiles];
+        if (!selectedProduct && mainImageIndex > 0 && mainImageIndex < filesToAppend.length) {
+          const mainFile = filesToAppend.splice(mainImageIndex, 1)[0];
+          filesToAppend.unshift(mainFile);
+        }
+
+        filesToAppend.forEach((file) => {
+          formData.append("Images", file);
         });
       }
+
+      console.log("Submitting API Payload Check (Variants & FlavourNotes):", {
+        variantsSent: variantsByWeight,
+        flavourNotesSent: siloFormState.flavourNotes,
+        isEdit: !!selectedProduct,
+      });
 
       setSaving(true);
       try {
@@ -704,6 +896,9 @@ const handleOpenEdit = async (productId: string) => {
     )
   }
 
+  const selectedCategoryObj = categories.find(c => c.id === siloFormState.categoryId) as any;
+  const isCoffeeCategory = selectedCategoryObj?.isCoffeeCategory === true || selectedCategoryObj?.name?.toLowerCase().includes('bean') || selectedCategoryObj?.name?.toLowerCase().includes('coffee');
+
   return (
     <div className="space-y-8 p-6 md:p-8">
       {/* Header */}
@@ -760,7 +955,7 @@ const handleOpenEdit = async (productId: string) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All categories</SelectItem>
-                {categories.map((c) => (
+                {(categories || []).map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
@@ -829,58 +1024,58 @@ const handleOpenEdit = async (productId: string) => {
                   </TableCell>
                   <TableCell className="py-4 px-4">
                     <span className="text-sm">
-                      {product.originName || "—"}
+                      {product.coffeeProfile?.originName || "—"}
                     </span>
                   </TableCell>
                   {/* Attributes Column: Show roast levels and grind types */}
                   <TableCell className="py-4 px-4">
                     <div className="flex flex-wrap gap-1">
-                      {product.roastLevelNames?.length
-                        ? product.roastLevelNames.map((name, idx) => (
+                      {product.coffeeProfile?.roastLevelNames?.length
+                        ? product.coffeeProfile?.roastLevelNames.map((name, idx) => (
                             <Badge key={`roast-${idx}`} variant="secondary" className="text-xs">
                               {name}
                             </Badge>
                           ))
                         : null}
-                      {product.grindTypeNames?.length
-                        ? product.grindTypeNames.map((name, idx) => (
+                      {product.coffeeProfile?.grindTypeNames?.length
+                        ? product.coffeeProfile?.grindTypeNames.map((name, idx) => (
                             <Badge key={`grind-${idx}`} variant="outline" className="text-xs bg-white/5">
                               {name}
                             </Badge>
                           ))
                         : null}
-                      {!product.roastLevelNames?.length && !product.grindTypeNames?.length && (
+                      {!product.coffeeProfile?.roastLevelNames?.length && !product.coffeeProfile?.grindTypeNames?.length && (
                         <span className="text-sm text-muted-foreground">—</span>
                       )}
                     </div>
                   </TableCell>
                   {/* Prices Column: Show all available prices (camelCase only, robust) */}
                   <TableCell className="py-4 px-4">
-                    <div className="flex flex-col gap-1">
-                      {[
-                        product.activePrice,
-                        ...(product.otherAvailableCurrencies || [])
-                      ]
-                        .filter(Boolean)
-                        .map((price: any, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-[10px] font-mono py-0 px-1">
-                              {price.weightLabel}
-                            </Badge>
-                            <span className={`text-sm font-semibold ${price.currencyCode === 'USD' ? 'text-green-600' : 'text-blue-600'}`}>
-                              {price.currencyCode === 'USD' ? '$' : 'AED'} {price.price.toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                      {!product.activePrice && (!product.otherAvailableCurrencies || product.otherAvailableCurrencies.length === 0) && (
+                    <div className="flex flex-col gap-2">
+                      {(product.variants || []).map((variant: any, idx: number) => {
+                         const weightLabel = variant.options?.find((o:any) => o.attributeName.toLowerCase() === 'weight')?.value || variant.sku;
+                         return (
+                           <div key={idx} className="flex flex-col gap-1 border-b border-border/30 pb-2 last:border-0 last:pb-0">
+                             <Badge variant="outline" className="text-[10px] font-mono py-0 px-1 w-fit">{weightLabel}</Badge>
+                             <div className="flex flex-wrap gap-2 mt-1">
+                               {variant.prices?.map((p: any, pIdx: number) => (
+                                  <span key={pIdx} className={`text-xs font-semibold ${p.currencyCode === 'USD' ? 'text-green-600' : 'text-blue-600'}`}>
+                                    {p.currencyCode === 'USD' ? '$' : 'AED'} {p.price.toFixed(2)}
+                                  </span>
+                               ))}
+                             </div>
+                           </div>
+                         )
+                      })}
+                      {(!product.variants || product.variants.length === 0) && (
                         <span className="text-muted-foreground text-xs italic">No prices set</span>
                       )}
                     </div>
                   </TableCell>
                   {/* Stock Column: Display stock in kg */}
                   <TableCell className="py-4 px-4">
-                    <Badge className={product.stockInKg === 0 ? "bg-destructive/20 text-destructive" : "bg-green-500/20 text-green-600"}>
-                      {product.stockInKg || 0} kg
+                    <Badge className={(product.variants?.[0]?.stockQuantity || 0) === 0 ? "bg-destructive/20 text-destructive" : "bg-green-500/20 text-green-600"}>
+                      {(product.variants?.[0]?.stockQuantity || 0) || 0} kg
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right py-4 px-6">
@@ -999,6 +1194,24 @@ const handleOpenEdit = async (productId: string) => {
             {/* Basic Info Section */}
             <div className="space-y-5">
               <div className="text-xs font-bold uppercase tracking-wider text-accent/70 pb-2 border-b border-border/20">Basic Info</div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Category *</label>
+                <Select
+                  value={siloFormState.categoryId}
+                  onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, categoryId: val }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(categories || []).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -1035,30 +1248,11 @@ const handleOpenEdit = async (productId: string) => {
                   />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Category *</label>
-                <Select
-                  value={siloFormState.categoryId}
-                  onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, categoryId: val }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
-            {/* Origin Section */}
-            <div className="space-y-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Origin</div>
+            {siloFormState.categoryId && isCoffeeCategory && (
+              <div className="space-y-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Origin</div>
               <Select
                 value={siloFormState.originId}
                 onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, originId: val }))}
@@ -1067,7 +1261,7 @@ const handleOpenEdit = async (productId: string) => {
                   <SelectValue placeholder="Select origin..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {origins.map((o) => (
+                  {(origins || []).map((o) => (
                     <SelectItem key={o.id} value={o.id}>
                       {o.name}
                     </SelectItem>
@@ -1075,6 +1269,7 @@ const handleOpenEdit = async (productId: string) => {
                 </SelectContent>
               </Select>
             </div>
+            )}
 
             {/* Stock Section */}
             <div className="space-y-4">
@@ -1092,11 +1287,13 @@ const handleOpenEdit = async (productId: string) => {
               </div>
             </div>
 
-            {/* Roast Levels Section */}
-            <div className="space-y-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Roast Levels *</div>
+            {siloFormState.categoryId && isCoffeeCategory && (
+            <>
+              {/* Roast Levels Section */}
+              <div className="space-y-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Roast Levels *</div>
               <div className="space-y-2 bg-white/5 p-4 rounded-lg border border-border/30">
-                {masterData?.roastLevels.map((roast) => (
+                {masterData?.roastLevels?.map((roast) => (
                   <div key={roast.id} className="flex items-center gap-2">
                     <Checkbox
                       id={`roast-${roast.id}`}
@@ -1115,7 +1312,7 @@ const handleOpenEdit = async (productId: string) => {
             <div className="space-y-4">
               <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Grind Types *</div>
               <div className="space-y-2 bg-white/5 p-4 rounded-lg border border-border/30">
-                {masterData?.grindTypes.map((grind) => (
+                {masterData?.grindTypes?.map((grind) => (
                   <div key={grind.id} className="flex items-center gap-2">
                     <Checkbox
                       id={`grind-${grind.id}`}
@@ -1134,7 +1331,7 @@ const handleOpenEdit = async (productId: string) => {
             <div className="space-y-4 pt-6 border-t border-border/20">
               <div className="text-xs font-bold uppercase tracking-wider text-accent/70">Flavour Notes (EN / AR)</div>
               <div className="space-y-3">
-                {siloFormState.flavourNotes.map((note, idx) => (
+                {(siloFormState.flavourNotes || []).map((note, idx) => (
                   <div key={idx} className="flex gap-2 items-start bg-white/5 p-3 rounded-lg border border-border/10">
                     <div className="flex-1 space-y-2">
                       <Input 
@@ -1178,24 +1375,25 @@ const handleOpenEdit = async (productId: string) => {
                 </Button>
               </div>
             </div>
+            </>
+            )}
               
             {/* Pricing Matrix Section */}
             <div className="space-y-4">
               <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Pricing Matrix *</div>
               <div className="space-y-3 bg-accent/5 p-4 rounded-lg border border-accent/20">
-                {masterData?.weights.map((weight) => (
-                  <div key={weight.id} className="space-y-2">
+                {masterData?.attributes?.find(a => a.name.toLowerCase() === 'weight')?.values?.map((weightVal) => (
+                  <div key={weightVal.id} className="space-y-2">
                     <div className="text-xs font-medium text-muted-foreground">
-                      {weight.label} ({weight.grams}g)
+                      {weightVal.value}
                     </div>
                     {['USD', 'AED'].map((curr) => {
                       const wp = siloFormState.weightPrices.find(
-                        p => p.weightId === weight.id && p.currencyCode === curr
-                      );
-                      if (!wp) return null;
+                        p => p.weightId === weightVal.id && p.currencyCode === curr
+                      ) || { weightId: weightVal.id, currencyCode: curr, enabled: false, price: "" };
                       
                       return (
-                        <div key={`${weight.id}-${curr}`} className="flex items-end gap-3">
+                        <div key={`${weightVal.id}-${curr}`} className="flex items-end gap-3">
                           <div className="flex-1">
                             <label className="text-xs font-medium text-muted-foreground">
                               {curr}
@@ -1205,7 +1403,7 @@ const handleOpenEdit = async (productId: string) => {
                               min="0"
                               step="0.01"
                               value={wp.price}
-                              onChange={(e) => updateWeightPrice(weight.id, curr, "price", e.target.value)}
+                              onChange={(e) => updateWeightPrice(weightVal.id, curr, "price", e.target.value)}
                               placeholder="0.00"
                               disabled={!wp.enabled}
                               className="mt-1"
@@ -1213,11 +1411,11 @@ const handleOpenEdit = async (productId: string) => {
                           </div>
                           <div className="flex items-center gap-2">
                             <Checkbox
-                              id={`price-${weight.id}-${curr}`}
+                              id={`price-${weightVal.id}-${curr}`}
                               checked={wp.enabled}
-                              onCheckedChange={(checked) => updateWeightPrice(weight.id, curr, "enabled", !!checked)}
+                              onCheckedChange={(checked) => updateWeightPrice(weightVal.id, curr, "enabled", !!checked)}
                             />
-                            <label htmlFor={`price-${weight.id}-${curr}`} className="text-sm cursor-pointer">
+                            <label htmlFor={`price-${weightVal.id}-${curr}`} className="text-sm cursor-pointer">
                               Enable
                             </label>
                           </div>
@@ -1268,7 +1466,7 @@ const handleOpenEdit = async (productId: string) => {
                   <div className="grid grid-cols-3 gap-3 mt-4">
                     
                     {/* Existing Images (Smart Edit) */}
-                    {existingImages.map((img, idx) => (
+                    {(existingImages || []).map((img, idx) => (
                       <div 
                         key={`exist-${idx}`} 
                         className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all group ${
@@ -1301,7 +1499,7 @@ const handleOpenEdit = async (productId: string) => {
                     ))}
 
                     {/* New Uploads */}
-                    {previewUrls.map((url, idx) => (
+                    {(previewUrls || []).map((url, idx) => (
                       <div 
                         key={`new-${idx}`} 
                         className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all group ${
@@ -1374,6 +1572,7 @@ const handleOpenEdit = async (productId: string) => {
         <DialogContent className="glass-dark dark:glass border-border/60 backdrop-blur-sm max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl">{viewingProduct?.name}</DialogTitle>
+            <DialogDescription className="sr-only">Product Details</DialogDescription>
           </DialogHeader>
           
           {viewingProduct && (
@@ -1418,13 +1617,13 @@ const handleOpenEdit = async (productId: string) => {
               </div>
 
               {/* Pricing Table */}
-              {viewingProduct.availablePrices && viewingProduct.availablePrices.length > 0 && (
+              {viewingProduct.variants && viewingProduct.variants.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">Pricing</h3>
                    <div className="glass rounded-lg p-3 border border-border/30 space-y-1">
-                     {viewingProduct.availablePrices.map((p) => (
-                       <div key={p.productPriceId || p.grams} className="flex justify-between text-sm">
-                         <span className="text-muted-foreground">{(p.weightLabel || "").trim() || `${p.grams}g`}:</span>
+                     {(viewingProduct.variants || []).map((p) => (
+                       <div key={p.id || (p.stockQuantity || 0)} className="flex justify-between text-sm">
+                         <span className="text-muted-foreground">{(p.sku || "").trim() || `${(p.stockQuantity || 0)}g`}:</span>
                          <span className="font-semibold text-accent">{currency.format(p.price)}</span>
                        </div>
                      ))}
@@ -1436,17 +1635,17 @@ const handleOpenEdit = async (productId: string) => {
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-accent/80 uppercase tracking-wider">Attributes</h3>
                 <div className="flex flex-wrap gap-2">
-                   {viewingProduct.roastLevelNames?.length
-                     ? viewingProduct.roastLevelNames.map((name, idx) => (
+                   {viewingProduct.coffeeProfile?.roastLevelNames?.length
+                     ? viewingProduct.coffeeProfile?.roastLevelNames.map((name, idx) => (
                          <Badge key={`roast-${idx}`} variant="secondary">{name}</Badge>
                        ))
                      : null}
-                   {viewingProduct.grindTypeNames?.length
-                     ? viewingProduct.grindTypeNames.map((name, idx) => (
+                   {viewingProduct.coffeeProfile?.grindTypeNames?.length
+                     ? viewingProduct.coffeeProfile?.grindTypeNames.map((name, idx) => (
                          <Badge key={`grind-${idx}`} variant="outline" className="bg-white/5">{name}</Badge>
                        ))
                      : null}
-                  {!viewingProduct.roastLevelNames?.length && !viewingProduct.grindTypeNames?.length && (
+                  {!viewingProduct.coffeeProfile?.roastLevelNames?.length && !viewingProduct.coffeeProfile?.grindTypeNames?.length && (
                     <Badge variant="outline" className="bg-white/5">No attributes</Badge>
                   )}
                 </div>
@@ -1462,11 +1661,11 @@ const handleOpenEdit = async (productId: string) => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Origin:</span>
-                    <span className="font-medium">{viewingProduct.originName || "—"}</span>
+                    <span className="font-medium">{viewingProduct.coffeeProfile?.originName || "—"}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Stock:</span>
-                     <span className="font-medium">{viewingProduct.stockInKg || 0} kg</span>
+                     <span className="font-medium">{(viewingProduct.variants?.[0]?.stockQuantity || 0) || 0} kg</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">ID:</span>

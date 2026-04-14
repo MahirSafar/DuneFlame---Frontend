@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import {
   CurrencyType,
   DEFAULT_CURRENCY,
@@ -25,6 +26,7 @@ const setCurrencyCookie = (currency: CurrencyType) => {
     date.setTime(date.getTime() + 365 * 24 * 60 * 60 * 1000);
     const expires = `expires=${date.toUTCString()}`;
     document.cookie = `${CURRENCY_COOKIE_NAME}=${currency}; ${expires}; path=/; SameSite=Lax`;
+    document.cookie = `NEXT_CURRENCY=${currency}; path=/; max-age=31536000; SameSite=Lax`;
   }
 };
 
@@ -71,6 +73,7 @@ interface CurrencyProviderProps {
 }
 
 export function CurrencyProvider({ children, initialCurrency }: CurrencyProviderProps) {
+  const router = useRouter();
   const [currency, setCurrencyState] = useState<CurrencyType>(initialCurrency || DEFAULT_CURRENCY);
   const [isHydrated, setIsHydrated] = useState(false);
 

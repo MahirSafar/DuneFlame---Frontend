@@ -7,7 +7,7 @@ export interface ProductPricePayload {
 }
 
 export interface ProductPriceDto {
-  productPriceId: string;
+  productVariantId: string;
   weightLabel: string;
   grams: number;
   price: number;
@@ -19,7 +19,49 @@ export interface CurrencyOptionDto {
   weightLabel: string;
   grams: number;
   price: number;
-  productPriceId: string;
+  productVariantId: string;
+}
+
+export interface ProductTranslationDto {
+  languageCode: string;
+  name: string;
+  description: string;
+}
+
+export interface FlavourNoteDto {
+  id?: string;
+  name: string;
+  displayOrder: number;
+  translations?: { languageCode: string; name: string }[];
+}
+
+export interface ProductCoffeeProfileDto {
+  originId: string | null;
+  originName: string | null;
+  roastLevelNames: string[];
+  grindTypeNames: string[];
+  roastLevelIds: string[];
+  grindTypeIds: string[];
+  flavourNotes: FlavourNoteDto[];
+}
+
+export interface VariantOptionDto {
+  attributeName: string;
+  value: string;
+}
+
+export interface VariantDto {
+  id: string;
+  sku: string;
+  price: number;
+  stockQuantity: number | null;
+  options: VariantOptionDto[];
+}
+
+export interface ProductImageDto {
+  id: string;
+  imageUrl: string;
+  isMain: boolean;
 }
 
 export interface Product {
@@ -27,29 +69,21 @@ export interface Product {
   name: string;
   slug: string;
   description: string;
-  stockInKg: number;
   isActive: boolean;
-  categoryName?: string;
-  originName?: string;
   categoryId: string;
-  originId?: string;
-  
-  // Backend Multi-Currency
-  activePrice: ProductPriceDto | null;
-  otherAvailableCurrencies: CurrencyOptionDto[];
-  availablePrices?: ProductPriceDto[]; // fallback
-  
-  images?: { id: string; imageUrl: string; isMain: boolean }[];
-  roastLevelNames?: string[];
-  grindTypeNames?: string[];
-  roastLevelIds?: string[];
-  grindTypeIds?: string[];
+  categoryName: string;
+  translations: ProductTranslationDto[];
+  coffeeProfile: ProductCoffeeProfileDto | null;
+  variants: VariantDto[];
+  createdAt: string;
+  updatedAt: string | null;
+  images: ProductImageDto[];
 }
 
 export interface MasterData {
-  weights: { id: string; label: string; grams: number }[];
+  attributes: { id: string; name: string; values: { id: string; value: string }[] }[];
   roastLevels: { id: string; name: string }[];
   grindTypes: { id: string; name: string }[];
-  categories: { id: string; name: string; slug: string }[];
+  categories: { id: string; name: string; slug: string; isCoffeeCategory: boolean }[];
   origins: { id: string; name: string }[];
 }

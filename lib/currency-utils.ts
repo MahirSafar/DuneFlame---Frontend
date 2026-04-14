@@ -84,7 +84,7 @@ export interface PriceVariant {
   weightLabel?: string;
   currency?: string;
   currencyCode?: string;
-  productPriceId?: string;
+  productVariantId?: string;
 }
 
 // Product shape tolerant to both legacy and new backend
@@ -93,7 +93,7 @@ export type ProductWithPricing = {
   activePrice?: PriceVariant;
   otherAvailableCurrencies?: PriceVariant[];
   // Legacy/Current fields
-  availablePrices?: PriceVariant[];
+  variants?: PriceVariant[];
 };
 
 /**
@@ -105,7 +105,7 @@ export function getAvailableWeights(product: ProductWithPricing): number[] {
   (product.otherAvailableCurrencies || []).forEach((p) => {
     if (typeof p.grams === "number") weights.add(p.grams);
   });
-  (product.availablePrices || []).forEach((p) => {
+  (product.variants || []).forEach((p) => {
     if (typeof p.grams === "number") weights.add(p.grams);
   });
   return Array.from(weights).sort((a, b) => a - b);
@@ -115,7 +115,7 @@ export interface ResolvedPrice {
   price: number;
   grams: number;
   weightLabel?: string;
-  productPriceId?: string;
+  productVariantId?: string;
 }
 
 /**
@@ -133,81 +133,4 @@ export interface ResolvedPrice {
  * 
  * Logs all candidates for debugging.
  */
-export function resolvePrice(
-  product: ProductWithPricing,
-  selectedCurrency: CurrencyType,
-  selectedWeight: number | undefined,
-): ResolvedPrice | null {
-  const w = selectedWeight ?? product.activePrice?.grams;
-
-  if (typeof w !== "number" && !w) {
-    return null;
-  }
-
-  // Normalize weight to number
-  const targetWeight = Number(w);
-  if (isNaN(targetWeight) || targetWeight <= 0) {
-    return null;
-  }
-
-  // BUILD: Unified price array from all sources
-  const allPrices: PriceVariant[] = [];
-  
-  if (product.activePrice) {
-    allPrices.push(product.activePrice);
-  }
-  
-  if (product.otherAvailableCurrencies?.length) {
-    allPrices.push(...product.otherAvailableCurrencies);
-  }
-  
-  if (product.availablePrices?.length) {
-    allPrices.push(...product.availablePrices);
-  }
-
-  // Normalize selected currency for comparison (case-insensitive)
-  const normalizedCurrency = selectedCurrency.trim().toUpperCase();
-
-  
-
-  // STRICT: Search by BOTH currencyCode AND grams - NO FALLBACKS
-  // ROBUST: Case-insensitive currency + type-safe weight comparison
-  const exactMatch = allPrices.find((p) => {
-    // Normalize price currency (handle both fields, case-insensitive)
-    const priceCurrency = (p.currency || p.currencyCode || "").trim().toUpperCase();
-    
-    // Type-safe weight comparison
-    const priceGrams = Number(p.grams);
-    const gramMatch = !isNaN(priceGrams) && priceGrams === targetWeight;
-    
-    // Case-insensitive currency match
-    const currencyMatch = priceCurrency === normalizedCurrency;
-    
-    
-    
-    return gramMatch && currencyMatch;
-  });
-
-  if (exactMatch && typeof exactMatch.price === "number") {
-    return {
-      price: exactMatch.price,
-      grams: Number(exactMatch.grams),
-      weightLabel: exactMatch.weightLabel,
-      productPriceId: exactMatch.productPriceId,
-    };
-  }
-
-  // NO FALLBACK - Return null if exact match not found
-  console.error(`[resolvePrice] ✗ STRICT MODE: No exact currency+weight match. Returning null.`, { 
-    requestedCurrency: normalizedCurrency, 
-    requestedWeight: targetWeight,
-    availableCombos: allPrices.map(p => ({
-      currency: (p.currency || p.currencyCode || "N/A").trim().toUpperCase(),
-      grams: Number(p.grams),
-      price: p.price,
-    })),
-  });
-  
-  return null;
-}
-
+export function resolvePrice(product: any, selectedCurrency?: any, selectedVariantId?: string | number): any | null { const allPrices: any[] = []; if (product?.activePrice) allPrices.push(product.activePrice); if (product?.otherAvailableCurrencies?.length) allPrices.push(...product.otherAvailableCurrencies); if (product?.variants?.length) allPrices.push(...product.variants); if (allPrices.length === 0) return null; if (selectedVariantId) { const match = allPrices.find(p => p.id === selectedVariantId || p.productVariantId === selectedVariantId || String(p.grams) === String(selectedVariantId)); if (match && typeof match.price === 'number') { return { price: match.price, grams: Number(match.grams) || 250, weightLabel: match.weightLabel || (match.sku ? match.sku.split('-').pop().toUpperCase() : (match.grams ? match.grams + 'g' : '250g')), productVariantId: match.id || match.productVariantId, sku: match.sku, }; } } const firstOption = allPrices[0]; if (firstOption && typeof firstOption.price === 'number') { return { price: firstOption.price, grams: Number(firstOption.grams) || 250, weightLabel: firstOption.weightLabel || (firstOption.sku ? firstOption.sku.split('-').pop().toUpperCase() : (firstOption.grams ? firstOption.grams + 'g' : '250g')), productVariantId: firstOption.id || firstOption.productVariantId, sku: firstOption.sku, }; } return null; }

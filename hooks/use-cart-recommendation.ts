@@ -9,8 +9,9 @@ export interface RecommendationResponse {
   gapAmount: number;
   recommendation?: {
     productId: string;
-    productPriceId: string;
+    productVariantId: string;
     name: string;
+    slug: string;
     imageUrl: string;
     price: number;
     currencyCode: string;
@@ -45,7 +46,7 @@ export function useCartRecommendation(countryCode?: string) {
     setError(null);
 
     const currentTotal = total(currency);
-    const excludedIds = items.map((item) => item.productPriceId);
+    const excludedIds = items.map((item) => item.productVariantId);
 
     try {
       const response = await apiFetch<RecommendationResponse>(`/basket/recommendation/stateless`, { 
