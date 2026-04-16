@@ -111,6 +111,7 @@ type SiloEditFormState = {
   arTranslationId?: string;
   stockInKg: string;
   categoryId: string;
+  brandId?: string;
   originId: string;
   isActive: boolean;
   coffeeProfileId?: string;
@@ -118,6 +119,7 @@ type SiloEditFormState = {
   selectedRoasts: string[];
   selectedGrinds: string[];
   weightPrices: WeightPrice[];
+  specifications: { key: string; value: string }[];
   flavourNotes: { 
     id?: string; 
     nameEn: string; 
@@ -136,6 +138,7 @@ const emptySiloForm: SiloEditFormState = {
   arTranslationId: undefined,
   stockInKg: "",
   categoryId: "",
+  brandId: "",
   originId: "",
   isActive: true,
   coffeeProfileId: undefined,
@@ -143,6 +146,7 @@ const emptySiloForm: SiloEditFormState = {
   selectedRoasts: [],
   selectedGrinds: [],
   weightPrices: [],
+  specifications: [],
   flavourNotes: [],
 }
 
@@ -178,6 +182,9 @@ export default function AdminProductsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("")
+  const [brandFilter, setBrandFilter] = useState("")
+  const [roastFilter, setRoastFilter] = useState("")
+  const [originFilter, setOriginFilter] = useState("")
   
   // UI Actions
   const [loading, setLoading] = useState(false)
@@ -191,6 +198,21 @@ export default function AdminProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [siloFormState, setSiloFormState] = useState<SiloEditFormState>(emptySiloForm)
   
+  // --- Render Specifications in Edit Modal ---
+  // Add this to your edit modal JSX where you want to show specifications:
+  // {siloFormState.specifications && siloFormState.specifications.length > 0 && (
+  //   <div className="glass rounded-xl p-4 mb-4">
+  //     <p className="text-xs text-muted-foreground font-semibold uppercase mb-2 tracking-wider">Technical Specifications</p>
+  //     <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+  //       {siloFormState.specifications.map((spec, idx) => (
+  //         <div key={idx} className="border-b border-border/30 pb-1">
+  //           <span className="text-xs text-muted-foreground uppercase">{spec.key}</span>
+  //           <span className="block font-semibold text-foreground">{spec.value}</span>
+  //         </div>
+  //       ))}
+  //     </div>
+  //   </div>
+  // )}
   // Image Handling
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]) 
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
@@ -227,8 +249,12 @@ export default function AdminProductsPage() {
   }, [])
 
   useEffect(() => {
+    fetchMasterDataForEdit()
+  }, [])
+
+  useEffect(() => {
     loadProducts(pageNumber)
-  }, [pageNumber, debouncedSearch, categoryFilter])
+  }, [pageNumber, debouncedSearch, categoryFilter, brandFilter, roastFilter, originFilter])
 
   useEffect(() => {
     return () => previewUrls.forEach((url) => URL.revokeObjectURL(url))
@@ -271,6 +297,9 @@ export default function AdminProductsPage() {
         pageSize: PAGE_SIZE,
         search: debouncedSearch || undefined,
         categoryId: categoryFilter || undefined,
+        brandId: brandFilter || undefined,
+        roastLevelIds: roastFilter ? [roastFilter] : undefined,
+        originIds: originFilter ? [originFilter] : undefined,
       })
       setProducts(res.items)
       setTotalPages(res.totalPages)
@@ -291,14 +320,15 @@ export default function AdminProductsPage() {
       
       const initialWeightPrices: WeightPrice[] = [];
       if (currentMasterData) {
-        const weightAttribute = currentMasterData.attributes?.find(a => a.name.toLowerCase() === 'weight');
-        weightAttribute?.values?.forEach((weightVal) => {
-          ["USD", "AED"].forEach((curr) => {
-            initialWeightPrices.push({
-              weightId: weightVal.id,
-              currencyCode: curr,
-              enabled: false,
-              price: "",
+        currentMasterData.attributes?.forEach((attr) => {
+          attr.values?.forEach((weightVal) => {
+            ["USD", "AED"].forEach((curr) => {
+              initialWeightPrices.push({
+                weightId: weightVal.id,
+                currencyCode: curr,
+                enabled: false,
+                price: "",
+              });
             });
           });
         });
@@ -334,18 +364,19 @@ const handleOpenEdit = async (productId: string) => {
   try {
     const product = await getProduct(productId, { admin: true });
     const p = product as any; // Yeni DTO (translations, activePrice və s. gəlir)
+
     setSelectedProduct(product);
 
-    // --- Tərcümələr ---
+    // --- Robustly map translations ---
     const getTrans = (lang: string) =>
-      p.translations?.find(
-        (t: any) => (t.languageCode || t.LanguageCode) === lang
-      );
+      Array.isArray(p.translations)
+        ? p.translations.find((t: any) => (t.languageCode || t.LanguageCode) === lang)
+        : undefined;
 
-    const enTrans = getTrans("en");
-    const arTrans = getTrans("ar");
+    const enTrans = getTrans("en") || { name: p.name || "", description: p.description || "" };
+    const arTrans = getTrans("ar") || { name: "", description: "" };
 
-    // --- Qiymət Matrisini Birləşdiririk ---
+    // --- Price Matrix ---
     const allPrices = [
       p.activePrice,
       ...(p.otherAvailableCurrencies || []),
@@ -354,30 +385,40 @@ const handleOpenEdit = async (productId: string) => {
     const weightPrices: WeightPrice[] = [];
 
     if (currentMasterData) {
-      const weightAttribute = currentMasterData.attributes?.find(a => a.name.toLowerCase() === 'weight');
-      weightAttribute?.values?.forEach((weightVal) => {
-        ["USD", "AED"].forEach((curr) => {
-          const existingVariant = p.variants?.find((v: any) => 
-            v.options?.some((o: any) => o.value === weightVal.value)
-          );
-          const existing = existingVariant?.prices?.find((pr: any) => pr.currencyCode === curr);
-          const existingOption = existingVariant?.options?.find((o: any) => o.value === weightVal.value);
+      currentMasterData.attributes?.forEach((attr) => {
+        attr.values?.forEach((weightVal) => {
+          ["USD", "AED"].forEach((curr) => {
+            const existingVariant = p.variants?.find((v: any) =>
+              v.options?.some((o: any) => o.value === weightVal.value)
+            );
+            const existing = existingVariant?.prices?.find((pr: any) => pr.currencyCode === curr);
+            const existingOption = existingVariant?.options?.find((o: any) => o.value === weightVal.value);
 
-          weightPrices.push({
-            weightId: weightVal.id,
-            variantId: existingVariant?.id || existingVariant?.Id,
-            currencyCode: curr,
-            priceId: existing?.id || existing?.Id,
-            enabled: !!existing,
-            price: existing ? existing.price.toString() : "",
-            sku: existingVariant?.sku,
-            optionId: existingOption?.id || existingOption?.Id,
+            weightPrices.push({
+              weightId: weightVal.id,
+              variantId: existingVariant?.id || existingVariant?.Id,
+              currencyCode: curr,
+              priceId: existing?.id || existing?.Id,
+              enabled: !!existing,
+              price: existing ? existing.price.toString() : "",
+              sku: existingVariant?.sku,
+              optionId: existingOption?.id || existingOption?.Id,
+            });
           });
         });
       });
     }
 
-    // --- Form State ---
+    // --- Robust Form State mapping with explicit specs handling ---
+    const mappedSpecifications = p.specifications && typeof p.specifications === 'object'
+      ? Object.entries(p.specifications).map(([key, value]) => ({ key, value: String(value ?? "") }))
+      : [];
+    
+    // Debug: Log if specifications are being loaded
+    if (mappedSpecifications.length > 0) {
+      console.log('✅ Loaded specifications:', mappedSpecifications);
+    }
+    
     setSiloFormState({
       nameEn: enTrans?.name || p.name || "",
       nameAr: arTrans?.name || "",
@@ -387,35 +428,33 @@ const handleOpenEdit = async (productId: string) => {
       arTranslationId: arTrans?.id || arTrans?.Id,
       stockInKg: String(p.variants?.[0]?.stockQuantity || p.stockInKg || "0"),
       categoryId: p.categoryId || "",
+      brandId: p.brandId || "",
       originId: p.coffeeProfile?.originId || "",
       isActive: p.isActive !== undefined ? p.isActive : true,
       coffeeProfileId: p.coffeeProfile?.id || undefined,
-      rowVersion: p.rowVersion || p.RowVersion || undefined, // Extract concurrency token
+      rowVersion: p.rowVersion || p.RowVersion || undefined,
       selectedRoasts: p.coffeeProfile?.roastLevelIds || [],
       selectedGrinds: p.coffeeProfile?.grindTypeIds || [],
       weightPrices,
+      // Robustly mapped specifications
+      specifications: mappedSpecifications,
+      // Robustly map flavourNotes
       flavourNotes:
-        p.coffeeProfile?.flavourNotes?.map((fn: any) => ({
-          id: fn.id || fn.Id,
-          nameEn:
-            fn.translations?.find(
-              (t: any) => (t.languageCode || t.LanguageCode) === "en"
-            )?.name || fn.name || "",
-          enTranslationId: fn.translations?.find(
-            (t: any) => (t.languageCode || t.LanguageCode) === "en"
-          )?.id || fn.translations?.find(
-            (t: any) => (t.languageCode || t.LanguageCode) === "en"
-          )?.Id,
-          nameAr:
-            fn.translations?.find(
-              (t: any) => (t.languageCode || t.LanguageCode) === "ar"
-            )?.name || "",
-          arTranslationId: fn.translations?.find(
-            (t: any) => (t.languageCode || t.LanguageCode) === "ar"
-          )?.id || fn.translations?.find(
-            (t: any) => (t.languageCode || t.LanguageCode) === "ar"
-          )?.Id,
-        })) || [],
+        Array.isArray(p.coffeeProfile?.flavourNotes)
+          ? p.coffeeProfile.flavourNotes.map((fn: any) => ({
+              id: fn.id || fn.Id,
+              nameEn:
+                fn.translations?.find((t: any) => (t.languageCode || t.LanguageCode) === "en")?.name || fn.name || "",
+              enTranslationId:
+                fn.translations?.find((t: any) => (t.languageCode || t.LanguageCode) === "en")?.id ||
+                fn.translations?.find((t: any) => (t.languageCode || t.LanguageCode) === "en")?.Id,
+              nameAr:
+                fn.translations?.find((t: any) => (t.languageCode || t.LanguageCode) === "ar")?.name || "",
+              arTranslationId:
+                fn.translations?.find((t: any) => (t.languageCode || t.LanguageCode) === "ar")?.id ||
+                fn.translations?.find((t: any) => (t.languageCode || t.LanguageCode) === "ar")?.Id,
+            }))
+          : [],
     });
 
     // --- Şəkil hissəsi (birinci koddan) ---
@@ -627,9 +666,21 @@ const handleOpenEdit = async (productId: string) => {
       formData.append("Name", siloFormState.nameEn);
       formData.append("Description", siloFormState.descriptionEn);
       formData.append("CategoryId", siloFormState.categoryId);
+      if (siloFormState.brandId) {
+        formData.append("BrandId", siloFormState.brandId);
+      }
       
       // MUST explicitly stringify booleans for FormData
       formData.append("IsActive", String(siloFormState.isActive));
+
+      // New: Append specifications as JSON string
+      if (siloFormState.specifications.length > 0) {
+        const specsObj = siloFormState.specifications.reduce((acc, curr) => {
+          if (curr.key.trim() !== '') acc[curr.key] = curr.value;
+          return acc;
+        }, {} as Record<string, string>);
+        formData.append('SpecificationsJson', JSON.stringify(specsObj));
+      }
 
       // Translations format: Explicit translations array
       if (siloFormState.enTranslationId) {
@@ -930,31 +981,31 @@ const handleOpenEdit = async (productId: string) => {
 
       {/* Filters */}
       <div className="glass-dark dark:glass rounded-2xl border border-border/60 p-5 md:p-6 shadow-lg">
-        <div className="grid gap-4 sm:grid-cols-[1fr,220px] lg:grid-cols-[1fr,240px,200px] items-center">
+        <div className="grid gap-4 sm:grid-cols-[1fr,220px] lg:grid-cols-[1fr,300px,200px] xl:grid-cols-[1fr,150px,150px,150px,150px,200px] mb-4 items-center">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search products..."
-              className="pl-10 bg-white/60 dark:bg-white/5 border-border/60"
+              className="w-full pl-10 bg-white/60 dark:bg-white/5 border-border/60"
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <Filter className="text-muted-foreground" size={18} />
+            <Filter className="text-muted-foreground hidden lg:block" size={18} />
             <Select
-              value={categoryFilter}
+              value={categoryFilter || "all"}
               onValueChange={(val) => {
                 setCategoryFilter(val === "all" ? "" : val)
                 setPageNumber(1)
               }}
             >
               <SelectTrigger className="w-full bg-white/60 dark:bg-white/5 border-border/60">
-                <SelectValue placeholder="All categories" />
+                <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
+                <SelectItem value="all">Categories (All)</SelectItem>
                 {(categories || []).map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
@@ -964,9 +1015,75 @@ const handleOpenEdit = async (productId: string) => {
             </Select>
           </div>
 
-          <div className="hidden lg:flex justify-end text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Select
+              value={brandFilter || "all"}
+              onValueChange={(val) => {
+                setBrandFilter(val === "all" ? "" : val)
+                setPageNumber(1)
+              }}
+            >
+              <SelectTrigger className="w-full bg-white/60 dark:bg-white/5 border-border/60">
+                <SelectValue placeholder="Brand" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Brands (All)</SelectItem>
+                {(masterData?.brands || []).map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Select
+              value={roastFilter || "all"}
+              onValueChange={(val) => {
+                setRoastFilter(val === "all" ? "" : val)
+                setPageNumber(1)
+              }}
+            >
+              <SelectTrigger className="w-full bg-white/60 dark:bg-white/5 border-border/60">
+                <SelectValue placeholder="Roast" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Roasts (All)</SelectItem>
+                {(masterData?.roastLevels || []).map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Select
+              value={originFilter || "all"}
+              onValueChange={(val) => {
+                setOriginFilter(val === "all" ? "" : val)
+                setPageNumber(1)
+              }}
+            >
+              <SelectTrigger className="w-full bg-white/60 dark:bg-white/5 border-border/60">
+                <SelectValue placeholder="Origin" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Origins (All)</SelectItem>
+                {(origins || []).map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="hidden xl:flex justify-end text-sm text-muted-foreground w-full whitespace-nowrap">
              <span>
-                {totalCount} items • Page {pageNumber} of {totalPages}
+                {totalCount} items • Pg {pageNumber}/{totalPages}
              </span>
           </div>
         </div>
@@ -983,17 +1100,16 @@ const handleOpenEdit = async (productId: string) => {
         {displayedProducts.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center h-100 text-muted-foreground">
             <Layers className="size-12 mb-4 opacity-20" />
-            <p>No coffee found.</p>
+            <p>No products found.</p>
           </div>
         ) : (
           <Table>
             <TableHeader className="bg-white/5">
               <TableRow className="border-border/60">
-                <TableHead className="py-4 px-6">Coffee</TableHead>
+                <TableHead className="py-4 px-6">Product</TableHead>
                 <TableHead className="py-4 px-4">Category</TableHead>
-                <TableHead className="py-4 px-4">Origin</TableHead>
-                <TableHead className="py-4 px-4">Attributes</TableHead>
-                <TableHead className="py-4 px-4">Price</TableHead>
+                <TableHead className="py-4 px-4">Brand</TableHead>
+                <TableHead className="py-4 px-4">Price Matrix</TableHead>
                 <TableHead className="py-4 px-4">Stock</TableHead>
                 <TableHead className="text-right py-4 px-6">Actions</TableHead>
               </TableRow>
@@ -1023,37 +1139,15 @@ const handleOpenEdit = async (productId: string) => {
                     </Badge>
                   </TableCell>
                   <TableCell className="py-4 px-4">
-                    <span className="text-sm">
-                      {product.coffeeProfile?.originName || "—"}
+                    <span className="text-sm font-medium">
+                      {product.brandName || "—"}
                     </span>
-                  </TableCell>
-                  {/* Attributes Column: Show roast levels and grind types */}
-                  <TableCell className="py-4 px-4">
-                    <div className="flex flex-wrap gap-1">
-                      {product.coffeeProfile?.roastLevelNames?.length
-                        ? product.coffeeProfile?.roastLevelNames.map((name, idx) => (
-                            <Badge key={`roast-${idx}`} variant="secondary" className="text-xs">
-                              {name}
-                            </Badge>
-                          ))
-                        : null}
-                      {product.coffeeProfile?.grindTypeNames?.length
-                        ? product.coffeeProfile?.grindTypeNames.map((name, idx) => (
-                            <Badge key={`grind-${idx}`} variant="outline" className="text-xs bg-white/5">
-                              {name}
-                            </Badge>
-                          ))
-                        : null}
-                      {!product.coffeeProfile?.roastLevelNames?.length && !product.coffeeProfile?.grindTypeNames?.length && (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </div>
                   </TableCell>
                   {/* Prices Column: Show all available prices (camelCase only, robust) */}
                   <TableCell className="py-4 px-4">
                     <div className="flex flex-col gap-2">
                       {(product.variants || []).map((variant: any, idx: number) => {
-                         const weightLabel = variant.options?.find((o:any) => o.attributeName.toLowerCase() === 'weight')?.value || variant.sku;
+                         const weightLabel = variant.options?.find((o:any) => o.attributeName.toLowerCase() === 'weight')?.value || variant.sku || `Variant ${idx + 1}`;
                          return (
                            <div key={idx} className="flex flex-col gap-1 border-b border-border/30 pb-2 last:border-0 last:pb-0">
                              <Badge variant="outline" className="text-[10px] font-mono py-0 px-1 w-fit">{weightLabel}</Badge>
@@ -1072,10 +1166,10 @@ const handleOpenEdit = async (productId: string) => {
                       )}
                     </div>
                   </TableCell>
-                  {/* Stock Column: Display stock in kg */}
+                  {/* Stock Column */}
                   <TableCell className="py-4 px-4">
                     <Badge className={(product.variants?.[0]?.stockQuantity || 0) === 0 ? "bg-destructive/20 text-destructive" : "bg-green-500/20 text-green-600"}>
-                      {(product.variants?.[0]?.stockQuantity || 0) || 0} kg
+                      {(product.variants?.[0]?.stockQuantity || 0)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right py-4 px-6">
@@ -1194,23 +1288,44 @@ const handleOpenEdit = async (productId: string) => {
             {/* Basic Info Section */}
             <div className="space-y-5">
               <div className="text-xs font-bold uppercase tracking-wider text-accent/70 pb-2 border-b border-border/20">Basic Info</div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Category *</label>
-                <Select
-                  value={siloFormState.categoryId}
-                  onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, categoryId: val }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(categories || []).map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Category *</label>
+                  <Select
+                    value={siloFormState.categoryId}
+                    onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, categoryId: val }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(categories || []).map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Brand</label>
+                  <Select
+                    value={siloFormState.brandId || "none"}
+                    onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, brandId: val === "none" ? "" : val }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select brand..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Brand</SelectItem>
+                      {(masterData?.brands || []).map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
@@ -1378,50 +1493,123 @@ const handleOpenEdit = async (productId: string) => {
             </>
             )}
               
+            {/* Technical Specifications Section - Equipment Only */}
+            {((!isCoffeeCategory && siloFormState.categoryId) || siloFormState.specifications.length > 0) && (
+            <div className="space-y-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Technical Specifications</div>
+              <div className="space-y-3 bg-accent/5 p-4 rounded-lg border border-accent/20">
+                {siloFormState.specifications.length > 0 ? (
+                  <>
+                    {siloFormState.specifications.map((spec, idx) => (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <div className="flex-1 space-y-1">
+                          <Input 
+                            placeholder="Key (e.g. Motor)" 
+                            value={spec.key}
+                            onChange={(e) => {
+                              const newSpecs = [...siloFormState.specifications];
+                              newSpecs[idx].key = e.target.value;
+                              setSiloFormState(prev => ({ ...prev, specifications: newSpecs }));
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <Input 
+                            placeholder="Value (e.g. 650W)" 
+                            value={spec.value}
+                            onChange={(e) => {
+                              const newSpecs = [...siloFormState.specifications];
+                              newSpecs[idx].value = e.target.value;
+                              setSiloFormState(prev => ({ ...prev, specifications: newSpecs }));
+                            }}
+                          />
+                        </div>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => {
+                            const newSpecs = siloFormState.specifications.filter((_, i) => i !== idx);
+                            setSiloFormState(prev => ({ ...prev, specifications: newSpecs }));
+                          }}
+                        >
+                          <X size={14} className="text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic py-2">No specifications added yet.</p>
+                )}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full border-dashed"
+                  onClick={() => setSiloFormState(prev => ({ ...prev, specifications: [...prev.specifications, { key: "", value: "" }] }))}
+                >
+                  <Plus size={14} className="mr-2" /> Add Specification
+                </Button>
+              </div>
+            </div>
+            )}
+
             {/* Pricing Matrix Section */}
             <div className="space-y-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Pricing Matrix *</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Attributes & Pricing Matrix *</div>
               <div className="space-y-3 bg-accent/5 p-4 rounded-lg border border-accent/20">
-                {masterData?.attributes?.find(a => a.name.toLowerCase() === 'weight')?.values?.map((weightVal) => (
-                  <div key={weightVal.id} className="space-y-2">
-                    <div className="text-xs font-medium text-muted-foreground">
-                      {weightVal.value}
+                {masterData?.attributes
+                  ?.filter((attr) =>
+                    isCoffeeCategory
+                      ? attr.name.toLowerCase().includes('weight')
+                      : !attr.name.toLowerCase().includes('weight')
+                  )
+                  ?.map((attr) => (
+                  <div key={attr.id} className="space-y-4 pb-4 border-b border-border/10 last:border-0">
+                    <div className="text-sm font-bold text-accent">{attr.name} Variants</div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                       {attr.values?.map((weightVal) => (
+                         <div key={weightVal.id} className="space-y-2 bg-white/5 p-3 rounded border border-border/50">
+                           <div className="text-xs font-medium text-foreground pb-1 border-b border-border/30">
+                             {weightVal.value}
+                           </div>
+                           {['USD', 'AED'].map((curr) => {
+                             const wp = siloFormState.weightPrices.find(
+                               p => p.weightId === weightVal.id && p.currencyCode === curr
+                             ) || { weightId: weightVal.id, currencyCode: curr, enabled: false, price: "" };
+                             
+                             return (
+                               <div key={`${weightVal.id}-${curr}`} className="flex items-end gap-3 translate-y-1">
+                                 <div className="flex-1">
+                                   <label className="text-[10px] font-medium text-muted-foreground uppercase">
+                                     Price ({curr})
+                                   </label>
+                                   <Input
+                                     type="number"
+                                     min="0"
+                                     step="0.01"
+                                     value={wp.price}
+                                     onChange={(e) => updateWeightPrice(weightVal.id, curr, "price", e.target.value)}
+                                     placeholder="0.00"
+                                     disabled={!wp.enabled}
+                                     className="mt-1 h-8 text-sm"
+                                   />
+                                 </div>
+                                 <div className="flex items-center gap-2 mb-2">
+                                   <Checkbox
+                                     id={`price-${weightVal.id}-${curr}`}
+                                     checked={wp.enabled}
+                                     onCheckedChange={(checked) => updateWeightPrice(weightVal.id, curr, "enabled", !!checked)}
+                                   />
+                                   <label htmlFor={`price-${weightVal.id}-${curr}`} className="text-xs cursor-pointer select-none">
+                                     Enable
+                                   </label>
+                                 </div>
+                               </div>
+                             );
+                           })}
+                         </div>
+                       ))}
                     </div>
-                    {['USD', 'AED'].map((curr) => {
-                      const wp = siloFormState.weightPrices.find(
-                        p => p.weightId === weightVal.id && p.currencyCode === curr
-                      ) || { weightId: weightVal.id, currencyCode: curr, enabled: false, price: "" };
-                      
-                      return (
-                        <div key={`${weightVal.id}-${curr}`} className="flex items-end gap-3">
-                          <div className="flex-1">
-                            <label className="text-xs font-medium text-muted-foreground">
-                              {curr}
-                            </label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={wp.price}
-                              onChange={(e) => updateWeightPrice(weightVal.id, curr, "price", e.target.value)}
-                              placeholder="0.00"
-                              disabled={!wp.enabled}
-                              className="mt-1"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id={`price-${weightVal.id}-${curr}`}
-                              checked={wp.enabled}
-                              onCheckedChange={(checked) => updateWeightPrice(weightVal.id, curr, "enabled", !!checked)}
-                            />
-                            <label htmlFor={`price-${weightVal.id}-${curr}`} className="text-sm cursor-pointer">
-                              Enable
-                            </label>
-                          </div>
-                        </div>
-                      );
-                    })}
                   </div>
                 ))}
               </div>

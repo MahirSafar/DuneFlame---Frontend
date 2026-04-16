@@ -13,6 +13,12 @@ import { FormattedPrice } from "@/components/currency/formatted-price"
 import { EMPTY_GUID } from "@/lib/cart-store"
 import { ProductQuickBuy } from "@/components/products/product-quick-buy"
 import { StripeElementsProvider } from "@/components/payment/stripe-elements-provider"
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion"
 
 const formatWeight = (grams?: number) => {
   if (!grams) return "";
@@ -78,6 +84,8 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   const handleVariantSelect = (id: string) => {
     setSelectedVariantId(id)
   }
+
+  const isCoffeeProduct = !!product.coffeeProfile;
 
   const mainImage = useMemo(
     () => {
@@ -186,86 +194,145 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
 
-      <motion.div
-        whileHover={{ scale: 1.01 }}
-        transition={{ type: "spring", stiffness: 120, damping: 12 }}
-        className="relative self-start overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-background via-background/60 to-background/30 shadow-[0_25px_80px_-40px_rgba(0,0,0,0.55)]"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.08),transparent_30%)]" />
-        <div className="absolute inset-0 bg-linear-to-br from-accent/10 via-transparent to-secondary/10" />
+      {/* LEFT column — image card + specs accordion below (equipment only) */}
+      <div className="space-y-4 self-start">
+        <motion.div
+          whileHover={{ scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 120, damping: 12 }}
+          className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-background via-background/60 to-background/30 shadow-[0_25px_80px_-40px_rgba(0,0,0,0.55)]"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.08),transparent_30%)]" />
+          <div className="absolute inset-0 bg-linear-to-br from-accent/10 via-transparent to-secondary/10" />
 
-        {mainImage ? (
-          <motion.div
-            initial={{ scale: 1 }}
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="relative z-10 w-full aspect-square md:aspect-auto md:h-150"
-          >
-            <Image
-              src={mainImage}
-              alt={product.name}
-              fill
-              quality={60}
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority
-              className="object-cover"
-            />
-          </motion.div>
-        ) : (
-          <div className="relative z-10 flex h-full min-h-105 items-center justify-center bg-linear-to-br from-amber-100 to-orange-200 text-8xl dark:from-amber-900 dark:to-orange-900">
-            ☕
+          {mainImage ? (
+            <motion.div
+              initial={{ scale: 1 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="relative z-10 w-full aspect-square md:aspect-auto md:h-150"
+            >
+              <Image
+                src={mainImage}
+                alt={product.name}
+                fill
+                quality={60}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority
+                className="object-cover"
+              />
+            </motion.div>
+          ) : (
+            <div className="relative z-10 flex h-full min-h-105 items-center justify-center bg-linear-to-br from-amber-100 to-orange-200 text-8xl dark:from-amber-900 dark:to-orange-900">
+              ☕
+            </div>
+          )}
+
+          <div className="absolute right-6 bottom-6 z-20 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs text-white backdrop-blur">
+            {(selectedVariant?.stockQuantity ?? 0) > 0 ? t('detail.inStock') : t('detail.limitedStock')}
+          </div>
+
+          {galleryImages.length > 1 && (
+            <div className="absolute bottom-6 left-6 right-6 z-20 flex gap-2">
+              {galleryImages.map((image) => (
+                <motion.button
+                  key={image.id}
+                  onClick={() => setSelectedImageId(image.id)}
+                  whileHover={{ scale: 1.05 }}
+                  className={`relative h-16 w-16 overflow-hidden rounded-lg border-2 transition-all ${
+                    selectedImageId === image.id ? "border-accent" : "border-white/20 hover:border-white/40"
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={getImageUrl(image.imageUrl) || ""} alt="Product thumbnail" className="h-full w-full object-cover" />
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Equipment: Technical Specifications accordion — below image, starts collapsed */}
+        {!isCoffeeProduct && product.specifications && Object.keys(product.specifications).length > 0 && (
+          <div className="rounded-2xl border border-white/10 bg-background/40 backdrop-blur overflow-hidden">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="specs" className="border-0">
+                <AccordionTrigger className="px-5 py-4 hover:no-underline">
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    Technical Specifications
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-5 pb-5 pt-0">
+                  <div className="divide-y divide-white/10">
+                    {Object.entries(product.specifications).map(([key, value]) => (
+                      <div key={key} className="flex justify-between py-2.5">
+                        <span className="text-xs font-semibold uppercase text-muted-foreground">{key}</span>
+                        <span className="text-sm font-semibold text-primary dark:text-secondary text-right max-w-[55%]">{value as React.ReactNode}</span>
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         )}
+      </div>
 
-        <div className="absolute right-6 bottom-6 z-20 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs text-white backdrop-blur">
-          {(selectedVariant?.stockQuantity ?? 0) > 0 ? t('detail.inStock') : t('detail.limitedStock')}
-        </div>
-
-        {galleryImages.length > 1 && (
-          <div className="absolute bottom-6 left-6 right-6 z-20 flex gap-2">
-            {galleryImages.map((image) => (
-              <motion.button
-                key={image.id}
-                onClick={() => setSelectedImageId(image.id)}
-                whileHover={{ scale: 1.05 }}
-                className={`relative h-16 w-16 overflow-hidden rounded-lg border-2 transition-all ${
-                  selectedImageId === image.id ? "border-accent" : "border-white/20 hover:border-white/40"
-                }`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={getImageUrl(image.imageUrl) || ""} alt="Product thumbnail" className="h-full w-full object-cover" />
-              </motion.button>
-            ))}
-          </div>
-        )}
-      </motion.div>
-
+      {/* RIGHT column — product info */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.35, ease: "easeOut" }}
         className="space-y-6"
       >
+        {/* Brand / origin */}
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-            {/* Removed category badge span as requested */}
             <div className="flex items-center gap-2">
               <Leaf size={14} className="text-accent" />
-                <span>{product.coffeeProfile?.originName || "DuneFlame Reserve"}</span>
+              {isCoffeeProduct
+                ? <span>{product.coffeeProfile?.originName || "DuneFlame Reserve"}</span>
+                : <span>{product.brandName || product.categoryName || "DuneFlame Equipment"}</span>
+              }
             </div>
           </div>
 
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h1 className="font-heading font-bold leading-tight text-primary dark:text-secondary uppercase" style={{ fontSize: "24px" }}>{productName}</h1>
-              <p className="mt-2 text-base text-muted-foreground md:text-lg">{productDescription}</p>
-            </div>
+          {/* Name + Description */}
+          <div>
+            <h1 className="font-heading font-bold leading-tight text-primary dark:text-secondary uppercase" style={{ fontSize: "24px" }}>{productName}</h1>
+            <p className="mt-2 text-base text-muted-foreground md:text-lg">{productDescription}</p>
           </div>
+
+          {/* Equipment: variant / color selector — directly under description */}
+          {!isCoffeeProduct && (
+            <div className="space-y-2 pt-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                {product.variants?.[0]?.options?.[0]?.attributeName || 'VARIANT'}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {product.variants?.map((variant) => {
+                  const label = variant.options?.map(o => o.value).join(' / ') || variant.sku;
+                  return (
+                    <button
+                      key={variant.id}
+                      onClick={() => handleVariantSelect(variant.id)}
+                      className={`flex flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:border-espresso-brown ${
+                        selectedVariantId === variant.id ? "border-espresso-brown bg-espresso-brown/10" : "border-white/10"
+                      }`}
+                    >
+                      <span className="font-semibold text-espresso-brown dark:text-espresso-brown">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="glass rounded-2xl border border-white/5 p-4 space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('weight')}</p>
-            <div className="grid grid-cols-2 gap-2">
+
+        {/* Coffee: weight + roast + grind grid */}
+        {isCoffeeProduct && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="glass rounded-2xl border border-white/5 p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('weight')}</p>
+              <div className="grid grid-cols-2 gap-2">
                 {product.variants?.map((variant) => {
                   const label = variant.options?.find(o => o.attributeName.toLowerCase() === 'weight')?.value || variant.sku;
                   return (
@@ -278,7 +345,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                     >
                       <span className="font-semibold text-espresso-brown dark:text-espresso-brown">{label}</span>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -316,91 +383,100 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                 </div>
               </div>
             )}
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {currentPrice > 0 ? t('craftedForMornings') : t('selectWeightAndCurrency')}
-              </p>
-              <p className="font-heading text-2xl font-bold text-primary dark:text-secondary">
-                {currentPrice > 0 ? (
-                  <FormattedPrice amount={currentPrice * quantity} />
-                ) : (
-                  <span className="text-gray-400 text-lg">—</span>
-                )}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 rounded-full border border-white/15 bg-background/60 px-3 py-2 shadow-inner">
-              <button
-                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                className="h-10 w-10 rounded-full border border-white/20 bg-white/5 text-lg font-bold transition hover:border-accent hover:bg-accent/10"
-                aria-label="Decrease quantity"
-              >
-                −
-              </button>
-              <span className="min-w-10 text-center text-lg font-semibold">{quantity}</span>
-              <button
-                onClick={() => setQuantity((prev) => prev + 1)}
-                className="h-10 w-10 rounded-full border border-white/20 bg-white/5 text-lg font-bold transition hover:border-accent hover:bg-accent/10"
-                aria-label="Increase quantity"
-              >
-                +
-              </button>
-            </div>
           </div>
+        )}
 
-          <div className="mt-6 flex flex-col gap-3">
-            <button
-              onClick={handleAddToCart}
-              disabled={(selectedVariant?.stockQuantity ?? 0) <= 0 || !selectedVariant}
-              style={{
-                backgroundColor: 'rgb(56, 109, 118)',
-                color: '#fff',
-                borderRadius: '0.75rem',
-                width: '100%',
-                padding: '1rem 1.5rem',
-                fontSize: '1.125rem',
-                fontWeight: 600,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 20px 60px -30px rgba(56,109,118,0.8)',
-                transition: 'box-shadow 0.2s, background 0.2s',
-              }}
-              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
+        {/* Price */}
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {currentPrice > 0
+              ? (isCoffeeProduct ? t('craftedForMornings') : t('detail.taxesIncluded'))
+              : t('selectWeightAndCurrency')
+            }
+          </p>
+          <p className="font-heading text-2xl font-bold text-primary dark:text-secondary">
+            {currentPrice > 0 ? (
+              <FormattedPrice amount={currentPrice * quantity} />
+            ) : (
+              <span className="text-gray-400 text-lg">—</span>
+            )}
+          </p>
+        </div>
 
-              onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
-              onMouseOut={e => (e.currentTarget.style.backgroundColor = 'rgb(56, 109, 118)')}
-            >
-              <ShoppingCart size={20} />
-              {t('addToBasket')}
-            </button>
+        {/* Quantity */}
+        <div className="flex items-center gap-3 rounded-full border border-white/15 bg-background/60 px-3 py-2 shadow-inner">
+          <button
+            onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+            className="h-10 w-10 rounded-full border border-white/20 bg-white/5 text-lg font-bold transition hover:border-accent hover:bg-accent/10"
+            aria-label="Decrease quantity"
+          >
+            −
+          </button>
+          <span className="min-w-10 text-center text-lg font-semibold">{quantity}</span>
+          <button
+            onClick={() => setQuantity((prev) => prev + 1)}
+            className="h-10 w-10 rounded-full border border-white/20 bg-white/5 text-lg font-bold transition hover:border-accent hover:bg-accent/10"
+            aria-label="Increase quantity"
+          >
+            +
+          </button>
+        </div>
 
-            <div className="w-full">
-              <StripeElementsProvider>
-                <ProductQuickBuy
-                  product={product}
-                    selectedVariantId={selectedVariantId}
-                  selectedRoast={selectedRoast}
-                  selectedGrind={selectedGrind}
-                  quantity={quantity}
-                  currentPrice={currentPrice}
-                  isPriceAvailable={isPriceAvailable}
-                  hasValidSelection={hasValidSelection}
-                />
-              </StripeElementsProvider>
-            </div>
+        {/* Buttons */}
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={handleAddToCart}
+            disabled={(selectedVariant?.stockQuantity ?? 0) <= 0 || !selectedVariant}
+            style={{
+              backgroundColor: 'rgb(56, 109, 118)',
+              color: '#fff',
+              borderRadius: '0.75rem',
+              width: '100%',
+              padding: '1rem 1.5rem',
+              fontSize: '1.125rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 20px 60px -30px rgba(56,109,118,0.8)',
+              transition: 'box-shadow 0.2s, background 0.2s',
+            }}
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
+            onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
+            onMouseOut={e => (e.currentTarget.style.backgroundColor = 'rgb(56, 109, 118)')}
+          >
+            <ShoppingCart size={20} />
+            {t('addToBasket')}
+          </button>
+
+          <div className="w-full">
+            <StripeElementsProvider>
+              <ProductQuickBuy
+                product={product}
+                selectedVariantId={selectedVariantId}
+                selectedRoast={selectedRoast}
+                selectedGrind={selectedGrind}
+                quantity={quantity}
+                currentPrice={currentPrice}
+                isPriceAvailable={isPriceAvailable}
+                hasValidSelection={hasValidSelection}
+              />
+            </StripeElementsProvider>
           </div>
+        </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">
-              <Sparkles size={14} className="text-accent" />
-              {t('freeShipping')}
-            </span>
-            <span className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">
-              <Leaf size={14} className="text-accent" />
-              {t('sustainableSourcing')}
-            </span>
-          </div>
+        {/* Trust badges */}
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">
+            <Sparkles size={14} className="text-accent" />
+            {t('freeShipping')}
+          </span>
+          <span className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1">
+            <Leaf size={14} className="text-accent" />
+            {t('sustainableSourcing')}
+          </span>
+        </div>
       </motion.div>
     </motion.section>
   )

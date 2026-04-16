@@ -7,6 +7,13 @@ import type { ProductResponse } from "@/lib/services/products"
 import { getProducts } from "@/lib/services/products"
 import ProductCard from "@/components/products/product-card"
 import { useTranslations } from "next-intl"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 export default function CartRecommendations() {
   const cartItems = useCartStore((state) => state.items)
@@ -63,9 +70,9 @@ export default function CartRecommendations() {
           <div className="h-10 w-64 animate-pulse rounded-lg bg-muted" />
           <div className="h-4 w-96 animate-pulse rounded bg-muted/60" />
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="flex gap-6">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="glass aspect-square rounded-xl animate-pulse" />
+            <div key={i} className="glass aspect-square w-72 flex-none rounded-xl animate-pulse" />
           ))}
         </div>
       </section>
@@ -91,21 +98,23 @@ export default function CartRecommendations() {
         <p className="text-muted-foreground">{t('recommendations')}</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-        {products.map((product, index) => {
-          return (
-            <motion.div
+      <Carousel
+        opts={{ align: "start", loop: false }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-4">
+          {products.map((product) => (
+            <CarouselItem
               key={product.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
-              viewport={{ once: true }}
+              className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
             >
               <ProductCard product={product} />
-            </motion.div>
-          )
-        })}
-      </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious className="-left-4 hidden sm:flex" />
+        <CarouselNext className="-right-4 hidden sm:flex" />
+      </Carousel>
     </motion.section>
   )
 }

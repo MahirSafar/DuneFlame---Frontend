@@ -120,7 +120,7 @@ export default function Navbar() {
         <div className="w-full px-4 sm:px-6 md:px-10">
         <div className="relative flex items-center h-16 sm:h-20 gap-3 sm:gap-6">
           {/* Logo - Left Side */}
-          <Link href="/" aria-label="DuneFlame Home" className="flex items-center gap-2 group flex-shrink-0 z-10">
+          <Link href="/" aria-label="DuneFlame Home" className="flex items-center gap-2 group shrink-0 z-10">
             <Image
               src="/logo.svg"
               alt="DuneFlame Logo"
@@ -146,7 +146,7 @@ export default function Navbar() {
           </div>
 
           {/* Right Actions - Right Side */}
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-shrink-0 ml-auto z-10" suppressHydrationWarning>
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0 ml-auto z-10" suppressHydrationWarning>
             {/* Language Switcher */}
             <div className="hidden md:block navbar-switcher" suppressHydrationWarning>
               <LanguageSwitcher />
@@ -174,7 +174,7 @@ export default function Navbar() {
             >
               <ShoppingBag size={18} className="sm:w-5 sm:h-5" />
               {cartItemCount > 0 && (
-                <span className="absolute -top-1 -end-1 bg-accent text-accent-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-1 -inset-e-1 bg-accent text-accent-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                   {cartItemCount}
                 </span>
               )}
@@ -226,10 +226,10 @@ export default function Navbar() {
             ))}
             <div className="mt-2 flex flex-col gap-3 px-4">
               <div className="pt-3 border-t border-border flex items-center gap-2">
-                <div className="[&>button]:!bg-white [&>button]:!border-[#4B2E2B] [&>button]:!text-[#4B2E2B] [&>button]:hover:!bg-gray-50">
+                <div className="[&>button]:bg-white! [&>button]:border-[#4B2E2B]! [&>button]:text-[#4B2E2B]! [&>button]:hover:bg-gray-50!">
                   <LanguageSwitcher />
                 </div>
-                <div className="[&>button]:!bg-white [&>button]:!border-[#4B2E2B] [&>button]:!text-[#4B2E2B] [&>button]:hover:!bg-gray-50">
+                <div className="[&>button]:bg-white! [&>button]:border-[#4B2E2B]! [&>button]:text-[#4B2E2B]! [&>button]:hover:bg-gray-50!">
                   <InstantCurrencySwitcher />
                 </div>
               </div>

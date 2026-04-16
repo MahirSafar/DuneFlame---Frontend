@@ -29,6 +29,7 @@ export default function ProductsPage() {
     filters,
     setSearch,
     setCategoryId,
+    setBrandId,
     setMinPrice,
     setMaxPrice,
     toggleRoastLevel,
@@ -53,11 +54,13 @@ export default function ProductsPage() {
     }
   }, [debouncedSearchInput, filters.search, setSearch]);
 
+  // Sync back from URL if filters.search changes externally
   useEffect(() => {
-    if (searchInput !== filters.search) {
+    if (filters.search !== debouncedSearchInput) {
       setSearchInput(filters.search || "");
     }
-  }, [filters.search, searchInput]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.search]);
 
   // 2. Filterlər hər dəyişəndə API-yə sorğu göndəririk
   useEffect(() => {
@@ -72,6 +75,7 @@ export default function ProductsPage() {
           pageSize: filters.pageSize,
           search: filters.search || undefined,
           categoryId: filters.categoryId || undefined,
+          brandId: filters.brandId || undefined,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           roastLevelIds: filters.roastLevelIds && filters.roastLevelIds.length > 0 ? filters.roastLevelIds : undefined,
@@ -155,6 +159,7 @@ export default function ProductsPage() {
               filters={filters}
               onSearchChange={setSearchInput}
               onCategoryChange={setCategoryId}
+              onBrandChange={setBrandId}
               onMinPriceChange={setMinPrice}
               onMaxPriceChange={setMaxPrice}
               onRoastLevelToggle={toggleRoastLevel}

@@ -43,6 +43,9 @@ export interface ProductResponse {
   isActive: boolean;
   categoryId: string;
   categoryName: string;
+  brandId?: string | null;
+  brandName?: string | null;
+  specifications?: Record<string, string> | null;
   translations: Array<{ languageCode: string; name: string; description: string }>;
   coffeeProfile: import("@/lib/types/product").ProductCoffeeProfileDto | null;
   variants: import("@/lib/types/product").VariantDto[];
@@ -66,6 +69,7 @@ export type ProductQuery = {
   pageSize?: number;
   search?: string;
   categoryId?: string;
+  brandId?: string;
   minPrice?: number;
   maxPrice?: number;
   roastLevelIds?: string[]; // Array
@@ -94,6 +98,7 @@ export async function getProducts(params: ProductQuery = {}): Promise<PagedResul
 
   if (params.search) query.set("search", params.search);
   if (params.categoryId) query.set("categoryId", params.categoryId);
+  if (params.brandId) query.set("brandId", params.brandId);
   if (params.minPrice !== undefined) query.set("minPrice", String(params.minPrice));
   if (params.maxPrice !== undefined) query.set("maxPrice", String(params.maxPrice));
   if (params.sortBy) query.set("sortBy", params.sortBy);
@@ -171,6 +176,7 @@ export async function getAdminProducts(params: ProductQuery = {}): Promise<{ ite
   if (params.sort) query.set("sort", params.sort);
   if (params.search) query.set("search", params.search);
   if (params.categoryId) query.set("categoryId", params.categoryId);
+  if (params.brandId) query.set("brandId", params.brandId);
   
   const qs = query.toString();
   const response = await apiFetch<PagedResult<ProductResponse>>(`/admin/products${qs ? `?${qs}` : ""}`);

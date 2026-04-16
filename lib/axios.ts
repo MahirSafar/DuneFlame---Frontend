@@ -19,7 +19,7 @@ const instance = axios.create({
 
 // Request interceptor with currency and auth headers
 instance.interceptors.request.use(
-  async (config) => {
+  async (config: any) => {
     // Add auth token (ONLY on client - SSR safe)
     if (typeof window !== "undefined") {
       const token = useAuthStore.getState().accessToken;

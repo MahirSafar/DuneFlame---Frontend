@@ -46,8 +46,11 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
       setSelectedVariantId(fullProduct.variants[0].id)
     }
 
-    // Check if product data is incomplete (missing IDs)
-    const hasIncompleteData = !product.coffeeProfile?.roastLevelIds || product.coffeeProfile?.roastLevelIds.length === 0 || !product.coffeeProfile?.grindTypeIds || product.coffeeProfile?.grindTypeIds.length === 0
+    // Check if it is a coffee product requiring roasted/grind options
+    const isCoffee = !!product.coffeeProfile;
+
+    // Check if product data is incomplete (missing IDs) but ONLY for Coffee products
+    const hasIncompleteData = isCoffee && (!product.coffeeProfile?.roastLevelIds || product.coffeeProfile?.roastLevelIds.length === 0 || !product.coffeeProfile?.grindTypeIds || product.coffeeProfile?.grindTypeIds.length === 0)
 
     if (hasIncompleteData && product.slug) {
       // Fetch full product details
@@ -73,7 +76,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
       setSelectedRoast(product.coffeeProfile?.roastLevelNames?.[0] || "")
       setSelectedGrind(product.coffeeProfile?.grindTypeNames?.[0] || "")
     }
-  }, [isOpen, product])
+  }, [isOpen, product, selectedVariantId])
 
   const mainImageRaw = useMemo(
     () => fullProduct.images?.find((image) => image.isMain)?.imageUrl || fullProduct.images?.[0]?.imageUrl,
@@ -82,17 +85,25 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
   const mainImage = mainImageRaw ? getImageUrl(mainImageRaw) : null
 
   // STRICT PRICE RESOLUTION: Use resolved price from variant based on selectedVariantId
-  const currentPrice = selectedVariant?.prices?.find((p: any) => p.currencyCode === currency)?.price ?? selectedVariant?.price ?? 0
+  const currentPrice =
+    selectedVariant?.prices?.find((p: any) => p.currencyCode === currency)?.price ??
+    selectedVariant?.prices?.[0]?.price ??
+    selectedVariant?.price ??
+    0;
   const isPriceAvailable = currentPrice > 0
 
-  const hasValidSelection = Boolean(selectedVariant && selectedRoast && selectedGrind)
+  const isCoffeeProduct = !!fullProduct.coffeeProfile;
+  const hasValidSelection = isCoffeeProduct 
+    ? Boolean(selectedVariant && selectedRoast && selectedGrind)
+    : Boolean(selectedVariant);
 
   const handleAddToCart = () => {
     if (!hasValidSelection || !selectedVariant) {
-      toast.error(t('products.detail.selectWeight'))
+      toast.error(isCoffeeProduct ? t('products.detail.selectWeight') : t('common.actions.loading'))
       return
     }
-    if (!fullProduct || !fullProduct.coffeeProfile?.roastLevelIds || fullProduct.coffeeProfile?.roastLevelIds.length === 0 || !fullProduct.coffeeProfile?.grindTypeIds || fullProduct.coffeeProfile?.grindTypeIds.length === 0) {
+    
+    if (isCoffeeProduct && (!fullProduct.coffeeProfile?.roastLevelIds || fullProduct.coffeeProfile?.roastLevelIds.length === 0 || !fullProduct.coffeeProfile?.grindTypeIds || fullProduct.coffeeProfile?.grindTypeIds.length === 0)) {
       toast.error(t('common.actions.loading'))
       return
     }
@@ -116,10 +127,10 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
       price: currentPrice,
       sku: selectedVariant?.sku || "",
       attributes: selectedVariant?.options?.map(o => `${o.attributeName}: ${o.value}`) || [],
-      roastLevelName: selectedRoast,
-      roastLevelId: roastLevelId || EMPTY_GUID,
-      grindTypeName: selectedGrind,
-      grindTypeId: grindTypeId || EMPTY_GUID,
+      roastLevelName: isCoffeeProduct ? selectedRoast : undefined,
+      roastLevelId: isCoffeeProduct ? (roastLevelId || EMPTY_GUID) : undefined,
+      grindTypeName: isCoffeeProduct ? selectedGrind : undefined,
+      grindTypeId: isCoffeeProduct ? (grindTypeId || EMPTY_GUID) : undefined,
       imageUrl: mainImageRaw || "",
     })
 
@@ -130,9 +141,14 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
     <Dialog open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
       <DialogContent className="w-[95vw] sm:w-full sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Select your perfect cup</DialogTitle>
+          <DialogTitle>
+            {isCoffeeProduct ? "Select your perfect cup" : `Configure ${fullProduct.name}`}
+          </DialogTitle>
           <DialogDescription>
-            Choose weight, roast, and grind to tailor {fullProduct.name} to your brewing ritual.
+            {isCoffeeProduct
+              ? `Choose weight, roast, and grind to tailor ${fullProduct.name} to your brewing ritual.`
+              : `Select the variant that fits your needs for ${fullProduct.name}.`
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -143,7 +159,14 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
               <img src={mainImage} alt={fullProduct.name} className="h-full w-full object-cover" loading="lazy" />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-5xl text-muted-foreground">
-                <Coffee className="h-14 w-14" />
+                {isCoffeeProduct ? <Coffee className="h-14 w-14" /> : <span className="text-6xl">⚙️</span>}
+              </div>
+            )}
+            {isCoffeeProduct && fullProduct.coffeeProfile?.originName && (
+              <div className="absolute top-3 left-3 z-10">
+                <span className="bg-accent/90 text-white text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded">
+                  {fullProduct.coffeeProfile.originName}
+                </span>
               </div>
             )}
           </div>
@@ -166,12 +189,31 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
             </div>
 
             <div className="space-y-3">
-              <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{t('common.weight')}</Label>
+              <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                {isCoffeeProduct
+                  ? t('common.weight')
+                  : (fullProduct.variants?.[0]?.options?.[0]?.attributeName || 'VARIANT')
+                }
+              </Label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {fullProduct.variants?.map((variant: any) => { const label = variant.options?.find((o: any) => o.attributeName.toLowerCase() === "weight")?.value || variant.sku; return ( <button key={variant.id} onClick={() => setSelectedVariantId(variant.id)} className={cn("flex flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:border-espresso-brown", selectedVariantId === variant.id ? "border-espresso-brown bg-espresso-brown/10" : "border-white/10")} > <span className="font-semibold text-espresso-brown dark:text-espresso-brown">{label}</span> </button> ) })}
+                {fullProduct.variants?.map((variant: any) => {
+                  const label = variant.options?.map((o: any) => o.value).join(', ') || variant.sku || `Var ${variant.id.substring(0,4)}`;
+                  return (
+                    <button
+                      key={variant.id}
+                      onClick={() => setSelectedVariantId(variant.id)}
+                      className={cn("flex flex-col items-start rounded-xl border px-3 py-2 text-left transition hover:border-espresso-brown",
+                        selectedVariantId === variant.id ? "border-espresso-brown bg-espresso-brown/10" : "border-white/10"
+                      )}
+                    >
+                      <span className="font-semibold text-espresso-brown dark:text-espresso-brown">{label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
+            {isCoffeeProduct && (
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{t('common.roast')}</Label>
@@ -205,33 +247,21 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                 </Select>
               </div>
             </div>
+            )}
 
             <DialogFooter className="sm:justify-between flex-col sm:flex-row gap-3">
               <div className="text-sm text-muted-foreground">
-                {isPriceAvailable ? "Crafted to order. Taxes included." : "Select currency and weight"}
+                {isPriceAvailable
+                  ? (isCoffeeProduct ? "Crafted to order. Taxes included." : "Taxes included. Ready to ship.")
+                  : (isCoffeeProduct ? "Select currency and weight" : "Select a variant")
+                }
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                {/* Quick Buy with Express Checkout */}
-                <div className="flex-1 sm:flex-none">
-                  <StripeElementsProvider>
-                    <ProductQuickBuy
-                      product={fullProduct}
-                      selectedVariantId={selectedVariantId}
-                      selectedRoast={selectedRoast}
-                      selectedGrind={selectedGrind}
-                      currentPrice={currentPrice}
-                      isPriceAvailable={isPriceAvailable}
-                      hasValidSelection={hasValidSelection}
-                      onSuccess={() => onClose()}
-                    />
-                  </StripeElementsProvider>
-                </div>
-
+              <div className="flex flex-col gap-3 w-full">
                 {/* Add to Cart Button */}
                 <Button
                   size="lg"
-                  className="flex-1 sm:flex-none w-full sm:w-auto"
+                  className="w-full py-3"
                   style={{
                     backgroundColor: 'rgb(56, 109, 118)',
                     color: '#fff',
@@ -242,6 +272,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.5rem',
+                    padding: '0.75rem 1.5rem',
                     transition: 'background 0.2s',
                   }}
                   onMouseOver={e => (e.currentTarget.style.backgroundColor = 'rgb(40, 80, 87)')}
@@ -256,6 +287,22 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                     t('products.detail.selectWeight')
                   )}
                 </Button>
+
+                {/* Quick Buy with Express Checkout — visible on all breakpoints */}
+                <div className="w-full">
+                  <StripeElementsProvider>
+                    <ProductQuickBuy
+                      product={fullProduct}
+                      selectedVariantId={selectedVariantId}
+                      selectedRoast={selectedRoast}
+                      selectedGrind={selectedGrind}
+                      currentPrice={currentPrice}
+                      isPriceAvailable={isPriceAvailable}
+                      hasValidSelection={hasValidSelection}
+                      onSuccess={() => onClose()}
+                    />
+                  </StripeElementsProvider>
+                </div>
               </div>
             </DialogFooter>
           </div>

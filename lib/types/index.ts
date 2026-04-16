@@ -72,6 +72,9 @@ export interface Product {
   isActive: boolean;
   categoryId: string;
   categoryName: string;
+  brandId?: string | null;
+  brandName?: string | null;
+  specifications?: Record<string, string> | null;
   translations: ProductTranslationDto[];
   coffeeProfile: ProductCoffeeProfileDto | null;
   variants: VariantDto[];
@@ -86,4 +89,5 @@ export interface MasterData {
   grindTypes: { id: string; name: string }[];
   categories: { id: string; name: string; slug: string; isCoffeeCategory: boolean }[];
   origins: { id: string; name: string }[];
+  brands: { id: string; name: string }[];
 }

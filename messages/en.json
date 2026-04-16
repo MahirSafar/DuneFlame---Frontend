@@ -188,6 +188,7 @@
       "inStock": "In Stock",
       "outOfStock": "Out of Stock",
       "limitedStock": "Limited",
+      "taxesIncluded": "Taxes included. Ready to ship.",
       "addedToCart": "Added to cart successfully!",
       "wholeBean": "Whole Bean",
       "fine": "Fine",
@@ -204,7 +205,9 @@
     "priceNotLoaded": "Price not loaded for this currency/weight combination",
     "freeShipping": "Free 2-day shipping on orders over $200",
     "sustainableSourcing": "Sustainable sourcing guaranteed",
-    "backToProducts": "Back to Coffee"
+    "backToProducts": "Back to Coffee",
+    "backToCoffee": "← Back to Coffee",
+    "backToEquipment": "← Back to Equipment"
   },
   "cart": {
     "title": "Shopping Cart",

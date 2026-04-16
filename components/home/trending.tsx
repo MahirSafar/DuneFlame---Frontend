@@ -1,27 +1,33 @@
 import ProductCard from "@/components/products/product-card"
 import type { ProductResponse } from "@/lib/services/products"
 import { getTranslations } from "next-intl/server"
-
-// Helper function to convert roast level number to descriptive text
-const getRoastLevelText = (level: number): string => {
-  if (level <= 3) return "Light"
-  if (level <= 6) return "Medium"
-  return "Dark"
-}
+import { cookies } from "next/headers"
 
 async function getTrendingProducts() {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dune-flame-backend-180239181668.me-central1.run.app';
-    const res = await fetch(`${baseUrl}/api/v1/products?pageNumber=1&pageSize=4`, {
-      next: { revalidate: 1800 }
+    // Read currency from cookie so the backend returns currency-specific prices in variants
+    const cookieStore = await cookies();
+    const currency =
+      cookieStore.get("df_currency")?.value ||
+      cookieStore.get("NEXT_CURRENCY")?.value ||
+      "AED";
+    // Fetch with larger pageSize (50) to bypass grinders and guarantee coffee products are included
+    const res = await fetch(`${baseUrl}/api/v1/products?pageNumber=1&pageSize=50`, {
+      next: { revalidate: 1800 },
+      headers: {
+        Currency: currency,
+        "X-Currency": currency,
+      },
     });
-    
     if (!res.ok) {
       throw new Error(`Failed to fetch trending products: ${res.statusText}`);
     }
-    
     const data = await res.json();
-    return (data.items || []) as ProductResponse[];
+    // Filter for products with coffeeProfile (Coffee Beans category)
+    const coffeeProducts = (data.items || []).filter((p: ProductResponse) => p.coffeeProfile);
+    // Return exactly 4 coffee products
+    return coffeeProducts.slice(0, 4);
   } catch (err) {
     console.error("Failed to fetch trending products:", err);
     return [];
@@ -30,7 +36,8 @@ async function getTrendingProducts() {
 
 export default async function Trending() {
   const t = await getTranslations()
-  const products = await getTrendingProducts()
+  // Only show coffee products in trending (already filtered in getTrendingProducts)
+  const products = await getTrendingProducts();
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -55,7 +62,7 @@ export default async function Trending() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product, index) => {
+          {products.map((product: ProductResponse, index: number) => {
             return (
               <ProductCard key={product.id} product={product} priority={index < 4} />
             )

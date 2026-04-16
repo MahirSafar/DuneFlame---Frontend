@@ -54,7 +54,8 @@ const rubberBandStyles = `
 import { useEffect, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { useLocale } from "next-intl";
-import { getCategories, getRoastLevels, getOrigins, type Category, type Origin, type RoastLevel } from "@/lib/services/products";
+import { getCategories, getRoastLevels, getOrigins, getMasterData, type Category, type Origin, type RoastLevel } from "@/lib/services/products";
+import { type MasterData } from "@/lib/types";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ interface ShopFiltersProps {
   filters: ShopFiltersState;
   onSearchChange: (search: string) => void;
   onCategoryChange: (categoryId: string | undefined) => void;
+  onBrandChange: (brandId: string | undefined) => void;
   onMinPriceChange: (minPrice: number | undefined) => void;
   onMaxPriceChange: (maxPrice: number | undefined) => void;
   onRoastLevelToggle: (id: string) => void;
@@ -80,6 +82,7 @@ export default function ShopFilters({
   filters,
   onSearchChange,
   onCategoryChange,
+  onBrandChange,
   onMinPriceChange,
   onMaxPriceChange,
   onRoastLevelToggle,
@@ -96,6 +99,7 @@ export default function ShopFilters({
   const currencySymbol = getCurrencySymbol(currency);
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<MasterData["brands"]>([]);
   const [roastLevels, setRoastLevels] = useState<RoastLevel[]>([]);
   const [origins, setOrigins] = useState<Origin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,6 +108,7 @@ export default function ShopFilters({
   const [expandedSections, setExpandedSections] = useState({
     search: false,
     category: false,
+    brand: false,
     roast: false,
     origin: false,
     price: false,
@@ -117,12 +122,13 @@ export default function ShopFilters({
   // Fetch master data on mount
   useEffect(() => {
 
-    Promise.all([getCategories(), getRoastLevels(), getOrigins()])
-      .then(([cats, roasts, orgs]) => {
+    Promise.all([getCategories(), getRoastLevels(), getOrigins(), getMasterData()])
+      .then(([cats, roasts, orgs, mData]) => {
 
         setCategories(cats);
         setRoastLevels(roasts);
         setOrigins(orgs);
+        setBrands(mData.brands || []);
         setError(null);
       })
       .catch((err) => {
@@ -137,6 +143,7 @@ export default function ShopFilters({
     setExpandedSections((prev) => ({
       search: false,
       category: false,
+      brand: false,
       roast: false,
       origin: false,
       price: false,
@@ -156,6 +163,14 @@ export default function ShopFilters({
   const handleCategoryChange = (id: string, checked: boolean) => {
     onCategoryChange(checked ? id : undefined);
   };
+
+  const handleBrandChange = (id: string, checked: boolean) => {
+    onBrandChange(checked ? id : undefined);
+  };
+
+  const selectedCategoryObj = categories.find(c => c.id === filters.categoryId);
+  const isCoffeeCategory = selectedCategoryObj ? ((selectedCategoryObj as any).isCoffeeCategory === true || selectedCategoryObj.name?.toLowerCase().includes('bean') || selectedCategoryObj.name?.toLowerCase().includes('coffee')) : null;
+  const isEquipmentCategory = selectedCategoryObj ? !isCoffeeCategory : null;
 
   // Update price display when currency changes
   useEffect(() => {
@@ -320,6 +335,7 @@ export default function ShopFilters({
       {/* FILTERS SECTION */}
 
       {/* Roast Level Checkboxes */}
+      {isEquipmentCategory !== true && (
       <div className="mb-6">
         <button
           onClick={() => toggleSection("roast")}
@@ -366,8 +382,10 @@ export default function ShopFilters({
           </div>
         )}
       </div>
+      )}
 
       {/* Origin Checkboxes */}
+      {isEquipmentCategory !== true && (
       <div className="mb-6">
         <button
           onClick={() => toggleSection("origin")}
@@ -414,6 +432,7 @@ export default function ShopFilters({
           </div>
         )}
       </div>
+      )}
 
       {/* Category Checkboxes */}
       <div className="mb-6">
@@ -458,6 +477,61 @@ export default function ShopFilters({
                       style={{ color: "#2b1b13" }}
                     >
                       {category.name}
+                    </label>
+                    {isChecked && <span className="text-xs text-accent">✓</span>}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Brand */}
+      <div className="mb-6">
+        <button
+          onClick={() => toggleSection("brand")}
+          className="w-full flex justify-between items-center mb-3 text-sm font-semibold transition-smooth uppercase"
+          style={{ color: "#2b1b13" }}
+        >
+          Brand
+          <ChevronDown
+            size={18}
+            className={`transition-transform rtl:rotate-180 ${
+              expandedSections.brand ? "" : "-rotate-90"
+            }`}
+          />
+        </button>
+
+        {expandedSections.brand && (
+          <div className="space-y-3 pl-2">
+            {brands.length === 0 && !loading ? (
+              <p className="text-sm text-muted-foreground italic">
+                No brands found
+              </p>
+            ) : (
+              brands.map((brand) => {
+                const isChecked = filters.brandId === brand.id;
+                return (
+                  <div
+                    key={brand.id}
+                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <input
+                      type="checkbox"
+                      id={`brand-${brand.id}`}
+                      checked={isChecked}
+                      onChange={(e) => {
+                        handleBrandChange(brand.id, e.target.checked);
+                      }}
+                      className="w-5 h-5 rounded border-2 border-border cursor-pointer accent-accent hover:border-accent transition-colors"
+                    />
+                    <label
+                      htmlFor={`brand-${brand.id}`}
+                      className="text-sm cursor-pointer flex-1"
+                      style={{ color: "#2b1b13" }}
+                    >
+                      {brand.name}
                     </label>
                     {isChecked && <span className="text-xs text-accent">✓</span>}
                   </div>

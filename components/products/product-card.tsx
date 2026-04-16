@@ -52,25 +52,61 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   const mainImage = rawMainImage ? getImageUrl(rawMainImage) : null
   const hasImage = Boolean(mainImage)
 
-  const productUrl = product.slug ? `/coffee/${product.slug}` : `/coffee/${product.id}`
-  const defaultVariant = product.variants?.[0]
-  
-  // Bulletproof: Always have a valid number for display
-  const displayPrice = defaultVariant?.prices?.find((p: any) => p.currencyCode === currency)?.price ?? defaultVariant?.price ?? 0;
-  const isPriceAvailable = displayPrice > 0;
-  
-  let flavorNotes = t('products.card.signature');
-  if (product.coffeeProfile && Array.isArray(product.coffeeProfile.flavourNotes) && product.coffeeProfile.flavourNotes.length > 0) {
-    // Try to get translation for current locale, fallback to English, then fallback to name
-    flavorNotes = product.coffeeProfile.flavourNotes
+  // Determine product type
+  const isCoffee = !!product.coffeeProfile;
+  const isEquipment = !isCoffee;
+
+  // Universal product URL (uses /product/ route)
+  const productUrl = product.slug
+    ? `/product/${product.slug}`
+    : `/product/${product.id}`;
+
+  // Brand Name (1st in hierarchy)
+  const brandName = product.brandName || (isCoffee ? product.coffeeProfile?.originName : product.categoryName) || "DuneFlame";
+
+  // Price (4th in hierarchy)
+  // Scan ALL variants for a valid price (full fallback chain).
+  // This handles: (a) no Currency header → backend omits prices[] but keeps price field,
+  // (b) currency mismatch after hydration, (c) first variant having price:0.
+  const displayPrice = (() => {
+    if (!product.variants?.length) return (product as any).basePrice ?? (product as any).price ?? 0;
+    // 1. Currency-specific price from any variant
+    for (const v of product.variants) {
+      const p = v.prices?.find((px: any) => px.currencyCode === currency)?.price;
+      if (p && p > 0) return p;
+    }
+    // 2. First available price from any variant's prices array
+    for (const v of product.variants) {
+      const p = v.prices?.[0]?.price;
+      if (p && p > 0) return p;
+    }
+    // 3. Base price field from any variant
+    for (const v of product.variants) {
+      if (v.price > 0) return v.price;
+    }
+    // 4. Top-level basePrice / price fallback
+    return (product as any).basePrice ?? (product as any).price ?? 0;
+  })();
+
+  // Mid-section content (3rd in hierarchy)
+  // If Equipment: truncated description (ONE line)
+  // If Coffee: Flavour Notes tags
+  let midSectionContent = "";
+  if (isEquipment) {
+    // Show truncated description for equipment
+    midSectionContent = product.description || "Premium Equipment";
+  } else if (isCoffee && product.coffeeProfile?.flavourNotes?.length) {
+    // Show flavour notes for coffee
+    midSectionContent = product.coffeeProfile.flavourNotes
       .map(note => {
         const translation = note.translations?.find(tr => tr.languageCode === locale)
           || note.translations?.find(tr => tr.languageCode === 'en');
         return translation?.name || note.name;
       })
       .join(", ");
+  } else {
+    midSectionContent = t('products.card.signature');
   }
-  const origin = product.coffeeProfile?.originName || product.categoryName || "DuneFlame"
 
   const openModal = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -87,7 +123,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
     >
         <Link
           href={productUrl}
-          className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <div className="relative h-64 overflow-hidden bg-muted rounded-t-xl transform-gpu">
             {hasImage && mainImage ? (
@@ -109,26 +145,29 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
             <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent z-10 group-hover:from-black/50 transition-all duration-500 ease-in-out" />
           </div>
 
-          <div className="p-4">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <p className="text-xs text-espresso-brown font-semibold uppercase tracking-wider font-heading">{origin}</p>
-                <h3 className="text-lg font-bold text-primary dark:text-secondary text-balance group-hover:text-accent transition-smooth uppercase">
-                  {product.name}
-                </h3>
-              </div>
-            </div>
-
-            <p className="text-sm text-muted-foreground mb-4 group-hover:text-muted-foreground/80 transition-smooth whitespace-nowrap overflow-hidden text-ellipsis">
-              {flavorNotes}
+          <div className="p-4 flex flex-col flex-1">
+            {/* 1st: Brand Name */}
+            <p className="text-xs text-espresso-brown font-semibold uppercase tracking-wider font-heading mb-1">
+              {brandName}
             </p>
 
-            <div className="flex items-center justify-between">
+            {/* 2nd: Product Name */}
+            <h3 className="text-lg font-bold text-primary dark:text-secondary text-balance group-hover:text-accent transition-smooth uppercase truncate mb-2" title={product.name}>
+              {product.name}
+            </h3>
+
+            {/* 3rd: Mid-section (Description for Equipment OR Flavour Notes for Coffee) - ONE line truncation */}
+            <p className="text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-smooth line-clamp-1">
+              {midSectionContent}
+            </p>
+
+            {/* 4th: Price — rendered unconditionally; dash shown only when truly unavailable */}
+            <div className="flex items-center justify-between mt-auto pt-3">
               <span className="text-lg font-heading text-primary dark:text-secondary">
-                {isPriceAvailable ? (
+                {displayPrice > 0 ? (
                   <FormattedPrice amount={displayPrice} />
                 ) : (
-                  <span className="text-muted-foreground text-base">{t('common.actions.loadingPrice')}</span>
+                  <span className="text-muted-foreground text-base">—</span>
                 )}
               </span>
             </div>

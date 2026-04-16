@@ -188,6 +188,7 @@
       "inStock": "متوفر",
       "outOfStock": "غير متوفر",
       "limitedStock": "محدود",
+      "taxesIncluded": "الضرائب مشمولة. جاهز للشحن.",
       "addedToCart": "تمت الإضافة إلى السلة بنجاح!",
       "wholeBean": "حبوب كاملة",
       "fine": "ناعم",
@@ -204,7 +205,9 @@
     "priceNotLoaded": "لم يتم تحميل السعر لهذه التولیفة من العملة والوزن",
     "freeShipping": "شحن مجاني في يومين على الطلبات فوق 200 درهم",
     "sustainableSourcing": "نضمن التوظيف المستدام",
-    "backToProducts": "العودة إلى المنتجات"
+    "backToProducts": "العودة إلى المنتجات",
+    "backToCoffee": "→ العودة إلى القهوة",
+    "backToEquipment": "→ العودة إلى المعدات"
   },
   "cart": {
     "title": "سلة التسوق",

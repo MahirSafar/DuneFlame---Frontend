@@ -1,10 +1,12 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 export interface ShopFiltersState {
   pageNumber: number;
   pageSize: number;
   search: string;
   categoryId?: string;
+  brandId?: string;
   minPrice?: number;
   maxPrice?: number;
   roastLevelIds: string[];
@@ -16,6 +18,7 @@ export interface UseShopFiltersReturn {
   filters: ShopFiltersState;
   setSearch: (search: string) => void;
   setCategoryId: (categoryId: string | undefined) => void;
+  setBrandId: (brandId: string | undefined) => void;
   setMinPrice: (minPrice: number | undefined) => void;
   setMaxPrice: (maxPrice: number | undefined) => void;
   setSortBy: (sortBy: string | undefined) => void;
@@ -29,14 +32,50 @@ const DEFAULT_FILTERS: ShopFiltersState = {
   pageNumber: 1,
   pageSize: 12,
   search: "",
-  minPrice: 0,
-  maxPrice: 1000,
+  minPrice: undefined,
+  maxPrice: undefined,
   roastLevelIds: [],
   originIds: [],
 };
 
 export function useShopFilters(): UseShopFiltersReturn {
-  const [filters, setFilters] = useState<ShopFiltersState>(DEFAULT_FILTERS);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [filters, setFilters] = useState<ShopFiltersState>(() => {
+    // Initial state from URL
+    const brandId = searchParams.get("brandId") || undefined;
+    const search = searchParams.get("search") || "";
+    return { ...DEFAULT_FILTERS, brandId, search };
+  });
+
+  // Sync URL when brandId or search changes
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (filters.brandId) {
+      params.set("brandId", filters.brandId);
+    } else {
+      params.delete("brandId");
+    }
+
+    if (filters.search) {
+      params.set("search", filters.search);
+    } else {
+      params.delete("search");
+    }
+    
+    // Only push if the string actually changed
+    const currentBrandId = searchParams.get("brandId");
+    const currentSearch = searchParams.get("search") || "";
+    const newBrandId = filters.brandId || null;
+    const newSearch = filters.search || "";
+    
+    if (currentBrandId !== newBrandId || currentSearch !== newSearch) {
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [filters.brandId, filters.search, pathname, router, searchParams]);
 
   // Helper to reset pageNumber to 1 when filters change
   const resetPageNumber = useCallback(() => {
@@ -58,6 +97,14 @@ export function useShopFilters(): UseShopFiltersReturn {
     setFilters((prev) => ({
       ...prev,
       categoryId,
+      pageNumber: 1,
+    }));
+  }, []);
+
+  const setBrandId = useCallback((brandId: string | undefined) => {
+    setFilters((prev) => ({
+      ...prev,
+      brandId,
       pageNumber: 1,
     }));
   }, []);
@@ -129,6 +176,7 @@ export function useShopFilters(): UseShopFiltersReturn {
     filters,
     setSearch,
     setCategoryId,
+    setBrandId,
     setMinPrice,
     setMaxPrice,
     setSortBy,
