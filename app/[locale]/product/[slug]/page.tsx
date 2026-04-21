@@ -6,6 +6,7 @@ import Footer from "@/components/layout/footer"
 import Navbar from "@/components/layout/navbar"
 import Newsletter from "@/components/home/newsletter"
 import ProductDetailView from "@/components/products/product-detail-view"
+import ProductBreadcrumb from "@/components/products/product-breadcrumb"
 import RelatedProducts from "@/components/products/related-products"
 import type { ApiError } from "@/lib/axios"
 import { setApiClientLocale } from "@/lib/axios"
@@ -111,6 +112,7 @@ export default async function ProductPage({
           >
             {backLabel}
           </Link>
+          <ProductBreadcrumb product={product} locale={locale} />
           <ProductDetailView product={product} />
           {product.categoryId && (
             <RelatedProducts categoryId={product.categoryId} currentProductId={product.id} />

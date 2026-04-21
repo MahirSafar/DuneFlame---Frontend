@@ -64,10 +64,7 @@ import {
 } from "@/lib/services/products"
 import type { 
   MasterData, 
-  ProductPricePayload, 
   Product,
-  ProductPriceDto,
-  CurrencyOptionDto 
 } from "@/lib/types"
 import { getErrorMessage } from "@/lib/utils"
 import { API_URL } from "@/lib/config"
@@ -161,6 +158,75 @@ const getImageUrl = (path: string | undefined) => {
   return `${rootUrl}/${path}`
 }
 
+// ── Category Tree Helpers ─────────────────────────────────────────────────────
+
+/** Returns the set of IDs that are NOT a parent of any other category (leaf nodes). */
+function computeLeafCategoryIds(categories: Category[]): Set<string> {
+  const parentIds = new Set(
+    categories.map((c) => c.parentCategoryId).filter((id): id is string => !!id)
+  )
+  return new Set(categories.filter((c) => !parentIds.has(c.id)).map((c) => c.id))
+}
+
+/** Builds a full breadcrumb path string, skipping any "root" node. */
+function buildCategoryPath(categoryId: string, allCategories: Category[]): string {
+  const cat = allCategories.find((c) => c.id === categoryId)
+  if (!cat) return ""
+  const parts: string[] = []
+  let current: Category | undefined = cat
+  while (current) {
+    if (current.name.toLowerCase() !== "root") {
+      parts.unshift(current.name)
+    }
+    if (!current.parentCategoryId) break
+    const parentId = current.parentCategoryId as string
+    current = allCategories.find((c) => c.id === parentId)
+  }
+  return parts.join(" › ")
+}
+
+/** Returns a depth-sorted flat array for rendering the category tree in a Select. */
+function buildSortedCategoryTree(
+  categories: Category[]
+): Array<{ id: string; name: string; depth: number; isLeaf: boolean }> {
+  const parentIds = new Set(
+    categories.map((c) => c.parentCategoryId).filter((id): id is string => !!id)
+  )
+  const result: Array<{ id: string; name: string; depth: number; isLeaf: boolean }> = []
+
+  function addChildren(parentId: string | null, depth: number): void {
+    const children = categories
+      .filter((c) => (c.parentCategoryId ?? null) === parentId)
+      .sort((a, b) => a.name.localeCompare(b.name))
+    for (const child of children) {
+      // Transparent "root" node: recurse its children at the same depth
+      if (depth === 0 && child.name.toLowerCase() === "root") {
+        addChildren(child.id, 0)
+        continue
+      }
+      result.push({ id: child.id, name: child.name, depth, isLeaf: !parentIds.has(child.id) })
+      addChildren(child.id, depth + 1)
+    }
+  }
+
+  addChildren(null, 0)
+  return result
+}
+
+/** Returns full path of category IDs from top-level down to the given category, excluding any "root" node. */
+function getPathFromRoot(categoryId: string, allCategories: Category[]): string[] {
+  const path: string[] = []
+  let currentId: string | null = categoryId
+  while (currentId) {
+    const current = allCategories.find((c) => c.id === currentId)
+    if (!current) break
+    if (current.name.toLowerCase() === "root") break
+    path.unshift(current.id)
+    currentId = current.parentCategoryId ?? null
+  }
+  return path
+}
+
 export default function AdminProductsPage() {
   const router = useRouter();
   
@@ -197,6 +263,9 @@ export default function AdminProductsPage() {
   // Form Data (Silo v2)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [siloFormState, setSiloFormState] = useState<SiloEditFormState>(emptySiloForm)
+  // Cascading category dropdown state
+  const [cascadeL1, setCascadeL1] = useState<string>("")
+  const [cascadeL2, setCascadeL2] = useState<string>("")
   
   // --- Render Specifications in Edit Modal ---
   // Add this to your edit modal JSX where you want to show specifications:
@@ -270,6 +339,8 @@ export default function AdminProductsPage() {
     setMainImageIndex(0)
     setDeletedImageIds([])
     setMainImageId(null)
+    setCascadeL1("")
+    setCascadeL2("")
   }
 
   // Fetch master data for edit form
@@ -363,7 +434,7 @@ const handleOpenEdit = async (productId: string) => {
 
   try {
     const product = await getProduct(productId, { admin: true });
-    const p = product as any; // Yeni DTO (translations, activePrice və s. gəlir)
+    const p = product as any; // Yeni DTO (translations, coffeeProfile, variants)
 
     setSelectedProduct(product);
 
@@ -376,12 +447,7 @@ const handleOpenEdit = async (productId: string) => {
     const enTrans = getTrans("en") || { name: p.name || "", description: p.description || "" };
     const arTrans = getTrans("ar") || { name: "", description: "" };
 
-    // --- Price Matrix ---
-    const allPrices = [
-      p.activePrice,
-      ...(p.otherAvailableCurrencies || []),
-      ...(p.availablePrices || []),
-    ].filter(Boolean);
+    // --- Price Matrix (from variants) ---
     const weightPrices: WeightPrice[] = [];
 
     if (currentMasterData) {
@@ -456,6 +522,14 @@ const handleOpenEdit = async (productId: string) => {
             }))
           : [],
     });
+
+    // Back-populate cascading category dropdowns from loaded product
+    const loadedCategoryId = p.categoryId || ""
+    if (loadedCategoryId) {
+      const path = getPathFromRoot(loadedCategoryId, categories)
+      setCascadeL1(path[0] || "")
+      setCascadeL2(path.length >= 2 ? path[1] : "")
+    }
 
     // --- Şəkil hissəsi (birinci koddan) ---
     const fixedImages =
@@ -604,10 +678,15 @@ const handleOpenEdit = async (productId: string) => {
         toast.error("Please select a category");
         return;
       }
+      // Validate leaf category selection
+      if (!computeLeafCategoryIds(categories).has(siloFormState.categoryId)) {
+        toast.error("Please select a leaf category (one that has no sub-categories)");
+        return;
+      }
 
       // Check Category Type (Coffee vs Non-Coffee)
-      const selectedCategory = categories.find(c => c.id === siloFormState.categoryId) as any;
-      const isCoffee = selectedCategory?.isCoffeeCategory === true || selectedCategory?.name?.toLowerCase().includes('bean') || selectedCategory?.name?.toLowerCase().includes('coffee');
+      const selectedCategory = categories.find((c) => c.id === siloFormState.categoryId);
+      const isCoffee = selectedCategory?.isCoffeeCategory === true;
 
       if (isCoffee) {
         if (siloFormState.selectedRoasts.length === 0) {
@@ -618,13 +697,8 @@ const handleOpenEdit = async (productId: string) => {
           toast.error("Please select at least one grind type for coffee");
           return;
         }
-      } else {
-        // Enforce clearing coffee fields if not a coffee category
-        siloFormState.originId = "";
-        siloFormState.selectedRoasts = [];
-        siloFormState.selectedGrinds = [];
-        siloFormState.flavourNotes = [];
       }
+      // Non-coffee fields are guarded in FormData assembly — no state mutation needed.
 
       if (!siloFormState.stockInKg || parseFloat(siloFormState.stockInKg) <= 0) {
         toast.error("Stock in KG must be greater than 0");
@@ -696,25 +770,24 @@ const handleOpenEdit = async (productId: string) => {
       formData.append("Translations[1].Name", siloFormState.nameAr || siloFormState.nameEn);
       formData.append("Translations[1].Description", siloFormState.descriptionAr || siloFormState.descriptionEn);
 
-      // Coffee & Non-Coffee conditional fields
+      // Coffee-only fields — strictly omitted for equipment
       if (isCoffee) {
         if (siloFormState.coffeeProfileId && siloFormState.coffeeProfileId.trim() !== "") {
           formData.append("CoffeeProfile.Id", siloFormState.coffeeProfileId);
         }
+        // Only append OriginId if it is a non-empty UUID string
         if (siloFormState.originId && siloFormState.originId.trim() !== "") {
           formData.append("OriginId", siloFormState.originId);
         }
-        siloFormState.selectedRoasts.forEach((id) => {
-          formData.append("RoastLevelIds", id);
-        });
-        siloFormState.selectedGrinds.forEach((id) => {
-          formData.append("GrindTypeIds", id);
-        });
-      } else {
-        // Non-Coffee
-        // Guid? in .NET fails binding if empty string is sent, so we omit appending OriginId entirely.
-        // RoastLevelIds & GrindTypeIds are also omitted safely.
+        // Only append roast/grind arrays if they actually contain entries
+        if (siloFormState.selectedRoasts.length > 0) {
+          siloFormState.selectedRoasts.forEach((id) => formData.append("RoastLevelIds", id));
+        }
+        if (siloFormState.selectedGrinds.length > 0) {
+          siloFormState.selectedGrinds.forEach((id) => formData.append("GrindTypeIds", id));
+        }
       }
+      // Equipment: OriginId, RoastLevelIds, GrindTypeIds, FlavourNotes are completely omitted.
 
       // Variants & Multi-Currency
       let variantIndex = 0;
@@ -759,8 +832,8 @@ const handleOpenEdit = async (productId: string) => {
         variantIndex++;
       });
 
-      // Append Flavour Notes (CLEAN MAPPING)
-      if (isCoffee) {
+      // Append Flavour Notes — only for coffee AND only when there are notes
+      if (isCoffee && siloFormState.flavourNotes.length > 0) {
         siloFormState.flavourNotes.forEach((note, index) => {
           const enName = note.nameEn?.trim();
           const arName = note.nameAr?.trim();
@@ -947,8 +1020,80 @@ const handleOpenEdit = async (productId: string) => {
     )
   }
 
-  const selectedCategoryObj = categories.find(c => c.id === siloFormState.categoryId) as any;
-  const isCoffeeCategory = selectedCategoryObj?.isCoffeeCategory === true || selectedCategoryObj?.name?.toLowerCase().includes('bean') || selectedCategoryObj?.name?.toLowerCase().includes('coffee');
+  const leafCategoryIds = useMemo(() => computeLeafCategoryIds(categories), [categories])
+  const categoryTreeItems = useMemo(() => buildSortedCategoryTree(categories), [categories])
+
+  // Walk up the ancestor chain to detect coffee vs equipment — the isCoffeeCategory flag
+  // may only be set on the L1 parent ("coffee"), not on every leaf node.
+  const isCoffeeCategory = useMemo(() => {
+    if (!siloFormState.categoryId) return false
+    let currentId: string | null = siloFormState.categoryId
+    while (currentId) {
+      const cat = categories.find((c) => c.id === currentId)
+      if (!cat) return false
+      if (cat.isCoffeeCategory === true) return true
+      if (cat.name.toLowerCase() === "coffee") return true
+      currentId = cat.parentCategoryId ?? null
+    }
+    return false
+  }, [siloFormState.categoryId, categories])
+
+  // Cascade dropdown options (Level 1 = top-level, Level 2 = children of L1, Level 3 = children of L2)
+  const cascadeL1Options = useMemo(() => {
+    // Find structural roots (categories with no parent)
+    const topLevel = categories.filter((c) => !c.parentCategoryId)
+    if (topLevel.length === 1) {
+      // Single root node pattern (e.g. a "root" admin node) — show its direct children as L1
+      return categories
+        .filter((c) => c.parentCategoryId === topLevel[0].id)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    }
+    // Multiple or zero top-level nodes — show them, but exclude any generic "root" placeholder
+    return topLevel
+      .filter((c) => c.name.toLowerCase() !== "root")
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [categories])
+
+  const cascadeL2Options = useMemo(() => {
+    if (!cascadeL1) return []
+    return categories
+      .filter((c) => c.parentCategoryId === cascadeL1)
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [cascadeL1, categories])
+
+  const cascadeL3Options = useMemo(() => {
+    if (!cascadeL2) return []
+    return categories
+      .filter((c) => c.parentCategoryId === cascadeL2)
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [cascadeL2, categories])
+
+  // EDIT mode: flat list of only leaf categories for quick re-assignment
+  const leafCategoryList = useMemo(
+    () =>
+      categories
+        .filter((c) => leafCategoryIds.has(c.id))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [categories, leafCategoryIds]
+  )
+
+  // EDIT mode: only the sibling leaf categories that share the same
+  // immediate parent (sub-category) as the currently-selected category.
+  // This restricts re-assignment to categories in the same group.
+  const siblingLeafCategoryList = useMemo(() => {
+    if (!siloFormState.categoryId) return leafCategoryList;
+    const currentCat = categories.find((c) => c.id === siloFormState.categoryId);
+    if (!currentCat?.parentCategoryId) return leafCategoryList;
+    const siblings = categories.filter(
+      (c) =>
+        c.parentCategoryId === currentCat.parentCategoryId &&
+        leafCategoryIds.has(c.id)
+    );
+    // Fall back to the full leaf list if there are no siblings (edge-case)
+    return siblings.length > 0
+      ? siblings.sort((a, b) => a.name.localeCompare(b.name))
+      : leafCategoryList;
+  }, [siloFormState.categoryId, categories, leafCategoryIds, leafCategoryList])
 
   return (
     <div className="space-y-8 p-6 md:p-8">
@@ -1285,28 +1430,134 @@ const handleOpenEdit = async (productId: string) => {
                 <Loader2 className="size-8 animate-spin text-accent" />
               </div>
             )}
-            {/* Basic Info Section */}
+            {/* Category Selection - Always visible */}
             <div className="space-y-5">
-              <div className="text-xs font-bold uppercase tracking-wider text-accent/70 pb-2 border-b border-border/20">Basic Info</div>
+              <div className="text-xs font-bold uppercase tracking-wider text-accent/70 pb-2 border-b border-border/20">Select Category</div>
+              <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Category *
+                  </label>
+
+                  {/* ── EDIT MODE: single select scoped to sibling leaves ── */}
+                  {selectedProduct ? (
+                    <div className="space-y-2">
+                      <p className="text-[11px] text-muted-foreground">
+                        Showing only categories in the same group as this product.
+                      </p>
+                      <Select
+                        value={siloFormState.categoryId}
+                        onValueChange={(val) =>
+                          setSiloFormState((prev) => ({ ...prev, categoryId: val }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-72 overflow-y-auto">
+                          {siblingLeafCategoryList.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {buildCategoryPath(cat.id, categories)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {siloFormState.categoryId && (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                          ✓ {buildCategoryPath(siloFormState.categoryId, categories)}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                  /* ── ADD MODE: 3-step cascading dropdowns ── */
+                    <div className="flex flex-col gap-2">
+                      <p className="text-[11px] text-muted-foreground">
+                        Step through the hierarchy to reach a leaf category.
+                      </p>
+                      {/* Step 1 — always visible */}
+                      <Select
+                        value={cascadeL1}
+                        onValueChange={(val) => {
+                          setCascadeL1(val)
+                          setCascadeL2("")
+                          const isLeaf = leafCategoryIds.has(val)
+                          setSiloFormState((prev) => ({ ...prev, categoryId: isLeaf ? val : "" }))
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Step 1 — top-level category..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          {cascadeL1Options.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {/* Step 2 — appears only after Step 1 is selected and has children */}
+                      {cascadeL1 !== "" && cascadeL2Options.length > 0 && (
+                        <Select
+                          value={cascadeL2}
+                          onValueChange={(val) => {
+                            setCascadeL2(val)
+                            const isLeaf = leafCategoryIds.has(val)
+                            setSiloFormState((prev) => ({ ...prev, categoryId: isLeaf ? val : "" }))
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Step 2 — sub-category..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60 overflow-y-auto">
+                            {cascadeL2Options.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {/* Step 3 — appears only after Step 2 is selected and has children */}
+                      {cascadeL2 !== "" && cascadeL3Options.length > 0 && (
+                        <Select
+                          value={siloFormState.categoryId}
+                          onValueChange={(val) => {
+                            setSiloFormState((prev) => ({ ...prev, categoryId: val }))
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Step 3 — leaf category..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60 overflow-y-auto">
+                            {cascadeL3Options.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {/* Confirmation / warnings */}
+                      {siloFormState.categoryId && leafCategoryIds.has(siloFormState.categoryId) && (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                          ✓ {buildCategoryPath(siloFormState.categoryId, categories)}
+                        </p>
+                      )}
+                      {!siloFormState.categoryId && cascadeL1 !== "" && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Continue selecting to reach a leaf category…
+                        </p>
+                      )}
+                    </div>
+                  )}
+              </div>
+            </div>
+
+            {/* ── All product fields: HIDDEN until leaf category is confirmed ── */}
+            {(selectedProduct || (siloFormState.categoryId && leafCategoryIds.has(siloFormState.categoryId))) && (
+            <>
+            <div className="space-y-5">
+              <div className="text-xs font-bold uppercase tracking-wider text-accent/70 pb-2 border-b border-border/20">Product Details</div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Category *</label>
-                  <Select
-                    value={siloFormState.categoryId}
-                    onValueChange={(val) => setSiloFormState((prev) => ({ ...prev, categoryId: val }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(categories || []).map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Brand</label>
                   <Select
@@ -1494,7 +1745,7 @@ const handleOpenEdit = async (productId: string) => {
             )}
               
             {/* Technical Specifications Section - Equipment Only */}
-            {((!isCoffeeCategory && siloFormState.categoryId) || siloFormState.specifications.length > 0) && (
+            {siloFormState.categoryId && !isCoffeeCategory && (
             <div className="space-y-4">
               <div className="text-xs font-semibold uppercase tracking-wider text-accent/70">Technical Specifications</div>
               <div className="space-y-3 bg-accent/5 p-4 rounded-lg border border-accent/20">
@@ -1730,6 +1981,8 @@ const handleOpenEdit = async (productId: string) => {
                 )}
               </Button>
             </SheetFooter>
+            </>
+            )}
           </form>
         </SheetContent>
       </Sheet>

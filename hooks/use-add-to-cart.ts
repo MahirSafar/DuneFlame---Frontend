@@ -15,7 +15,7 @@ export interface AddToCartProduct {
 }
 
 export interface AddToCartOptions {
-  productVariantId: string
+  variantId: string
   price: number
   prices?: { currencyCode: string; price: number }[]
   sku: string
@@ -41,7 +41,7 @@ export function useAddToCart() {
     // Use shared generateVariantKey helper to ensure consistency with cart-store
     const variantKey = generateVariantKey(
       product.id,
-      options.productVariantId,
+      options.variantId,
       options.roastLevelId,
       options.grindTypeId
     )
@@ -49,7 +49,7 @@ export function useAddToCart() {
     const cartItemToAdd = {
       id: product.id,
       productId: product.id,
-      productVariantId: options.productVariantId || "",
+      variantId: options.variantId || EMPTY_GUID,
       slug: product.slug ?? "",
       name: product.name,
       price: options.price,
@@ -71,9 +71,22 @@ export function useAddToCart() {
     } catch {}
 
 
+    // addItem is async; await it so the toast only fires after the backend confirms
+    // (for guests the promise resolves immediately; for auth users after syncWithBackend).
+    // If the item was blocked by the perimeter guard, addItem resolves without throwing —
+    // the console.error in cart-store is the signal; no toast is shown for blocked items.
     addItem(cartItemToAdd, isAuthenticated)
-
-    toast.success("Added to basket!")
+      .then(() => {
+        // Guard blocked the item if variantId was invalid — only toast if the item
+        // actually landed in the store (works for both guest optimistic and auth pessimistic).
+        const stored = useCartStore.getState().items.some((i) => i.variantKey === variantKey)
+        if (stored) {
+          toast.success("Added to basket!")
+        }
+      })
+      .catch(() => {
+        toast.error("Failed to add item to basket. Please try again.")
+      })
   }
 
   return { addToCart }

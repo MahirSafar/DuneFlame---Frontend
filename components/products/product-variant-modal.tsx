@@ -31,8 +31,11 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
 
   // State to hold the full product data (with IDs)
   const [fullProduct, setFullProduct] = useState<ProductResponse>(product)
-  const [selectedVariantId, setSelectedVariantId] = useState<string>(product.variants?.[0]?.id || "")
-  
+  // Securely initialise to the first variant with a non-empty ID; never fall back to ""
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(() => {
+    return product.variants?.find((v) => v.id && v.id.length > 0)?.id || ""
+  })
+
   const [selectedRoast, setSelectedRoast] = useState<string>(product.coffeeProfile?.roastLevelNames?.[0] || "")
   const [selectedGrind, setSelectedGrind] = useState<string>(product.coffeeProfile?.grindTypeNames?.[0] || "")
 
@@ -41,42 +44,52 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
   useEffect(() => {
     if (!isOpen) return
 
-    // Set default variant if not set
-    if (!selectedVariantId && fullProduct.variants?.[0]) {
-      setSelectedVariantId(fullProduct.variants[0].id)
-    }
-
-    // Check if it is a coffee product requiring roasted/grind options
     const isCoffee = !!product.coffeeProfile;
 
-    // Check if product data is incomplete (missing IDs) but ONLY for Coffee products
-    const hasIncompleteData = isCoffee && (!product.coffeeProfile?.roastLevelIds || product.coffeeProfile?.roastLevelIds.length === 0 || !product.coffeeProfile?.grindTypeIds || product.coffeeProfile?.grindTypeIds.length === 0)
+    // Check if product data is incomplete for ANY product type:
+    // - missing variants entirely, variant IDs are empty/missing
+    // - coffee-specific: missing roast/grind IDs needed for cart
+    const hasIncompleteData = (
+      !product.variants?.length ||
+      !product.variants[0]?.id ||
+      product.variants[0].id.length === 0 ||
+      (isCoffee && (
+        !product.coffeeProfile?.roastLevelIds ||
+        product.coffeeProfile?.roastLevelIds.length === 0 ||
+        !product.coffeeProfile?.grindTypeIds ||
+        product.coffeeProfile?.grindTypeIds.length === 0
+      ))
+    )
 
     if (hasIncompleteData && product.slug) {
-      // Fetch full product details
+      // Fetch full product details to get real variant IDs
       import("@/lib/services/products")
         .then(({ getProduct }) => getProduct(product.slug))
         .then((data) => {
           setFullProduct(data)
-          if (!selectedVariantId && data.variants?.[0]) {
-            setSelectedVariantId(data.variants[0].id)
-          }
-          // Always set roast and grind from fetched data (user hasn't selected these yet)
+          // Functional updater: only overwrite if the current value is still empty/invalid
+          setSelectedVariantId((prev) => {
+            const firstValidId = data.variants?.find((v: any) => v.id && v.id.length > 0)?.id
+            return prev && prev.length > 0 ? prev : (firstValidId || "")
+          })
           setSelectedRoast(data.coffeeProfile?.roastLevelNames?.[0] || "")
           setSelectedGrind(data.coffeeProfile?.grindTypeNames?.[0] || "")
         })
         .catch((err) => console.error("❌ MODAL: Failed to fetch full product:", err))
     } else {
-      // Data is complete, use as-is with unified source
+      // Data is complete, use as-is
       setFullProduct(product)
-      if (!selectedVariantId && product.variants?.[0]) {
-        setSelectedVariantId(product.variants[0].id)
-      }
-      // Always set roast and grind from product data (user hasn't selected these yet)
+      // Functional updater: only overwrite if the current value is still empty/invalid
+      setSelectedVariantId((prev) => {
+        const firstValidId = product.variants?.find((v) => v.id && v.id.length > 0)?.id
+        return prev && prev.length > 0 ? prev : (firstValidId || "")
+      })
       setSelectedRoast(product.coffeeProfile?.roastLevelNames?.[0] || "")
       setSelectedGrind(product.coffeeProfile?.grindTypeNames?.[0] || "")
     }
-  }, [isOpen, product, selectedVariantId])
+  // selectedVariantId intentionally excluded: functional updaters read current state internally
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, product])
 
   const mainImageRaw = useMemo(
     () => fullProduct.images?.find((image) => image.isMain)?.imageUrl || fullProduct.images?.[0]?.imageUrl,
@@ -108,8 +121,8 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
       return
     }
 
-    // 1. Use resolved price and productVariantId from strict resolution
-    const productVariantId = selectedVariant.id
+    // 1. Use resolved price and variantId from strict resolution
+    const variantId = selectedVariant.id
 
     // 2. Find Roast ID by Name using API keys
     const roastIndex = fullProduct.coffeeProfile?.roastLevelNames?.indexOf(selectedRoast) ?? -1
@@ -122,7 +135,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
 
     // 4. Send EVERYTHING to addToCart (including real GUIDs)
     addToCart(fullProduct, 1, {
-      productVariantId,
+      variantId,
       prices: selectedVariant?.prices || [],
       price: currentPrice,
       sku: selectedVariant?.sku || "",

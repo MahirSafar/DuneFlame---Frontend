@@ -57,17 +57,38 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
     product.images?.find((image) => image.isMain)?.id || product.images?.[0]?.id,
   )
   // Default weight: replace with variant selection
-  const variants = product.variants || [];
+  const variants = useMemo(() => product.variants || [], [product.variants]);
   const defaultVariant = variants[0];
-  const [selectedVariantId, setSelectedVariantId] = useState<string>(defaultVariant?.id || "");
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(
+    product.variants?.[0]?.id || EMPTY_GUID
+  );
 
+  // Robustly sync selectedVariantId whenever product.variants changes (e.g. after hydration or
+  // prop update). Uses the functional updater so selectedVariantId is NOT a dependency, which
+  // avoids the circular re-run. Catches both falsy and EMPTY_GUID as "not yet selected".
   useEffect(() => {
-    if (variants.length > 0 && (!selectedVariantId || !variants.find(v => v.id === selectedVariantId))) {
-      setSelectedVariantId(variants[0].id);
-    }
-  }, [variants, selectedVariantId]);
+    const firstId = product.variants?.[0]?.id;
+    if (!firstId) return;
+    setSelectedVariantId((current) => {
+      const isValid =
+        current &&
+        current !== EMPTY_GUID &&
+        product.variants?.some((v) => v.id === current);
+      return isValid ? current : firstId;
+    });
+  }, [product.variants]);
 
   const selectedVariant = useMemo(() => variants.find(v => v.id === selectedVariantId) || defaultVariant, [selectedVariantId, variants, defaultVariant]);
+
+  // True when the product has exactly one variant that carries no meaningful label
+  // (sku contains "DEFAULT" or no option values defined)
+  const isDefaultOnlyVariant = useMemo(() => {
+    if (variants.length !== 1) return false;
+    const v = variants[0];
+    const hasNoOptions = !v.options?.length || v.options.every(o => !o.value || o.value.toLowerCase() === 'default');
+    const hasDefaultSku = typeof v.sku === 'string' && v.sku.toUpperCase().includes('DEFAULT');
+    return hasNoOptions || hasDefaultSku;
+  }, [variants]);
   
   const [selectedRoast, setSelectedRoast] = useState<string>("")
   const [selectedGrind, setSelectedGrind] = useState<string>("")
@@ -166,7 +187,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   
   const handleAddToCart = () => {
     addToCart(product, quantity, {
-      productVariantId: selectedVariant?.id || "",
+      variantId: selectedVariant?.id || EMPTY_GUID,
       prices: selectedVariant?.prices || [],
       price: currentPrice,
       sku: selectedVariant?.sku || "",
@@ -286,13 +307,23 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
         {/* Brand / origin */}
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Leaf size={14} className="text-accent" />
-              {isCoffeeProduct
-                ? <span>{product.coffeeProfile?.originName || "DuneFlame Reserve"}</span>
-                : <span>{product.brandName || product.categoryName || "DuneFlame Equipment"}</span>
-              }
-            </div>
+            {isCoffeeProduct && product.coffeeProfile?.originName && (
+              <div className="flex items-center gap-2">
+                <Leaf size={14} className="text-accent" />
+                <span>{product.coffeeProfile.originName}</span>
+              </div>
+            )}
+            {product.brandName && (
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-0.5 text-xs font-semibold uppercase tracking-wide backdrop-blur">
+                {product.brandName}
+              </span>
+            )}
+            {!isCoffeeProduct && !product.brandName && (
+              <div className="flex items-center gap-2">
+                <Leaf size={14} className="text-accent" />
+                <span>{product.categoryName || "DuneFlame Equipment"}</span>
+              </div>
+            )}
           </div>
 
           {/* Name + Description */}
@@ -302,7 +333,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           </div>
 
           {/* Equipment: variant / color selector — directly under description */}
-          {!isCoffeeProduct && (
+          {!isCoffeeProduct && !isDefaultOnlyVariant && (
             <div className="space-y-2 pt-2">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 {product.variants?.[0]?.options?.[0]?.attributeName || 'VARIANT'}
@@ -330,6 +361,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
         {/* Coffee: weight + roast + grind grid */}
         {isCoffeeProduct && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {!isDefaultOnlyVariant && (
             <div className="glass rounded-2xl border border-white/5 p-4 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('weight')}</p>
               <div className="grid grid-cols-2 gap-2">
@@ -349,6 +381,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                 })}
               </div>
             </div>
+            )}
 
             {product.coffeeProfile && (
               <div className="glass rounded-2xl border border-white/5 p-4 space-y-3">
@@ -383,6 +416,29 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Coffee: flavour notes */}
+        {isCoffeeProduct && product.coffeeProfile?.flavourNotes && product.coffeeProfile.flavourNotes.length > 0 && (
+          <div className="glass rounded-2xl border border-white/5 p-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Flavour Notes</p>
+            <div className="flex flex-wrap gap-2">
+              {product.coffeeProfile.flavourNotes.map((note) => {
+                const label =
+                  note.translations?.find((tr) => tr.languageCode === locale)?.name ||
+                  note.translations?.find((tr) => tr.languageCode === "en")?.name ||
+                  note.name;
+                return (
+                  <span
+                    key={note.id ?? note.name}
+                    className="inline-flex items-center rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-accent"
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -422,8 +478,8 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           </button>
         </div>
 
-        {/* Buttons */}
-        <div className="flex flex-col gap-3">
+        {/* Buttons — hidden on mobile (replaced by sticky bar below) */}
+        <div className="hidden lg:flex flex-col gap-3">
           <button
             onClick={handleAddToCart}
             disabled={(selectedVariant?.stockQuantity ?? 0) <= 0 || !selectedVariant}
@@ -477,7 +533,38 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
             {t('sustainableSourcing')}
           </span>
         </div>
+
+        {/* Mobile: bottom spacer so sticky bar doesn't overlap content */}
+        <div className="h-24 lg:hidden" aria-hidden="true" />
       </motion.div>
+
+      {/* Mobile sticky Add to Cart bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/95 backdrop-blur-sm border-t shadow-lg lg:hidden">
+        <button
+          onClick={handleAddToCart}
+          disabled={(selectedVariant?.stockQuantity ?? 0) <= 0 || !selectedVariant}
+          style={{
+            backgroundColor: 'rgb(56, 109, 118)',
+            color: '#fff',
+            borderRadius: '0.75rem',
+            width: '100%',
+            padding: '0.875rem 1.5rem',
+            fontSize: '1rem',
+            fontWeight: 600,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+          }}
+          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
+        >
+          <ShoppingCart size={18} />
+          {t('addToBasket')}
+          {currentPrice > 0 && (
+            <span className="ml-2 opacity-80">· <FormattedPrice amount={currentPrice * quantity} /></span>
+          )}
+        </button>
+      </div>
     </motion.section>
   )
 }

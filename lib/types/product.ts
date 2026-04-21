@@ -1,31 +1,8 @@
-// UpdateProductRequest for edit operations
-export interface UpdateProductRequest {
-  name: string;
-  description: string;
-  stockInKg: number;
-  categoryId: string;
-  originId: string | null;
-  roastLevelIds: string[];
-  grindTypeIds: string[];
-  prices: { productWeightId: string; price: number }[];
-  flavourNotes: FlavourNoteDto[];
-  images?: File[]; // Newly added images
-  deletedImageIds?: string[]; // IDs of images to delete
-  setMainImageId?: string; // ID of the image to set as main
-}
 // Product Response & Base Types
 export interface ProductImageDto {
   id: string;
   imageUrl: string;
   isMain: boolean;
-}
-
-export interface ProductPriceDto {
-  productVariantId: string;
-  weightLabel: string;
-  grams: number;
-  price: number;
-  currencyCode: string;
 }
 
 export interface ProductTranslationDto {
@@ -56,11 +33,16 @@ export interface VariantOptionDto {
   value: string;
 }
 
+export interface VariantPriceDto {
+  currencyCode: string;
+  price: number;
+}
+
 export interface VariantDto {
   id: string;
   sku: string;
   price: number;
-  prices?: { currencyCode: string; price: number }[];
+  prices: VariantPriceDto[];
   stockQuantity: number | null;
   options: VariantOptionDto[];
 }
@@ -73,6 +55,9 @@ export interface Product {
   isActive: boolean;
   categoryId: string;
   categoryName: string;
+  brandId: string | null;
+  brandName: string | null;
+  specifications: Record<string, string> | null;
   translations: ProductTranslationDto[];
   coffeeProfile: ProductCoffeeProfileDto | null;
   variants: VariantDto[];

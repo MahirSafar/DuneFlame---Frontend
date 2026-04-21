@@ -6,28 +6,38 @@ import { cookies } from "next/headers"
 async function getTrendingProducts() {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://dune-flame-backend-180239181668.me-central1.run.app';
-    // Read currency from cookie so the backend returns currency-specific prices in variants
     const cookieStore = await cookies();
     const currency =
       cookieStore.get("df_currency")?.value ||
       cookieStore.get("NEXT_CURRENCY")?.value ||
       "AED";
-    // Fetch with larger pageSize (50) to bypass grinders and guarantee coffee products are included
-    const res = await fetch(`${baseUrl}/api/v1/products?pageNumber=1&pageSize=50`, {
-      next: { revalidate: 1800 },
-      headers: {
-        Currency: currency,
-        "X-Currency": currency,
-      },
+
+    // Step 1: resolve the "coffee" L1 category slug to its GUID (cached 1 hr)
+    const catRes = await fetch(`${baseUrl}/api/v1/categories/slug/coffee`, {
+      next: { revalidate: 3600 },
     });
+    let categoryParam = "";
+    if (catRes.ok) {
+      const cat = await catRes.json();
+      if (cat?.id) categoryParam = `&categoryId=${cat.id}`;
+    }
+
+    // Step 2: fetch only coffee products via API-level filter, minimal pageSize
+    const res = await fetch(
+      `${baseUrl}/api/v1/products?pageNumber=1&pageSize=8${categoryParam}`,
+      {
+        next: { revalidate: 1200 },
+        headers: {
+          Currency: currency,
+          "X-Currency": currency,
+        },
+      }
+    );
     if (!res.ok) {
       throw new Error(`Failed to fetch trending products: ${res.statusText}`);
     }
     const data = await res.json();
-    // Filter for products with coffeeProfile (Coffee Beans category)
-    const coffeeProducts = (data.items || []).filter((p: ProductResponse) => p.coffeeProfile);
-    // Return exactly 4 coffee products
-    return coffeeProducts.slice(0, 4);
+    return (data.items || []).slice(0, 4);
   } catch (err) {
     console.error("Failed to fetch trending products:", err);
     return [];

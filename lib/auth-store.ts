@@ -63,14 +63,17 @@ export const useAuthStore = create<AuthState>()(
             localStorage.removeItem("guestBasketId");
             localStorage.removeItem("df_user_basket_id");
           }
-          
-          // Clear guest data and load authenticated user's basket from backend
+
+          // Fetch the authenticated basket ID (mirrors the Google login flow)
+          await get().fetchAndStoreBasketId();
+
+          // Merge any guest cart items into the authenticated basket, then load fresh state
           try {
-            const { clearGuestData, loadBasket } = useCartStore.getState();
-            clearGuestData();
+            const { syncGuestItemsToAuthenticatedBasket, loadBasket } = useCartStore.getState();
+            await syncGuestItemsToAuthenticatedBasket();
             await loadBasket();
           } catch (cartError) {
-            console.error("[Auth] Failed to load basket after login:", cartError);
+            console.error("[Auth] Failed to sync/load basket after login:", cartError);
             // Don't throw - login was successful, cart load failure shouldn't break login
           }
         } catch (e: any) {

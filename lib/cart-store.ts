@@ -27,7 +27,7 @@ export function generateVariantKey(
 export interface CartItem {
   id: string
   productId: string
-  productVariantId: string
+  variantId: string
   slug: string
   name: string
   price: number
@@ -48,7 +48,7 @@ export interface CartItem {
 interface CartStore {
   items: CartItem[]
   isLoading: boolean
-  addItem: (item: CartItem, isAuthenticated?: boolean) => void
+  addItem: (item: CartItem, isAuthenticated?: boolean) => Promise<void>
   removeItem: (idOrKey: string, isAuthenticated?: boolean) => void
   updateQuantity: (id: string, quantity: number, isAuthenticated?: boolean) => void
   clearCart: () => void
@@ -99,14 +99,19 @@ const syncWithBackend = async (items: CartItem[]) => {
       return
     }
 
-    if (items.length === 0) {
+    // Strip any items that somehow still carry an empty/zero GUID before hitting the network
+    const validItems = items.filter(
+      (item) => item.variantId && item.variantId !== "" && item.variantId !== EMPTY_GUID
+    )
+
+    if (validItems.length === 0) {
       // Clear basket by sending empty items
       await basketService.clearBasket(basketId)
     } else {
-      const basketItems: BasketItem[] = items.map((item) => ({
+      const basketItems: BasketItem[] = validItems.map((item) => ({
         id: item.cartItemId,
         productId: item.productId,
-        productVariantId: item.productVariantId,
+        variantId: item.variantId,
         productName: item.name,
         slug: item.slug,
         price: item.price,
@@ -135,21 +140,37 @@ export const useCartStore = create<CartStore>()(
       items: [],
       isLoading: false,
 
-      addItem: (item, isAuthenticated = false) =>
-        set((state) => {
-          const variantKey = generateVariantKey(item.productId, item.productVariantId, item.roastLevelId, item.grindTypeId)
-          const itemWithKey = { ...item, variantKey }
+      addItem: async (item, isAuthenticated = false) => {
+        // PERIMETER GUARD: Reject any item with a missing or empty GUID variant ID
+        if (
+          !item.variantId ||
+          item.variantId === "" ||
+          item.variantId === EMPTY_GUID
+        ) {
+          console.error("[CartStore] BLOCKED INVALID VARIANT ID — item not added:", item)
+          return
+        }
 
-          const existingItemIndex = state.items.findIndex((si) => si.variantKey === variantKey)
+        const state = get()
+        const variantKey = generateVariantKey(item.productId, item.variantId, item.roastLevelId, item.grindTypeId)
+        const itemWithKey = { ...item, variantKey }
+        const existingItemIndex = state.items.findIndex((si) => si.variantKey === variantKey)
+        const updatedItems: CartItem[] =
+          existingItemIndex > -1
+            ? state.items.map((si, idx) => (idx === existingItemIndex ? { ...si, quantity: si.quantity + item.quantity } : si))
+            : [...state.items, itemWithKey]
 
-          const updatedItems: CartItem[] =
-            existingItemIndex > -1
-              ? state.items.map((si, idx) => (idx === existingItemIndex ? { ...si, quantity: si.quantity + item.quantity } : si))
-              : [...state.items, itemWithKey]
-
-          if (isAuthenticated) syncWithBackend(updatedItems)
-          return { items: updatedItems }
-        }),
+        if (isAuthenticated) {
+          // Pessimistic update: confirm with the backend FIRST, then commit to local state.
+          // This eliminates the race where navigating to the cart page triggers loadBasket
+          // before the POST has landed, returning an empty basket and wiping Zustand.
+          await syncWithBackend(updatedItems)
+          set({ items: updatedItems })
+        } else {
+          // Guest: optimistic — no backend call, update local state immediately
+          set({ items: updatedItems })
+        }
+      },
 
   removeItem: (idOrKey, isAuthenticated = false) =>
     set((state) => {
@@ -236,8 +257,8 @@ export const useCartStore = create<CartStore>()(
         .filter((item) => Boolean(item.slug))
         .map(async (item) => {
           const productId = (item.productId || "").toLowerCase().trim()
-          const productVariantId = (item.productVariantId || "").toLowerCase().trim()
-          const variantKey = generateVariantKey(productId, productVariantId)
+          const variantId = (item.variantId || "").trim()
+          const variantKey = generateVariantKey(productId, variantId)
 
           // Debug log for server-loaded items and generated key
           try {
@@ -252,15 +273,15 @@ export const useCartStore = create<CartStore>()(
           return {
             id: productId, // maintain id backwards compatibility if needed, or align with productId
             productId: productId,
-            productVariantId: productVariantId,
+            variantId: variantId,
             name: item.productName || productData?.name || "Unknown",
             slug: item.slug!,
             price: item.price,
-            prices: productData?.variants?.find((v: any) => v.id === productVariantId)?.prices || [],
+            prices: productData?.variants?.find((v: any) => v.id === variantId)?.prices || [],
             quantity: item.quantity,
             imageUrl: item.imageUrl,
             sku: "",
-            attributes: productData?.variants?.find((v: any) => v.id === productVariantId)?.options?.map((o: any) => `${o.attributeName}: ${o.value}`) || ["250g"],
+            attributes: productData?.variants?.find((v: any) => v.id === variantId)?.options?.map((o: any) => `${o.attributeName}: ${o.value}`) || [],
             variantKey,
             cartItemId: item.id,
             product: productData,
@@ -272,9 +293,15 @@ export const useCartStore = create<CartStore>()(
         })
 
       const resolvedItems = await Promise.all(itemPromises)
-      set({ items: resolvedItems || [], isLoading: false })
+      // Filter out any items the backend returned with invalid variantIds (legacy data)
+      const validResolved = resolvedItems.filter(
+        (item) => item.variantId && item.variantId !== "" && item.variantId !== EMPTY_GUID
+      )
+      set({ items: validResolved, isLoading: false })
     } catch (error) {
-      set({ items: [], isLoading: false })
+      // Do NOT wipe existing items on a fetch failure; preserve what the user has locally
+      console.error("[CartStore] loadBasket failed, preserving existing items:", error)
+      set({ isLoading: false })
     }
   },
 
@@ -294,19 +321,24 @@ export const useCartStore = create<CartStore>()(
     if (!user?.id) {
       return
     }
-    
-    // Clear guest ID from localStorage
+
+    // Filter valid items FIRST — before touching the store or localStorage.
+    // Items with EMPTY_GUID were blocked by addItem on new sessions but may survive
+    // from old localStorage data; sending them would cause a backend 400 and wipe the cart.
+    const validItems = (items || []).filter(
+      (item) => item.variantId && item.variantId !== "" && item.variantId !== EMPTY_GUID
+    )
+
+    // Always clear the guest localStorage key
     if (typeof window !== "undefined") {
       localStorage.removeItem("guestBasketId")
     }
-    
-    // Clear local items
+
+    // Wipe local state (invalid items are useless; valid items will be re-hydrated by loadBasket)
     set({ items: [] })
     
-    // Ensure items is an array
-    const itemsToSync = items || []
-    
-    if (itemsToSync.length === 0) {
+    if (validItems.length === 0) {
+      // Nothing valid to push — authenticated basket will be loaded as-is by caller
       return
     }
     
@@ -314,11 +346,11 @@ export const useCartStore = create<CartStore>()(
       // Use stored userBasketId if available (set after Google login), otherwise use user.id
       const basketId = userBasketId || user.id;
       
-      // Convert current local items to BasketItem format
-      const basketItems: BasketItem[] = itemsToSync.map((item) => ({
+      // Convert valid guest items to BasketItem format
+      const basketItems: BasketItem[] = validItems.map((item) => ({
         id: item.cartItemId,
           productId: item.productId,
-          productVariantId: item.productVariantId,
+          variantId: item.variantId,
           productName: item.name,
           slug: item.slug,
           price: item.price,
@@ -341,10 +373,25 @@ export const useCartStore = create<CartStore>()(
   },
     }),
     {
-      name: "df-cart-storage", // LocalStorage key
+      name: "df-cart-storage",
       partialize: (state) => ({
-        items: state.items, // Only persist cart items
+        items: state.items,
       }),
+      // On every app boot, scrub any items with empty/zero GUID that survived from
+      // previous sessions (before the addItem guard existed).
+      onRehydrateStorage: () => (rehydratedState) => {
+        if (rehydratedState?.items) {
+          const before = rehydratedState.items.length
+          rehydratedState.items = rehydratedState.items.filter(
+            (item) => item.variantId && item.variantId !== "" && item.variantId !== EMPTY_GUID
+          )
+          if (rehydratedState.items.length !== before) {
+            console.warn(
+              `[CartStore] Purged ${before - rehydratedState.items.length} persisted item(s) with invalid variantId from localStorage.`
+            )
+          }
+        }
+      },
     }
   )
 )

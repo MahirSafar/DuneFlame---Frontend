@@ -29,7 +29,7 @@ export interface PagedResult<T> {
 export interface OrderItem {
   id: string;
   orderId: string;
-  productVariantId: string;
+  variantId: string;
   productName: string;
   unitPrice: number;
   quantity: number;

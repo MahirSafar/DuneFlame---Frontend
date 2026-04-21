@@ -53,9 +53,13 @@ export default function GoogleCallbackPage() {
           useAuthStore.setState({ user: userObj as any });
         }
 
-        // Clear guest data before loading the authenticated basket
-        const { clearGuestData } = useCartStore.getState();
-        clearGuestData();
+        // Merge guest cart items into the authenticated basket before loading
+        const { syncGuestItemsToAuthenticatedBasket } = useCartStore.getState();
+        try {
+          await syncGuestItemsToAuthenticatedBasket();
+        } catch (mergeErr) {
+          console.error("[GoogleCallback] Failed to merge guest basket:", mergeErr);
+        }
 
         // STEP 1: Load authenticated user's basket
         try {

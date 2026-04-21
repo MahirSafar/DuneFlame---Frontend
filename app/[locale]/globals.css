@@ -1,8 +1,3 @@
-/* Register form label color override */
-.register-form label {
-  color: var(--espresso-brown) !important;
-}
-
 /* Subscribe button */
 .btn-subscribe {
   background-color: #2b1b13;
@@ -180,19 +175,8 @@
   /* ========================================
      TYPOGRAPHY UTILITIES
      ======================================== */
-  .font-logo {
-    font-family: var(--font-logo);
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-  
   .font-heading {
     font-family: var(--font-heading);
-  }
-  
-  .font-body {
-    font-family: var(--font-body);
   }
 
   /* ========================================
@@ -227,90 +211,15 @@
   .border-oasis-teal { border-color: var(--color-oasis-teal); }
 
   /* ========================================
-     SOFT GLASSMORPHISM UTILITIES
+     GLASSMORPHISM
      ======================================== */
-  .glass-soft {
-    @apply bg-white/60 backdrop-blur-md border border-dune-taupe/40 shadow-lg shadow-black/5;
-  }
-
   .glass {
     @apply bg-white/90 backdrop-blur-xl border border-dune-taupe/50 shadow-xl shadow-[#E6D3BF]/40;
   }
 
-  .glass-medium {
-    @apply bg-white/85 backdrop-blur-2xl border border-dune-taupe/60 shadow-2xl shadow-black/10;
-  }
-
-  .glass-strong {
-    @apply bg-white/95 backdrop-blur-3xl border border-dune-taupe/70 shadow-2xl shadow-black/12;
-  }
-
-  .glass-warm {
-    @apply bg-dune-paper/80 backdrop-blur-xl border border-dune-taupe/40 shadow-xl shadow-flame-deep/8;
-  }
-
-  .glass-flame {
-    @apply bg-flame-apricot/75 backdrop-blur-xl border border-flame-caramel/35 shadow-xl shadow-flame-red/8;
-  }
-
-  .glass-dune {
-    @apply bg-dune-sand/85 backdrop-blur-xl border border-dune-taupe/45 shadow-lg shadow-espresso-brown/6;
-  }
-
-  .glass-frost {
-    @apply bg-white/50 backdrop-blur-3xl backdrop-saturate-150 border border-dune-taupe/30 shadow-lg shadow-black/5;
-  }
-
   /* ========================================
-     BENTO GRID SYSTEM
+     GLOW EFFECTS
      ======================================== */
-  .bento-grid {
-    @apply grid gap-3 md:gap-4 lg:gap-6 auto-rows-[180px] md:auto-rows-[220px] lg:auto-rows-[260px];
-  }
-
-  .bento-cols-1 { @apply grid-cols-1; }
-  .bento-cols-2 { @apply grid-cols-1 md:grid-cols-2; }
-  .bento-cols-3 { @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-3; }
-  .bento-cols-4 { @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-4; }
-  .bento-cols-5 { @apply grid-cols-1 md:grid-cols-3 lg:grid-cols-5; }
-  .bento-cols-6 { @apply grid-cols-2 md:grid-cols-3 lg:grid-cols-6; }
-
-  .bento-card {
-    @apply rounded-2xl overflow-hidden transition-all duration-500 ease-out;
-    @apply hover:scale-[1.02] hover:shadow-2xl;
-  }
-
-  .bento-glass {
-    @apply rounded-2xl overflow-hidden transition-all duration-500 ease-out;
-    @apply hover:scale-[1.02] hover:shadow-2xl;
-    @apply bg-white/60 dark:bg-white/5 backdrop-blur-md border border-dune-taupe/40 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/20;
-  }
-
-  .bento-row-1 { @apply row-span-1; }
-  .bento-row-2 { @apply row-span-2; }
-  .bento-row-3 { @apply row-span-3; }
-  .bento-row-4 { @apply row-span-4; }
-
-  .bento-col-1 { @apply col-span-1; }
-  .bento-col-2 { @apply col-span-1 md:col-span-2; }
-  .bento-col-3 { @apply col-span-1 md:col-span-2 lg:col-span-3; }
-  .bento-col-full { @apply col-span-full; }
-
-  .bento-span-md { @apply md:col-span-2 md:row-span-1; }
-  .bento-span-lg { @apply md:col-span-2 md:row-span-2; }
-  .bento-span-xl { @apply md:col-span-3 md:row-span-2; }
-
-  .bento-content {
-    @apply p-4 md:p-6 lg:p-8 h-full flex flex-col;
-  }
-
-  /* ========================================
-     DUNEFLAME GLOW EFFECTS
-     ======================================== */
-  .glow-soft {
-    @apply shadow-lg shadow-flame-red/15 dark:shadow-flame-red/20;
-  }
-
   .glow-warm {
     @apply shadow-xl shadow-flame-caramel/20 dark:shadow-flame-caramel/25;
   }
@@ -319,110 +228,11 @@
     @apply shadow-xl shadow-oasis-teal/25 dark:shadow-oasis-teal/20;
   }
 
-  .glow-flame {
-    @apply shadow-xl shadow-flame-red/20 dark:shadow-flame-red/18;
-  }
-
-  .hover-glow {
-    @apply transition-shadow duration-500;
-    @apply hover:shadow-xl hover:shadow-flame-red/25 dark:hover:shadow-flame-red/30;
-  }
-
   /* ========================================
-     BACKGROUNDS & TEXTURES
-     ======================================== */
-  .grain-bg-soft {
-    background-image: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 3px,
-        rgba(0, 0, 0, 0.015) 3px,
-        rgba(0, 0, 0, 0.015) 6px
-      ),
-      repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 3px,
-        rgba(0, 0, 0, 0.015) 3px,
-        rgba(0, 0, 0, 0.015) 6px
-      );
-  }
-
-  .dark .grain-bg-soft {
-    background-image: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 3px,
-        rgba(255, 255, 255, 0.015) 3px,
-        rgba(255, 255, 255, 0.015) 6px
-      ),
-      repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 3px,
-        rgba(255, 255, 255, 0.015) 3px,
-        rgba(255, 255, 255, 0.015) 6px
-      );
-  }
-
-  .gradient-soft-warm {
-    @apply bg-linear-to-br from-dune-paper/50 via-flame-apricot/40 to-dune-sand/50;
-  }
-
-  .dark .gradient-soft-warm {
-    @apply bg-linear-to-br from-espresso-brown/30 via-flame-deep/25 to-charcoal-roast/30;
-  }
-
-  .gradient-warm-subtle {
-    @apply bg-linear-to-r from-flame-caramel/80 via-flame-apricot/80 to-flame-red/80;
-  }
-
-  .gradient-btn-flame {
-    @apply bg-linear-to-r from-flame-deep via-flame-red to-flame-red;
-    @apply hover:from-flame-red hover:via-flame-red hover:to-flame-deep;
-    @apply transition-all duration-300;
-  }
-
-  /* ========================================
-     SMOOTH ANIMATIONS
+     ANIMATIONS
      ======================================== */
   .transition-smooth {
     @apply transition-all duration-500 ease-out;
-  }
-
-  .transition-gentle {
-    @apply transition-all duration-700 ease-in-out;
-  }
-
-  @keyframes float-soft {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-5px);
-    }
-  }
-
-  .animate-float-soft {
-    animation: float-soft 4s ease-in-out infinite;
-  }
-
-  @keyframes glow-pulse-soft {
-    0%, 100% {
-      box-shadow: 0 0 15px rgba(204, 51, 35, 0.2);
-    }
-    50% {
-      box-shadow: 0 0 30px rgba(204, 51, 35, 0.35);
-    }
-  }
-
-  .animate-glow-soft {
-    animation: glow-pulse-soft 3s ease-in-out infinite;
-  }
-
-  .hover-scale-soft {
-    @apply transition-transform duration-500 ease-out;
-    @apply hover:scale-[1.02];
   }
 
   .hover-lift {
@@ -430,53 +240,671 @@
     @apply hover:-translate-y-1 hover:shadow-xl;
   }
 
-  /* ========================================
-     DEPTH & LAYERING
-     ======================================== */
-  .depth-soft {
-    @apply shadow-md hover:shadow-xl transition-shadow duration-500;
+  .bento-content {
+    @apply p-4 md:p-6 lg:p-8 h-full flex flex-col;
   }
+}
 
-  .depth-medium {
-    @apply shadow-lg hover:shadow-2xl transition-shadow duration-500;
+/* ========================================
+   TRUCK ORDER BUTTON
+   ======================================== */
+.truck-button {
+  --truck-color: #fff;
+  --truck-bg: var(--espresso-brown);
+  --truck-tick: var(--oasis-teal);
+  --truck-base: var(--charcoal-roast);
+  --truck-wheel: var(--espresso-brown);
+  --truck-wheel-inner: var(--dune-taupe);
+  --truck-wheel-dot: var(--dune-paper);
+  --truck-back: var(--flame-red);
+  --truck-back-inner: var(--flame-deep);
+  --truck-back-inner-shadow: #7A1E15;
+  --truck-front: var(--dune-sand);
+  --truck-front-shadow: var(--dune-taupe);
+  --truck-front-light: var(--flame-apricot);
+  --truck-window: var(--espresso-brown);
+  --truck-window-shadow: var(--olive-deep);
+  --truck-street: var(--dune-taupe);
+  --truck-street-fill: var(--espresso-brown);
+  --truck-box: var(--flame-caramel);
+  --truck-box-shadow: #C48F56;
+
+  padding: 12px 0;
+  width: 100%;
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+  border: none;
+  outline: none;
+  color: var(--truck-color);
+  background: var(--truck-bg);
+  border-radius: var(--truck-br, 8px);
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx, 0deg)) translateZ(0);
+  transition: transform 0.5s, border-radius 0.3s linear var(--truck-br-d, 0s);
+  font-family: inherit;
+  min-height: 48px;
+}
+
+.truck-button:hover:not(:disabled) {
+  background: #3E2A1F;
+}
+
+.truck-button::before,
+.truck-button::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 6px;
+  display: block;
+  background: var(--b, var(--truck-street));
+  transform-origin: 0 100%;
+  transform: rotateX(90deg) scaleX(var(--sy, 1));
+}
+
+.truck-button::after {
+  --sy: var(--progress, 0);
+  --b: var(--truck-street-fill);
+}
+
+.truck-button .default,
+.truck-button .success {
+  display: block;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  opacity: var(--o, 1);
+  transition: opacity 0.3s;
+  letter-spacing: 0.02em;
+}
+
+.truck-button .success {
+  --o: 0;
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+}
+
+.truck-button .success svg {
+  width: 12px;
+  height: 10px;
+  display: inline-block;
+  vertical-align: top;
+  fill: none;
+  margin: 7px 0 0 4px;
+  stroke: var(--truck-tick);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 16px;
+  stroke-dashoffset: var(--offset, 16px);
+  transition: stroke-dashoffset 0.4s ease 0.45s;
+}
+
+.truck-button .truck {
+  position: absolute;
+  width: 72px;
+  height: 28px;
+  transform: rotateX(90deg) translate3d(calc(var(--truck-x, 4) * 1px), calc(var(--truck-y-n, -26) * 1px), 12px);
+}
+
+.truck-button .truck::before,
+.truck-button .truck::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: var(--l, 18px);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: inset 0 0 0 2px var(--truck-wheel), inset 0 0 0 4px var(--truck-wheel-inner);
+  background: var(--truck-wheel-dot);
+  transform: translateY(calc(var(--truck-y, 0) * -1px)) translateZ(0);
+}
+
+.truck-button .truck::after {
+  --l: 54px;
+}
+
+.truck-button .wheel,
+.truck-button .wheel::before {
+  position: absolute;
+  bottom: var(--b, -6px);
+  left: var(--l, 6px);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--truck-wheel);
+  transform: translateZ(0);
+}
+
+.truck-button .wheel {
+  transform: translateY(calc(var(--truck-y, 0) * -1px)) translateZ(0);
+}
+
+.truck-button .wheel::before {
+  --l: 35px;
+  --b: 0;
+  content: '';
+}
+
+.truck-button .front,
+.truck-button .back,
+.truck-button .box {
+  position: absolute;
+}
+
+.truck-button .back {
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 47px;
+  height: 28px;
+  border-radius: 1px 1px 0 0;
+  background: linear-gradient(
+    68deg,
+    var(--truck-back-inner) 0%,
+    var(--truck-back-inner) 22%,
+    var(--truck-back-inner-shadow) 22.1%,
+    var(--truck-back-inner-shadow) 100%
+  );
+}
+
+.truck-button .back::before,
+.truck-button .back::after {
+  content: '';
+  position: absolute;
+}
+
+.truck-button .back::before {
+  left: 11px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  border-radius: 0 1px 0 0;
+  background: var(--truck-back);
+}
+
+.truck-button .back::after {
+  border-radius: 1px;
+  width: 73px;
+  height: 2px;
+  left: -1px;
+  bottom: -2px;
+  background: var(--truck-base);
+}
+
+.truck-button .front {
+  left: 47px;
+  bottom: -1px;
+  height: 22px;
+  width: 24px;
+  clip-path: polygon(55% 0, 72% 44%, 100% 58%, 100% 100%, 0 100%, 0 0);
+  background: linear-gradient(
+    84deg,
+    var(--truck-front-shadow) 0%,
+    var(--truck-front-shadow) 10%,
+    var(--truck-front) 12%,
+    var(--truck-front) 100%
+  );
+}
+
+.truck-button .front::before,
+.truck-button .front::after {
+  content: '';
+  position: absolute;
+}
+
+.truck-button .front::before {
+  width: 7px;
+  height: 8px;
+  left: 7px;
+  top: 2px;
+  clip-path: polygon(0 0, 60% 0%, 100% 100%, 0% 100%);
+  background: linear-gradient(
+    59deg,
+    var(--truck-window) 0%,
+    var(--truck-window) 57%,
+    var(--truck-window-shadow) 55%,
+    var(--truck-window-shadow) 100%
+  );
+}
+
+.truck-button .front::after {
+  width: 3px;
+  height: 2px;
+  right: 0;
+  bottom: 3px;
+  background: var(--truck-front-light);
+}
+
+.truck-button .box {
+  width: 13px;
+  height: 13px;
+  right: 56px;
+  bottom: 0;
+  z-index: 1;
+  border-radius: 1px;
+  overflow: hidden;
+  transform: translate(
+    calc(var(--box-x, -24) * 1px),
+    calc(var(--box-y, -6) * 1px)
+  )
+  scale(var(--box-s, 0.5));
+  opacity: var(--box-o, 0);
+  background: linear-gradient(
+    68deg,
+    var(--truck-box) 0%,
+    var(--truck-box) 50%,
+    var(--truck-box-shadow) 50.2%,
+    var(--truck-box-shadow) 100%
+  );
+  background-size: 250% 100%;
+  background-position-x: calc(var(--bx, 0) * 1%);
+}
+
+.truck-button .box::before,
+.truck-button .box::after {
+  content: '';
+  position: absolute;
+}
+
+.truck-button .box::before {
+  background: rgba(255, 255, 255, 0.2);
+  left: 0;
+  right: 0;
+  top: 6px;
+  height: 1px;
+}
+
+.truck-button .box::after {
+  width: 6px;
+  left: 100%;
+  top: 0;
+  bottom: 0;
+  background: var(--truck-back);
+  transform: translateX(calc(var(--hx, 0) * 1px));
+}
+
+.truck-button.animation {
+  --rx: -90deg;
+  --truck-br: 0;
+}
+
+.truck-button.animation .default {
+  --o: 0;
+}
+
+.truck-button.animation.done {
+  --rx: 0deg;
+  --truck-br: 8px;
+  --truck-br-d: 0.2s;
+}
+
+.truck-button.animation.done .success {
+  --o: 1;
+  --offset: 0;
+}
+
+/* ========================================
+   ANIMATED AUTH (Login / Register)
+   Simple horizontal overlay slide
+   ======================================== */
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: var(--background);
+  padding: 1rem;
+}
+
+.auth-wrapper {
+  position: relative;
+  width: 880px;
+  min-height: 540px;
+  background: var(--background);
+  border: 2px solid var(--flame-caramel);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(43, 27, 19, 0.1);
+  display: flex;
+}
+
+/* Form panels — each takes 50% */
+.auth-wrapper .auth-form-box {
+  width: 50%;
+  min-height: 540px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 36px 44px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+.auth-wrapper .auth-form-box::-webkit-scrollbar { display: none; }
+
+.auth-wrapper .auth-login {
+  padding: 36px 48px 36px 44px;
+}
+.auth-wrapper .auth-register {
+  padding: 24px 40px 24px 48px;
+}
+
+/* Heading */
+.auth-form-box h2 {
+  font-size: 26px;
+  color: var(--espresso-brown) !important;
+  text-align: center;
+  margin-bottom: 14px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+/* Inputs */
+.auth-input-box {
+  position: relative;
+  width: 100%;
+  height: 48px;
+  margin: 16px 0;
+}
+.auth-input-box input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  border-bottom: 2px solid var(--dune-taupe);
+  padding-right: 28px;
+  font-size: 14px;
+  color: var(--espresso-brown);
+  font-weight: 500;
+  transition: 0.3s;
+}
+.auth-input-box input:focus,
+.auth-input-box input:not(:placeholder-shown) {
+  border-bottom-color: var(--oasis-teal);
+}
+.auth-input-box label {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--dune-taupe);
+  pointer-events: none;
+  transition: 0.3s;
+}
+.auth-input-box input:focus ~ label,
+.auth-input-box input:not(:placeholder-shown) ~ label {
+  top: -4px;
+  color: var(--oasis-teal);
+  font-size: 11px;
+  font-weight: 600;
+}
+.auth-input-icon {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  color: var(--dune-taupe);
+  transition: 0.3s;
+}
+.auth-input-box input:focus ~ .auth-input-icon,
+.auth-input-box input:not(:placeholder-shown) ~ .auth-input-icon {
+  color: var(--oasis-teal);
+}
+
+.auth-name-row { display: flex; gap: 12px; }
+.auth-input-box.auth-half { flex: 1; min-width: 0; }
+
+.auth-field-error {
+  position: absolute;
+  bottom: -14px;
+  left: 0;
+  font-size: 11px;
+  color: var(--flame-red);
+  font-weight: 500;
+}
+.auth-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  background: var(--flame-apricot);
+  border: 1px solid var(--flame-red);
+  border-radius: 8px;
+  color: var(--flame-deep);
+  font-size: 12px;
+}
+.auth-forgot {
+  display: block;
+  margin-top: 4px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--dune-taupe);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.auth-forgot:hover { color: var(--flame-red); text-decoration: underline; }
+
+/* Button */
+.auth-btn {
+  width: 100%;
+  height: 44px;
+  background: var(--espresso-brown);
+  border: none;
+  outline: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #fff;
+  font-weight: 600;
+  margin-top: 16px;
+  transition: background 0.2s, opacity 0.2s;
+  letter-spacing: 0.01em;
+}
+.auth-btn:hover:not(:disabled) { background: #3E2A1F; }
+.auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Divider */
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 14px 0 10px;
+}
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--dune-taupe);
+  opacity: 0.35;
+}
+.auth-divider span {
+  position: relative;
+  padding: 0 10px;
+  background: var(--background);
+  font-size: 11px;
+  color: var(--dune-taupe);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Google */
+.auth-google-btn {
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: 1.5px solid var(--dune-taupe);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--espresso-brown);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.auth-google-btn:hover {
+  border-color: var(--flame-red);
+  background: var(--flame-apricot);
+}
+
+/* Switch link */
+.auth-logreg-link {
+  font-size: 13px;
+  color: var(--dune-taupe);
+  text-align: center;
+  margin: 14px 0 0;
+}
+.auth-logreg-link a {
+  color: var(--flame-red);
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-logreg-link a:hover { text-decoration: underline; }
+
+/* Terms */
+.auth-terms {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin: 4px 0 0;
+}
+.auth-terms input[type="checkbox"] { accent-color: var(--oasis-teal); width: 15px; height: 15px; }
+.auth-terms span { font-size: 12px; color: var(--dune-taupe); }
+.auth-terms-link { color: var(--flame-red); text-decoration: none; font-weight: 600; }
+.auth-terms-link:hover { text-decoration: underline; }
+
+/* ─── Overlay panel (slides horizontally) ────────────────────────────── */
+.auth-overlay {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  z-index: 10;
+  overflow: hidden;
+  transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+  background: linear-gradient(135deg, var(--flame-apricot), var(--flame-caramel));
+  border-left: 2px solid var(--flame-caramel);
+}
+.auth-wrapper.active .auth-overlay {
+  transform: translateX(-100%);
+  border-left: none;
+  border-right: 2px solid var(--flame-caramel);
+}
+
+.auth-overlay-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1),
+              opacity 0.4s ease;
+}
+
+/* Right panel — "Join us" (visible in login mode) */
+.auth-overlay-right {
+  transform: translateX(0);
+  opacity: 1;
+}
+.auth-wrapper.active .auth-overlay-right {
+  transform: translateX(50%);
+  opacity: 0;
+}
+
+/* Left panel — "Welcome back" (visible in register mode) */
+.auth-overlay-left {
+  transform: translateX(-50%);
+  opacity: 0;
+}
+.auth-wrapper.active .auth-overlay-left {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.auth-overlay-panel h2 {
+  font-size: 26px;
+  color: var(--espresso-brown) !important;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.auth-overlay-panel p {
+  font-size: 14px;
+  color: var(--espresso-brown);
+  opacity: 0.75;
+  margin-bottom: 24px;
+  line-height: 1.5;
+  max-width: 240px;
+}
+
+.auth-overlay-btn {
+  padding: 10px 36px;
+  border: 2px solid var(--espresso-brown);
+  border-radius: 40px;
+  background: transparent;
+  color: var(--espresso-brown);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  letter-spacing: 0.02em;
+}
+.auth-overlay-btn:hover {
+  background: var(--espresso-brown);
+  color: var(--dune-paper);
+}
+
+/* ─── Mobile ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .auth-wrapper {
+    width: 100%;
+    max-width: 400px;
+    flex-direction: column;
+    min-height: auto;
   }
-
-  .glass-highlight {
-    @apply relative;
+  .auth-wrapper .auth-form-box {
+    width: 100%;
+    min-height: auto;
+    padding: 24px 20px !important;
   }
-
-  .glass-highlight::before {
-    content: "";
-    @apply absolute inset-0 rounded-[inherit] bg-linear-to-b from-white/30 to-transparent dark:from-white/10 pointer-events-none;
+  .auth-wrapper .auth-register {
+    display: none;
   }
-
-  /* ========================================
-     PRESET BENTO CARD STYLES
-     ======================================== */
-  .bento-featured {
-    @apply rounded-2xl overflow-hidden transition-all duration-500 ease-out;
-    @apply hover:scale-[1.02] hover:shadow-2xl;
-    @apply col-span-1 md:col-span-2 row-span-2;
-    @apply bg-white/85 dark:bg-white/10 backdrop-blur-2xl border border-dune-taupe/60 dark:border-white/15 shadow-2xl shadow-black/10 dark:shadow-black/30;
-    @apply shadow-xl shadow-flame-red/20 dark:shadow-flame-red/25;
-    @apply p-6 md:p-8 lg:p-10;
+  .auth-wrapper.active .auth-login {
+    display: none;
   }
-
-  .bento-standard {
-    @apply rounded-2xl overflow-hidden transition-all duration-500 ease-out;
-    @apply hover:scale-[1.02] hover:shadow-2xl;
-    @apply bg-white/60 dark:bg-white/5 backdrop-blur-md border border-dune-taupe/40 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/20;
-    @apply transition-shadow duration-500;
-    @apply hover:shadow-xl hover:shadow-flame-red/25 dark:hover:shadow-flame-red/30;
-    @apply p-4 md:p-6;
+  .auth-wrapper.active .auth-register {
+    display: flex;
   }
-
-  .bento-accent {
-    @apply rounded-2xl overflow-hidden transition-all duration-500 ease-out;
-    @apply hover:scale-[1.02] hover:shadow-2xl;
-    @apply bg-dune-paper/80 dark:bg-espresso-brown/15 backdrop-blur-xl border border-dune-taupe/40 dark:border-dune-taupe/20 shadow-xl shadow-flame-deep/8 dark:shadow-flame-deep/20;
-    @apply shadow-lg shadow-flame-red/15 dark:shadow-flame-red/20;
-    @apply p-4 md:p-5;
+  .auth-overlay {
+    display: none;
   }
 }
 

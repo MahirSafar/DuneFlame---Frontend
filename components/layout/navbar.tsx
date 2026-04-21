@@ -2,13 +2,20 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { Menu, X, User, LogOut, ShoppingBag, Search, ChevronUp } from "lucide-react"
+import { Menu, X, User, LogOut, ShoppingBag, Search, ChevronUp, ChevronDown, ChevronRight } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { Link, useRouter } from "@/i18n/routing"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useCartStore } from "@/lib/cart-store"
 import { InstantCurrencySwitcher } from "@/components/currency/instant-switcher"
 import { LanguageSwitcher } from "./language-switcher"
+import { getCategoryTree, type CategoryTreeNode } from "@/lib/services/products"
+
+// Helper: flatten a CategoryTreeNode subtree into leaf links
+function getLeafLinks(node: CategoryTreeNode): CategoryTreeNode[] {
+  if (!node.children || node.children.length === 0) return [node]
+  return node.children.flatMap(getLeafLinks)
+}
 
 export default function Navbar() {
   const router = useRouter()
@@ -16,6 +23,11 @@ export default function Navbar() {
   const [isHidden, setIsHidden] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const [openMobileEquipSub, setOpenMobileEquipSub] = useState<string | null>(null)
+  const [coffeeNode, setCoffeeNode] = useState<CategoryTreeNode | null>(null)
+  const [equipmentNode, setEquipmentNode] = useState<CategoryTreeNode | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const { isLoggedIn, logout } = useAuth()
   const { loadBasket, items } = useCartStore()
   const t = useTranslations('common.nav')
@@ -83,11 +95,33 @@ export default function Navbar() {
     }
   }, [isOpen])
 
-  const navLinks = [
-    { href: "/coffee", key: "our-coffee", label: t('ourCoffee') },
-    { href: "/wholesale", key: "wholesale", label: t('wholesale') },
-    { href: "/about", key: "about", label: t('aboutUs') },
-    { href: "/contact", key: "contact" },
+  // Fetch category tree once on mount to build nav dropdowns
+  useEffect(() => {
+    getCategoryTree().then((tree) => {
+      // tree is [root] or [coffee, equipment, ...] depending on backend
+      const flat = tree.flatMap((n) =>
+        n.name.toLowerCase() === "root" ? n.children : [n]
+      )
+      setCoffeeNode(flat.find((n) => n.name.toLowerCase() === "coffee") ?? null)
+      setEquipmentNode(flat.find((n) => n.name.toLowerCase() === "equipment") ?? null)
+    }).catch(() => { /* silently degrade */ })
+  }, [])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
+  const staticLinks = [
+    { href: "/wholesale", label: t('wholesale') },
+    { href: "/about", label: t('aboutUs') },
+    { href: "/contact", label: t('contact') },
   ]
 
   return (
@@ -133,14 +167,117 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation - True Center */}
-          <div className="hidden lg:flex items-center gap-6 lg:gap-8 absolute left-1/2 transform -translate-x-1/2">
-            {navLinks.map((link) => (
+          <div ref={dropdownRef} className="hidden lg:flex items-center gap-6 lg:gap-8 absolute left-1/2 transform -translate-x-1/2">
+            {/* Coffee dropdown */}
+            <div className="relative">
+              <button
+                className="flex items-center gap-1 text-sm font-heading uppercase tracking-wide text-foreground hover:text-accent transition-smooth"
+                onClick={() => setOpenDropdown(openDropdown === "coffee" ? null : "coffee")}
+                aria-expanded={openDropdown === "coffee"}
+              >
+                {t('ourCoffee')}
+                <ChevronDown size={14} className={`transition-transform duration-200 ${openDropdown === "coffee" ? "rotate-180" : ""}`} />
+              </button>
+              {openDropdown === "coffee" && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 min-w-45 glass rounded-xl border border-border/60 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <Link
+                    href={{ pathname: "/shop", query: { category: "coffee" } }}
+                    className="block px-4 py-2 text-sm font-semibold text-foreground hover:text-accent hover:bg-accent/5 transition-smooth"
+                    onClick={() => setOpenDropdown(null)}
+                  >
+                    All Coffee
+                  </Link>
+                  {coffeeNode && getLeafLinks(coffeeNode).map((leaf) => (
+                    <Link
+                      key={leaf.id}
+                      href={{ pathname: "/shop", query: { category: leaf.slug ?? leaf.name.toLowerCase().replace(/\s+/g, "-") } }}
+                      className="block px-4 py-2 text-sm text-foreground hover:text-accent hover:bg-accent/5 transition-smooth capitalize"
+                      onClick={() => setOpenDropdown(null)}
+                    >
+                      {leaf.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Equipment dropdown */}
+            <div className="relative">
+              <button
+                className="flex items-center gap-1 text-sm font-heading uppercase tracking-wide text-foreground hover:text-accent transition-smooth"
+                onClick={() => setOpenDropdown(openDropdown === "equipment" ? null : "equipment")}
+                aria-expanded={openDropdown === "equipment"}
+              >
+                Equipment
+                <ChevronDown size={14} className={`transition-transform duration-200 ${openDropdown === "equipment" ? "rotate-180" : ""}`} />
+              </button>
+              {openDropdown === "equipment" && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 min-w-52 glass rounded-xl border border-border/60 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <Link
+                    href={{ pathname: "/shop", query: { category: "equipment" } }}
+                    className="block px-4 py-2 text-sm font-semibold text-foreground hover:text-accent hover:bg-accent/5 transition-smooth"
+                    onClick={() => setOpenDropdown(null)}
+                  >
+                    All Equipment
+                  </Link>
+                  <div className="my-1 border-t border-border/40" />
+                  {equipmentNode?.children?.map((sub) =>
+                    sub.children && sub.children.length > 0 ? (
+                      /* L2 item with L3 children → hover flyout to the right */
+                      <div key={sub.id} className="relative group/sub">
+                        <Link
+                          href={{ pathname: "/shop", query: { category: sub.slug ?? sub.name.toLowerCase().replace(/\s+/g, "-") } }}
+                          className="flex items-center justify-between px-4 py-2 text-sm text-foreground hover:text-accent hover:bg-accent/5 transition-smooth capitalize gap-2"
+                          onClick={() => setOpenDropdown(null)}
+                        >
+                          {sub.name}
+                          <ChevronRight size={12} className="text-muted-foreground group-hover/sub:text-accent rtl:rotate-180 shrink-0" />
+                        </Link>
+                        {/* L3 flyout — slides out to the right (rtl: to the left) */}
+                        <div className="absolute left-full top-0 -mt-1 hidden group-hover/sub:flex flex-col min-w-44 glass rounded-xl border border-border/60 shadow-xl py-2 z-60 rtl:right-full rtl:left-auto">
+                          <Link
+                            href={{ pathname: "/shop", query: { category: sub.slug ?? sub.name.toLowerCase().replace(/\s+/g, "-") } }}
+                            className="block px-4 py-1.5 text-xs font-semibold text-muted-foreground hover:text-accent hover:bg-accent/5 transition-smooth capitalize border-b border-border/40 mb-1"
+                            onClick={() => setOpenDropdown(null)}
+                          >
+                            All {sub.name}
+                          </Link>
+                          {sub.children.map((leaf) => (
+                            <Link
+                              key={leaf.id}
+                              href={{ pathname: "/shop", query: { category: leaf.slug ?? leaf.name.toLowerCase().replace(/\s+/g, "-") } }}
+                              className="block px-4 py-2 text-sm text-foreground hover:text-accent hover:bg-accent/5 transition-smooth capitalize"
+                              onClick={() => setOpenDropdown(null)}
+                            >
+                              {leaf.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      /* L2 leaf (no children) */
+                      <Link
+                        key={sub.id}
+                        href={{ pathname: "/shop", query: { category: sub.slug ?? sub.name.toLowerCase().replace(/\s+/g, "-") } }}
+                        className="block px-4 py-2 text-sm text-foreground hover:text-accent hover:bg-accent/5 transition-smooth capitalize"
+                        onClick={() => setOpenDropdown(null)}
+                      >
+                        {sub.name}
+                      </Link>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Static links */}
+            {staticLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className="text-sm font-heading uppercase tracking-wide text-foreground hover:text-accent transition-smooth relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-smooth hover:after:w-full"
               >
-                {link.label ? link.label : t(link.key)}
+                {link.label}
               </Link>
             ))}
           </div>
@@ -214,14 +351,73 @@ export default function Navbar() {
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="lg:hidden pb-4 border-t border-border animate-in slide-in-from-top duration-300">
-            {navLinks.map((link) => (
+            {/* Coffee group */}
+            <div className="py-1 px-4">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground py-2">{t('ourCoffee')}</div>
+              <Link href={{ pathname: "/shop", query: { category: "coffee" } }} className="block py-1.5 pl-2 text-sm text-foreground hover:text-accent transition-smooth" onClick={() => setIsOpen(false)}>All Coffee</Link>
+              {coffeeNode && getLeafLinks(coffeeNode).map((leaf) => (
+                <Link key={leaf.id} href={{ pathname: "/shop", query: { category: leaf.slug ?? leaf.name.toLowerCase().replace(/\s+/g, "-") } }} className="block py-1.5 pl-2 text-sm text-foreground hover:text-accent transition-smooth capitalize" onClick={() => setIsOpen(false)}>{leaf.name}</Link>
+              ))}
+            </div>
+            {/* Equipment group */}
+            <div className="py-1 px-4">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground py-2">Equipment</div>
+              <Link href={{ pathname: "/shop", query: { category: "equipment" } }} className="block py-1.5 pl-2 text-sm text-foreground hover:text-accent transition-smooth" onClick={() => setIsOpen(false)}>All Equipment</Link>
+              {equipmentNode?.children?.map((sub) =>
+                sub.children && sub.children.length > 0 ? (
+                  /* L2 with children → collapsible accordion */
+                  <div key={sub.id}>
+                    <button
+                      className="flex items-center justify-between w-full py-1.5 pl-2 text-sm text-foreground hover:text-accent transition-smooth capitalize"
+                      onClick={() => setOpenMobileEquipSub(openMobileEquipSub === sub.id ? null : sub.id)}
+                    >
+                      {sub.name}
+                      <ChevronDown size={14} className={`transition-transform duration-200 mr-1 shrink-0 ${openMobileEquipSub === sub.id ? "rotate-180" : ""}`} />
+                    </button>
+                    {openMobileEquipSub === sub.id && (
+                      <div className="pl-3 border-l-2 border-accent/30 ml-2 my-1 flex flex-col gap-0.5">
+                        <Link
+                          href={{ pathname: "/shop", query: { category: sub.slug ?? sub.name.toLowerCase().replace(/\s+/g, "-") } }}
+                          className="block py-1.5 pl-2 text-xs font-semibold text-muted-foreground hover:text-accent transition-smooth capitalize"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          All {sub.name}
+                        </Link>
+                        {sub.children.map((leaf) => (
+                          <Link
+                            key={leaf.id}
+                            href={{ pathname: "/shop", query: { category: leaf.slug ?? leaf.name.toLowerCase().replace(/\s+/g, "-") } }}
+                            className="block py-1.5 pl-2 text-sm text-foreground hover:text-accent transition-smooth capitalize"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            {leaf.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* L2 leaf */
+                  <Link
+                    key={sub.id}
+                    href={{ pathname: "/shop", query: { category: sub.slug ?? sub.name.toLowerCase().replace(/\s+/g, "-") } }}
+                    className="block py-1.5 pl-2 text-sm text-foreground hover:text-accent transition-smooth capitalize"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {sub.name}
+                  </Link>
+                )
+              )}
+            </div>
+            {/* Static links */}
+            {staticLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className="block py-2 px-4 text-sm font-heading uppercase tracking-wide text-foreground hover:text-accent transition-smooth text-left"
                 onClick={() => setIsOpen(false)}
               >
-                {link.label ? link.label : t(link.key)}
+                {link.label}
               </Link>
             ))}
             <div className="mt-2 flex flex-col gap-3 px-4">

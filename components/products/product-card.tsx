@@ -117,13 +117,13 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   return (
     <article
       ref={cardRef}
-      className={`group relative glass rounded-xl overflow-hidden card-float card-depth cursor-pointer transform-gpu will-change-transform transition-all duration-500 ease-in-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-2xl hover:glow-accent ${
+      className={`group relative glass rounded-xl overflow-hidden card-float card-depth cursor-pointer transform-gpu will-change-transform transition-all duration-500 ease-in-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-2xl hover:glow-accent flex flex-col h-full ${
         isVisible ? "mobile-visible" : ""
       }`}
     >
         <Link
           href={productUrl}
-          className="flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="flex flex-col flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <div className="relative h-64 overflow-hidden bg-muted rounded-t-xl transform-gpu">
             {hasImage && mainImage ? (

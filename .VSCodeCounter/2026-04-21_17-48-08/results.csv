@@ -1,0 +1,207 @@
+"filename", "language", "JSON", "XML", "JavaScript", "YAML", "JSON with Comments", "TypeScript", "Docker", "Ignore", "TypeScript JSX", "PostCSS", "comment", "blank", "total"
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\.dockerignore", "Ignore", 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 6
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\Dockerfile", "Docker", 0, 0, 0, 0, 0, 0, 24, 0, 0, 0, 3, 8, 35
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\about\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 74, 0, 0, 9, 83
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\contacts\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 350, 0, 19, 24, 393
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\dashboard\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 277, 0, 11, 19, 307
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 181, 0, 15, 23, 219
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\orders\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 1, 15
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\orders\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 712, 0, 43, 53, 808
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 2, 8
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\products-list\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 313, 0, 19, 25, 357
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\products\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 1, 4
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\products\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 1840, 0, 127, 157, 2124
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\subscribers\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 285, 0, 13, 21, 319
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\users\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 1, 15
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\(manage)\users\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 187, 0, 4, 11, 202
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\admin\login\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 210, 0, 18, 19, 247
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\auth\confirm\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 1, 22
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\auth\forgot-password\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 9, 63
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\auth\google-callback\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 87, 0, 11, 16, 114
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\auth\login\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 25, 0, 0, 5, 30
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\auth\reset-password\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 85, 0, 0, 13, 98
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\cart\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 23, 0, 0, 4, 27
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\checkout\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 54, 0, 4, 9, 67
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\checkout\success\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 81, 0, 5, 8, 94
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\coffee\[slug]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 107, 0, 0, 10, 117
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\coffee\metadata.ts", "TypeScript", 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 3, 17
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\coffee\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 163, 0, 13, 17, 193
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\contact\metadata.ts", "TypeScript", 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 3, 17
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\contact\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 147, 0, 0, 15, 162
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\dashboard\orders\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 305, 0, 17, 27, 349
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\dashboard\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 105, 0, 0, 13, 118
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\globals.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 0, 0, 789, 57, 86, 932
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 145, 0, 7, 15, 167
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\login\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 1, 2, 9
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\not-found.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 54, 0, 10, 11, 75
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\orders\confirmation\[id]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 301, 0, 11, 31, 343
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 4, 36
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\payment-cancelled\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 47, 0, 0, 7, 54
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\payment-success\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 7, 55
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\policies\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 3, 10
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\policies\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 429, 0, 22, 42, 493
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\product\[slug]\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 114, 0, 0, 13, 127
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\refund\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 5, 19
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\register\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 3, 14
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\shop\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 214, 0, 9, 22, 245
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\unsubscribe\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 83, 0, 4, 13, 100
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\wholesale\metadata.ts", "TypeScript", 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 7
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\[locale]\wholesale\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 162, 0, 8, 14, 184
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 4, 8
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\robots.ts", "TypeScript", 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 2, 12
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\app\sitemap.ts", "TypeScript", 0, 0, 0, 0, 0, 51, 0, 0, 0, 0, 1, 13, 65
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components.json", "JSON", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 22
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\GoogleSDKScript.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 10, 4, 30
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ShopFilters.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 506, 0, 12, 38, 556
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\admin\sliders\slider-form.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 81, 0, 1, 7, 89
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\auth\auth-init.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 2, 12
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\auth\auth-provider.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 3, 11, 50
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\auth\unified-auth.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 215, 0, 3, 32, 250
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\cart\cart-express-checkout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 41, 0, 5, 9, 55
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\cart\cart-recommendations.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 103, 0, 5, 13, 121
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\cart\cart-summary.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 159, 0, 12, 19, 190
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\cart\cart-upsell.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 120, 0, 5, 16, 141
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\checkout\checkout-form.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 1199, 0, 102, 170, 1471
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\checkout\truck-button.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 156, 0, 16, 25, 197
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\currency\currency-switcher.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 92, 0, 24, 17, 133
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\currency\example-layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 137, 0, 32, 18, 187
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\currency\formatted-price.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 4, 6, 31
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\currency\instant-switcher.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 168, 0, 33, 20, 221
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\currency\navbar-integration.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 136, 0, 45, 19, 200
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\dashboard\order-history.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 96, 0, 9, 13, 118
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\dashboard\rewards.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 33, 0, 4, 7, 44
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\dashboard\user-profile.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 75, 0, 7, 13, 95
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\home\newsletter.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 66, 0, 0, 7, 73
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\home\story-banner.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 28, 0, 0, 5, 33
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\home\trending.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 75, 0, 3, 7, 85
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\layout\footer.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 211, 0, 12, 20, 243
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\layout\language-switcher.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 76, 0, 1, 11, 88
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\layout\navbar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 409, 0, 30, 30, 469
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\locale-header-init.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 26, 7, 50
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\payment-script-init.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 42, 0, 16, 12, 70
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\payment\express-checkout-button.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 302, 0, 37, 46, 385
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\payment\stripe-elements-provider.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 25, 0, 0, 6, 31
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\products\filter-sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 234, 0, 5, 23, 262
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\products\product-breadcrumb.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 67, 0, 2, 10, 79
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\products\product-card.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 153, 0, 22, 22, 197
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\products\product-detail-view.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 500, 0, 26, 45, 571
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\products\product-detail.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 145, 0, 6, 13, 164
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\products\product-quick-buy.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 343, 0, 39, 56, 438
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\products\product-variant-modal.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 277, 0, 20, 32, 329
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\products\related-products.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 95, 0, 0, 12, 107
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\products\search-results-section.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 152, 0, 2, 13, 167
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\theme-provider.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 3, 12
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\toaster-wrapper.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 5, 4, 17
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\accordion.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 59, 0, 0, 8, 67
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\alert-dialog.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 143, 0, 0, 15, 158
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\alert.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 60, 0, 0, 7, 67
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\aspect-ratio.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 4, 12
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\avatar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 47, 0, 0, 7, 54
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\badge.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 41, 0, 0, 6, 47
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\breadcrumb.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 99, 0, 0, 11, 110
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\button-group.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 76, 0, 0, 8, 84
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\button.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 55, 0, 0, 6, 61
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\calendar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 203, 0, 0, 11, 214
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\card.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 83, 0, 1, 10, 94
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\carousel.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 214, 0, 0, 28, 242
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\chart.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 319, 0, 2, 33, 354
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\checkbox.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 28, 0, 0, 5, 33
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\collapsible.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 28, 0, 0, 6, 34
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\command.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 172, 0, 0, 13, 185
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\context-menu.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 234, 0, 0, 19, 253
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\dialog.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 133, 0, 0, 15, 148
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\drawer.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 122, 0, 0, 14, 136
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\dropdown-menu.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 239, 0, 0, 19, 258
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\empty.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 95, 0, 0, 10, 105
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\field.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 225, 0, 0, 20, 245
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\form.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 143, 0, 0, 25, 168
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\hover-card.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 38, 0, 0, 7, 45
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\input-group.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 151, 0, 3, 16, 170
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\input-otp.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 69, 0, 0, 9, 78
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\input.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 4, 22
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\item.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 179, 0, 0, 15, 194
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\kbd.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 25, 0, 0, 4, 29
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\label.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 5, 25
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\menubar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 257, 0, 0, 20, 277
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\navigation-menu.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 155, 0, 0, 12, 167
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\pagination.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 117, 0, 0, 11, 128
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\popover.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 41, 0, 0, 8, 49
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\progress.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 27, 0, 0, 5, 32
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\radio-group.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 40, 0, 0, 6, 46
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\resizable.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 50, 0, 0, 7, 57
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\scroll-area.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 53, 0, 0, 6, 59
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\select.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 172, 0, 0, 14, 186
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\separator.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 0, 5, 29
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\sheet.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 126, 0, 0, 14, 140
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 660, 0, 12, 55, 727
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\skeleton.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 3, 14
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\slider.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\sonner.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 5, 26
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\spinner.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 4, 17
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\switch.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 27, 0, 0, 5, 32
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\table.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 105, 0, 0, 12, 117
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\tabs.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 59, 0, 0, 8, 67
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\textarea.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 4, 19
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\toast.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 116, 0, 0, 14, 130
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\toaster.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 4, 36
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\toggle-group.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 66, 0, 0, 8, 74
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\toggle.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 6, 48
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\tooltip.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 8, 62
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\use-mobile.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 5, 20
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\components\ui\use-toast.ts", "TypeScript", 0, 0, 0, 0, 0, 157, 0, 0, 0, 0, 3, 32, 192
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\firebase.json", "JSON", 29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 29
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\fix-admin.js", "JavaScript", 0, 0, 57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 57
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\hooks\use-add-to-cart.ts", "TypeScript", 0, 0, 0, 0, 0, 73, 0, 0, 0, 0, 8, 13, 94
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\hooks\use-cart-recommendation.ts", "TypeScript", 0, 0, 0, 0, 0, 67, 0, 0, 0, 0, 3, 11, 81
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\hooks\use-currency.ts", "TypeScript", 0, 0, 0, 0, 0, 27, 0, 0, 0, 0, 19, 9, 55
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\hooks\use-debounce.ts", "TypeScript", 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 0, 5, 16
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\hooks\use-express-checkout.ts", "TypeScript", 0, 0, 0, 0, 0, 473, 0, 0, 0, 0, 49, 78, 600
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\hooks\use-google-sdk.ts", "TypeScript", 0, 0, 0, 0, 0, 53, 0, 0, 0, 0, 25, 14, 92
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\hooks\use-mobile.ts", "TypeScript", 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 5, 20
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\hooks\use-toast.ts", "TypeScript", 0, 0, 0, 0, 0, 157, 0, 0, 0, 0, 3, 32, 192
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\hooks\useShopFilters.ts", "TypeScript", 0, 0, 0, 0, 0, 192, 0, 0, 0, 0, 6, 28, 226
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\i18n.ts", "TypeScript", 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 2, 5, 19
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\i18n\request.ts", "TypeScript", 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 1, 4, 17
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\i18n\routing.ts", "TypeScript", 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 2, 4, 17
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\auth-store.ts", "TypeScript", 0, 0, 0, 0, 0, 260, 0, 0, 0, 0, 23, 34, 317
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\axios.ts", "TypeScript", 0, 0, 0, 0, 0, 215, 0, 0, 0, 0, 35, 39, 289
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\cart-store.ts", "TypeScript", 0, 0, 0, 0, 0, 312, 0, 0, 0, 0, 33, 53, 398
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\config.ts", "TypeScript", 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 1, 1, 5
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\currency-context.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 96, 0, 15, 22, 133
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\currency-utils.ts", "TypeScript", 0, 0, 0, 0, 0, 90, 0, 0, 0, 0, 46, 19, 155
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\dark-mode-context.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\mock-data.ts", "TypeScript", 0, 0, 0, 0, 0, 134, 0, 0, 0, 0, 0, 2, 136
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\admin.ts", "TypeScript", 0, 0, 0, 0, 0, 43, 0, 0, 0, 0, 0, 7, 50
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\adminProducts.ts", "TypeScript", 0, 0, 0, 0, 0, 59, 0, 0, 0, 0, 19, 11, 89
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\auth.ts", "TypeScript", 0, 0, 0, 0, 0, 27, 0, 0, 0, 0, 1, 5, 33
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\basket.ts", "TypeScript", 0, 0, 0, 0, 0, 76, 0, 0, 0, 0, 1, 10, 87
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\cart.ts", "TypeScript", 0, 0, 0, 0, 0, 31, 0, 0, 0, 0, 3, 6, 40
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\contact.ts", "TypeScript", 0, 0, 0, 0, 0, 59, 0, 0, 0, 0, 2, 12, 73
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\newsletter.ts", "TypeScript", 0, 0, 0, 0, 0, 53, 0, 0, 0, 0, 2, 10, 65
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\orders.ts", "TypeScript", 0, 0, 0, 0, 0, 84, 0, 0, 0, 0, 0, 14, 98
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\payments.ts", "TypeScript", 0, 0, 0, 0, 0, 73, 0, 0, 0, 0, 28, 14, 115
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\products.ts", "TypeScript", 0, 0, 0, 0, 0, 199, 0, 0, 0, 0, 21, 45, 265
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\rewards.ts", "TypeScript", 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 4, 5, 29
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\sliderService.ts", "TypeScript", 0, 0, 0, 0, 0, 44, 0, 0, 0, 0, 1, 11, 56
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\services\user.ts", "TypeScript", 0, 0, 0, 0, 0, 34, 0, 0, 0, 0, 9, 5, 48
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\stripe-global.ts", "TypeScript", 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 4, 10, 62
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\types\express-checkout.ts", "TypeScript", 0, 0, 0, 0, 0, 35, 0, 0, 0, 0, 3, 5, 43
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\types\flavour-note.ts", "TypeScript", 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 3, 3, 20
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\types\index.ts", "TypeScript", 0, 0, 0, 0, 0, 67, 0, 0, 0, 0, 1, 10, 78
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\types\product.ts", "TypeScript", 0, 0, 0, 0, 0, 75, 0, 0, 0, 0, 14, 13, 102
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\utils.ts", "TypeScript", 0, 0, 0, 0, 0, 43, 0, 0, 0, 0, 22, 12, 77
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\lib\utils\form-data-helper.ts", "TypeScript", 0, 0, 0, 0, 0, 23, 0, 0, 0, 0, 1, 3, 27
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\messages\ar.json", "JSON", 841, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 841
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\messages\en.json", "JSON", 843, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 843
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\next.config.mjs", "JavaScript", 0, 0, 105, 0, 0, 0, 0, 0, 0, 0, 8, 4, 117
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\package-lock.json", "JSON", 6328, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6329
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\package.json", "JSON", 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 93
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\pnpm-lock.yaml", "YAML", 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 1, 5
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\postcss.config.mjs", "JavaScript", 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 1, 2, 9
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\proxy.ts", "TypeScript", 0, 0, 0, 0, 0, 33, 0, 0, 0, 0, 20, 12, 65
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\public\favicon.svg", "XML", 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 7
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\public\logo.svg", "XML", 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 8
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\public\manifest.json", "JSON", 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 25
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\tailwind.config.ts", "TypeScript", 0, 0, 0, 0, 0, 46, 0, 0, 0, 0, 3, 3, 52
+"c:\Users\Mahir\Saved Games\DuneFlame---Frontend\tsconfig.json", "JSON with Comments", 0, 0, 0, 0, 41, 0, 0, 0, 0, 0, 0, 1, 42
+"Total", "-", 8177, 13, 168, 4, 41, 3556, 24, 6, 19748, 789, 1501, 2929, 36956

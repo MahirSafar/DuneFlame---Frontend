@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select"
 import { getGlobalStripeInstance } from "@/lib/stripe-global"
 import { CartUpsell } from "@/components/cart/cart-upsell"
+import { TruckButton } from "@/components/checkout/truck-button"
 
 interface ShippingAddress {
   street: string
@@ -794,12 +795,39 @@ export default function CheckoutForm() {
 
       // STEP 0.5: Just-In-Time Sync
       // Ensure the backend Redis cache actually holds the basket items before OrderService tries to read them.
-      await apiFetch("/basket", {
-        method: "POST",
-        body: JSON.stringify({
-          id: basketId,
-          items: currentItems,
-        }),
+      // IMPORTANT: Map CartItem[] → BasketItem[] before sending. Sending raw CartItem objects
+      // (which include nested `product`, `attributes`, `prices`, etc.) corrupts the basket in Redis.
+      // Also filter out any items with EMPTY_GUID variantId to prevent backend 400 errors
+      // (these can survive from old localStorage data predating the addItem guard).
+      const validCartItems = currentItems.filter(
+        (item) =>
+          item.variantId &&
+          item.variantId !== "" &&
+          item.variantId !== "00000000-0000-0000-0000-000000000000"
+      )
+
+      if (validCartItems.length === 0 && currentItems.length > 0) {
+        throw new Error(
+          "Your cart contains items with missing product variants. Please remove them and add the products again."
+        )
+      }
+
+      await basketService.updateBasket({
+        id: basketId,
+        items: validCartItems.map((item) => ({
+          id: item.cartItemId,
+          productId: item.productId,
+          variantId: item.variantId,
+          productName: item.name,
+          slug: item.slug,
+          price: item.price,
+          quantity: item.quantity,
+          imageUrl: item.imageUrl || "",
+          roastLevelId: item.roastLevelId,
+          roastLevelName: item.roastLevelName,
+          grindTypeId: item.grindTypeId,
+          grindTypeName: item.grindTypeName,
+        })),
       });
 
 
@@ -908,8 +936,13 @@ export default function CheckoutForm() {
 
   const handleContinueToPayment = async (e: FormEvent) => {
     e.preventDefault()
+    // Let the TruckButton handle submission via handleTruckSubmit
+    await handleTruckSubmit()
+  }
+
+  const handleTruckSubmit = async (): Promise<boolean> => {
     // STRICT SYNCHRONOUS LOCK
-    if (isSubmittingRef.current || isInitializingPayment || (isGuest && guestStep === 1)) return;
+    if (isSubmittingRef.current || isInitializingPayment || (isGuest && guestStep === 1)) return false;
     
     isSubmittingRef.current = true;
     try {
@@ -919,12 +952,17 @@ export default function CheckoutForm() {
         if (validateGuestStepOne()) {
           setGuestStep(2)
         }
-        return
+        return false
       }
 
-      if (validateForm()) {
-        await initializePayment()
+      if (!validateForm()) {
+        return false
       }
+
+      await initializePayment()
+      return true
+    } catch {
+      return false
     } finally {
       // Release the lock slightly after to prevent rapid bounce-backs
       setTimeout(() => { isSubmittingRef.current = false; }, 500);
@@ -1243,15 +1281,13 @@ export default function CheckoutForm() {
               </CardContent>
             </Card>
 
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full text-lg font-semibold"
-              style={{ backgroundColor: '#2b1b13', color: '#fff' }}
+            <TruckButton
+              defaultText={t("proceedToPayment")}
+              successText={t("preparingPayment")}
+              loadingText={t("preparingPayment")}
               disabled={isInitializingPayment || (isGuest && guestStep === 1)}
-            >
-              {isInitializingPayment ? t("preparingPayment") : t("proceedToPayment")}
-            </Button>
+              onClick={handleTruckSubmit}
+            />
           </form>
 
           {paymentError && (
@@ -1282,7 +1318,7 @@ export default function CheckoutForm() {
                 {items.map((item) => (
                   <div
                     key={
-                      item.variantKey || `${item.id}-${item.productVariantId}-${item.roastLevelId}-${item.grindTypeId}`
+                      item.variantKey || `${item.id}-${item.variantId}-${item.roastLevelId}-${item.grindTypeId}`
                     }
                     className={`flex gap-4 ${isArabic ? "flex-row-reverse" : ""}`}
                   >

@@ -75,62 +75,81 @@ export function getCurrencyCode(currency: CurrencyType): string {
   return currency === "USD" ? "USD" : "AED";
 }
 
-// ---------------- Pricing Helpers (compatible with new backend) ----------------
+// ---------------- Pricing Helpers (compatible with variant engine) ----------------
 
 // Minimal price shape used across responses
 export interface PriceVariant {
-  grams: number;
   price: number;
-  weightLabel?: string;
-  currency?: string;
   currencyCode?: string;
-  productVariantId?: string;
+  variantId?: string;
 }
 
 // Product shape tolerant to both legacy and new backend
 export type ProductWithPricing = {
-  // New backend fields
-  activePrice?: PriceVariant;
-  otherAvailableCurrencies?: PriceVariant[];
-  // Legacy/Current fields
-  variants?: PriceVariant[];
+  variants?: Array<{
+    id: string;
+    sku: string;
+    price: number;
+    prices?: { currencyCode: string; price: number }[];
+    options?: { attributeName: string; value: string }[];
+  }>;
 };
 
 /**
- * Extract unique, sorted weights from product pricing info
+ * Extract unique option values for a given attribute name from product variants
  */
-export function getAvailableWeights(product: ProductWithPricing): number[] {
-  const weights = new Set<number>();
-  if (product.activePrice?.grams) weights.add(product.activePrice.grams);
-  (product.otherAvailableCurrencies || []).forEach((p) => {
-    if (typeof p.grams === "number") weights.add(p.grams);
+export function getAvailableWeights(product: ProductWithPricing): string[] {
+  const values = new Set<string>();
+  (product.variants || []).forEach((v) => {
+    const weight = v.options?.find(o => o.attributeName.toLowerCase() === 'weight');
+    if (weight) values.add(weight.value);
   });
-  (product.variants || []).forEach((p) => {
-    if (typeof p.grams === "number") weights.add(p.grams);
-  });
-  return Array.from(weights).sort((a, b) => a - b);
+  return Array.from(values);
 }
 
 export interface ResolvedPrice {
   price: number;
-  grams: number;
-  weightLabel?: string;
-  productVariantId?: string;
+  variantId?: string;
+  sku?: string;
 }
 
 /**
- * Resolve price for selected currency and weight.
+ * Resolve price for selected currency and variant.
  * 
- * STRICT MODE: Returns price ONLY if BOTH currency AND grams match exactly.
- * NO fallbacks - prevents showing wrong-currency prices.
- * 
- * ROBUST: Case-insensitive currency matching + type-safe weight comparison
- * 
- * Returns null if:
- * - Weight doesn't exist for this product
- * - Currency variant not found for this weight
- * - Data is still loading from server
- * 
- * Logs all candidates for debugging.
+ * Uses the new variant engine: iterates product.variants[].prices[] to find
+ * currency-specific pricing. Falls back to variant.price (base AED price).
  */
-export function resolvePrice(product: any, selectedCurrency?: any, selectedVariantId?: string | number): any | null { const allPrices: any[] = []; if (product?.activePrice) allPrices.push(product.activePrice); if (product?.otherAvailableCurrencies?.length) allPrices.push(...product.otherAvailableCurrencies); if (product?.variants?.length) allPrices.push(...product.variants); if (allPrices.length === 0) return null; if (selectedVariantId) { const match = allPrices.find(p => p.id === selectedVariantId || p.productVariantId === selectedVariantId || String(p.grams) === String(selectedVariantId)); if (match && typeof match.price === 'number') { return { price: match.price, grams: Number(match.grams) || 250, weightLabel: match.weightLabel || (match.sku ? match.sku.split('-').pop().toUpperCase() : (match.grams ? match.grams + 'g' : '250g')), productVariantId: match.id || match.productVariantId, sku: match.sku, }; } } const firstOption = allPrices[0]; if (firstOption && typeof firstOption.price === 'number') { return { price: firstOption.price, grams: Number(firstOption.grams) || 250, weightLabel: firstOption.weightLabel || (firstOption.sku ? firstOption.sku.split('-').pop().toUpperCase() : (firstOption.grams ? firstOption.grams + 'g' : '250g')), productVariantId: firstOption.id || firstOption.productVariantId, sku: firstOption.sku, }; } return null; }
+export function resolvePrice(product: any, selectedCurrency?: string, selectedVariantId?: string): ResolvedPrice | null {
+  const variants = product?.variants;
+  if (!variants?.length) return null;
+
+  // If a specific variant is selected, find it
+  if (selectedVariantId) {
+    const variant = variants.find((v: any) => v.id === selectedVariantId);
+    if (variant) {
+      const currencyPrice = selectedCurrency
+        ? variant.prices?.find((p: any) => p.currencyCode === selectedCurrency)?.price
+        : undefined;
+      return {
+        price: currencyPrice ?? variant.price ?? 0,
+        variantId: variant.id,
+        sku: variant.sku,
+      };
+    }
+  }
+
+  // Fallback: first variant
+  const firstVariant = variants[0];
+  if (firstVariant) {
+    const currencyPrice = selectedCurrency
+      ? firstVariant.prices?.find((p: any) => p.currencyCode === selectedCurrency)?.price
+      : undefined;
+    return {
+      price: currencyPrice ?? firstVariant.price ?? 0,
+      variantId: firstVariant.id,
+      sku: firstVariant.sku,
+    };
+  }
+
+  return null;
+}

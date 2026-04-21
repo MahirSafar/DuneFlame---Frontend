@@ -1,25 +1,8 @@
 // @/lib/types/index.ts
 
-export interface ProductPricePayload {
-  productWeightId: string;
-  price: number;
+export interface VariantPriceDto {
   currencyCode: string;
-}
-
-export interface ProductPriceDto {
-  productVariantId: string;
-  weightLabel: string;
-  grams: number;
   price: number;
-  currencyCode: string; // 👈 Bu mütləq olmalıdır
-}
-
-export interface CurrencyOptionDto {
-  currencyCode: string;
-  weightLabel: string;
-  grams: number;
-  price: number;
-  productVariantId: string;
 }
 
 export interface ProductTranslationDto {
@@ -56,6 +39,7 @@ export interface VariantDto {
   price: number;
   stockQuantity: number | null;
   options: VariantOptionDto[];
+  prices: VariantPriceDto[];
 }
 
 export interface ProductImageDto {
@@ -87,7 +71,7 @@ export interface MasterData {
   attributes: { id: string; name: string; values: { id: string; value: string }[] }[];
   roastLevels: { id: string; name: string }[];
   grindTypes: { id: string; name: string }[];
-  categories: { id: string; name: string; slug: string; isCoffeeCategory: boolean }[];
+  categories: { id: string; name: string; slug: string; isCoffeeCategory: boolean; parentCategoryId: string | null }[];
   origins: { id: string; name: string }[];
   brands: { id: string; name: string }[];
 }

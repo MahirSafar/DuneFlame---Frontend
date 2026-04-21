@@ -433,6 +433,14 @@
       "passwordMatch": "Passwords must match",
       "firstNameRequired": "First name is required",
       "lastNameRequired": "Last name is required"
+    },
+    "overlay": {
+      "welcomeBack": "Welcome Back!",
+      "alreadyHaveAccount": "Already have an account? Sign in to continue your journey.",
+      "signIn": "Sign In",
+      "hello": "Hello, Friend!",
+      "enterDetails": "Enter your personal details and start your journey with us.",
+      "signUp": "Sign Up"
     }
   },
   "dashboard": {

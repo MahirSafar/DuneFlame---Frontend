@@ -1,6 +1,6 @@
 import axios from "@/lib/axios";
 import { apiFetch } from "../axios";
-import type { MasterData, Product, ProductPriceDto } from "@/lib/types";
+import type { MasterData, Product } from "@/lib/types";
 import type { FlavourNoteDto } from "@/lib/types/flavour-note";
 
 export type { Product };
@@ -19,6 +19,18 @@ export interface PagedResult<T> {
 export interface Category {
   id: string;
   name: string;
+  slug?: string;
+  isCoffeeCategory?: boolean;
+  parentCategoryId?: string | null;
+}
+
+// Nested tree node returned by GET /categories/tree
+export interface CategoryTreeNode {
+  id: string;
+  name: string;
+  slug?: string;
+  isCoffeeCategory?: boolean;
+  children: CategoryTreeNode[];
 }
 
 // Master Data üçün sadə Origin (Pagination yoxdur)
@@ -75,6 +87,7 @@ export type ProductQuery = {
   roastLevelIds?: string[]; // Array
   originIds?: string[];     // Array
   sortBy?: string;
+  color?: string;
   
   // Legacy support (əgər hələ də lazımdırsa)
   page?: number; 
@@ -102,6 +115,7 @@ export async function getProducts(params: ProductQuery = {}): Promise<PagedResul
   if (params.minPrice !== undefined) query.set("minPrice", String(params.minPrice));
   if (params.maxPrice !== undefined) query.set("maxPrice", String(params.maxPrice));
   if (params.sortBy) query.set("sortBy", params.sortBy);
+  if (params.color) query.set("color", params.color);
 
   // 2. Array parametrlərini APPEND edirik (Backend Contract Tələbi)
   // Bu yaradır: ?roastLevelIds=ID1&roastLevelIds=ID2
@@ -146,6 +160,18 @@ export async function getCategories() {
   return apiFetch<Category[]>("/master-data/categories");
 }
 
+export async function getCategoryTree(): Promise<CategoryTreeNode[]> {
+  return apiFetch<CategoryTreeNode[]>("/categories/tree");
+}
+
+export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+  try {
+    return await apiFetch<Category>(`/categories/slug/${slug}`);
+  } catch {
+    return null;
+  }
+}
+
 export async function getOrigins() {
   // DÜZƏLİŞ: /admin/origins PagedResult qaytarırdı.
   // Backend Contract deyir ki, /master-data/origins sadə Array qaytarır.
@@ -177,6 +203,18 @@ export async function getAdminProducts(params: ProductQuery = {}): Promise<{ ite
   if (params.search) query.set("search", params.search);
   if (params.categoryId) query.set("categoryId", params.categoryId);
   if (params.brandId) query.set("brandId", params.brandId);
+
+  if (params.roastLevelIds && params.roastLevelIds.length > 0) {
+    params.roastLevelIds.forEach((id) => {
+      query.append("roastLevelIds", id);
+    });
+  }
+
+  if (params.originIds && params.originIds.length > 0) {
+    params.originIds.forEach((id) => {
+      query.append("originIds", id);
+    });
+  }
   
   const qs = query.toString();
   const response = await apiFetch<PagedResult<ProductResponse>>(`/admin/products${qs ? `?${qs}` : ""}`);

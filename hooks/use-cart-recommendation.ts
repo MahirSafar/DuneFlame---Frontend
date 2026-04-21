@@ -9,7 +9,7 @@ export interface RecommendationResponse {
   gapAmount: number;
   recommendation?: {
     productId: string;
-    productVariantId: string;
+    variantId: string;
     name: string;
     slug: string;
     imageUrl: string;
@@ -46,12 +46,12 @@ export function useCartRecommendation(countryCode?: string) {
     setError(null);
 
     const currentTotal = total(currency);
-    const excludedIds = items.map((item) => item.productVariantId);
+    const excludedIds = items.map((item) => item.variantId);
 
     try {
       const response = await apiFetch<RecommendationResponse>(`/basket/recommendation/stateless`, { 
         method: "POST",
-        body: JSON.stringify({ currentSubtotal: currentTotal, excludedProductPriceIds: excludedIds })
+        body: JSON.stringify({ currentSubtotal: currentTotal, excludedVariantIds: excludedIds })
       });
       
       // If 204 No Content, response is undefined/empty string

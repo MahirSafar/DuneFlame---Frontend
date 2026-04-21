@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, SearchX } from "lucide-react";
 import { useTranslations } from "next-intl";
 import ProductCard from "@/components/products/product-card";
 import { Button } from "@/components/ui/button";
@@ -75,21 +75,54 @@ export default function SearchResultsSection({
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="aspect-square bg-muted rounded-xl mb-4"></div>
-              <div className="h-4 bg-muted rounded mb-2"></div>
-              <div className="h-4 bg-muted rounded w-3/4"></div>
+            <div key={i} className="glass rounded-xl overflow-hidden animate-pulse flex flex-col">
+              {/* Image placeholder */}
+              <div className="h-64 bg-muted rounded-t-xl shrink-0" />
+              {/* Content placeholder */}
+              <div className="p-4 flex flex-col flex-1 space-y-3">
+                <div className="h-3 bg-muted rounded w-1/3" />
+                <div className="h-5 bg-muted rounded w-3/4" />
+                <div className="h-4 bg-muted rounded w-full" />
+                <div className="mt-auto pt-3 h-6 bg-muted rounded w-2/5" />
+              </div>
+              <div className="px-4 pb-4">
+                <div className="h-3 bg-muted rounded w-1/4" />
+              </div>
             </div>
           ))}
         </div>
       )}
 
       {!loading && products.length === 0 && !error && (
-        <div className="text-center py-12">
-          <p className="text-lg text-muted-foreground mb-4">{paginationT("noProductsFound")}</p>
-          <Button onClick={onResetFilters} variant="outline">
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          <div className="mb-6 flex items-center justify-center w-24 h-24 rounded-full bg-muted/60">
+            <SearchX size={40} className="text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-bold uppercase mb-2" style={{ color: '#2b1b13' }}>
+            {paginationT("noProductsFound")}
+          </h3>
+          <p className="text-muted-foreground mb-8 max-w-sm">
+            No products match your current filters. Try adjusting your search or removing some filters.
+          </p>
+          <button
+            onClick={onResetFilters}
+            style={{
+              backgroundColor: '#2b1b13',
+              color: '#fff',
+              borderRadius: '0.75rem',
+              padding: '0.875rem 2.5rem',
+              fontSize: '1rem',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+            onMouseOver={e => ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1a0f09')}
+            onMouseOut={e => ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#2b1b13')}
+          >
             {paginationT("resetFilters")}
-          </Button>
+          </button>
         </div>
       )}
 

@@ -50,22 +50,17 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
 
   const handleAddField = () => {
     if (recommendation) {
-      const numericWeight = parseInt(recommendation.weightLabel.replace(/\D/g, '')) || 250;
-      
       const mappedPrices = recommendation.availablePrices 
         ? Object.entries(recommendation.availablePrices).map(([cur, pr]) => ({
             currencyCode: cur.toUpperCase(),
             price: pr,
-            grams: numericWeight,
-            weightLabel: recommendation.weightLabel,
-            productVariantId: recommendation.productVariantId
           }))
         : [];
 
       addItem(
         {
           id: recommendation.productId,
-          productVariantId: recommendation.productVariantId,
+          variantId: recommendation.variantId,
           slug: recommendation.slug,
           name: recommendation.name,
           price: recommendation.price,
@@ -73,7 +68,7 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
           quantity: 1,
           imageUrl: recommendation.imageUrl,
           sku: "",
-          attributes: [recommendation.weightLabel || "250g"],
+          attributes: recommendation.weightLabel ? [recommendation.weightLabel] : [],
           roastLevelId: EMPTY_GUID,
           roastLevelName: "Original",
           grindTypeId: EMPTY_GUID,

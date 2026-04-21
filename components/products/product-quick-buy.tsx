@@ -195,7 +195,7 @@ export function ProductQuickBuy({
             const basketItems = [
               {
                 productId: product.id,
-                productVariantId: selectedVariantId,
+                variantId: selectedVariantId,
                 productName: product.name,
                 slug: product.slug,
                 price: currentPrice,

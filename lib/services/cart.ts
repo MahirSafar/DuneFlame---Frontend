@@ -3,7 +3,7 @@ import { apiFetch } from "../axios";
 export interface CartItemDto {
   id: string;
   productId: string;
-  productVariantId: string;
+  variantId: string;
   productName: string;
   price: number;
   quantity: number;

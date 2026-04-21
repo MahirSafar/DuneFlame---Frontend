@@ -1,7 +1,7 @@
 import React, { Suspense } from "react"
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
-import LoginForm from "@/components/auth/login-form"
+import UnifiedAuth from "@/components/auth/unified-auth"
 
 export async function generateMetadata({
   params,
@@ -23,7 +23,7 @@ export default async function Page() {
 
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">{t("loading")}</div>}>
-      <LoginForm />
+      <UnifiedAuth initialMode="login" />
     </Suspense>
   )
 }

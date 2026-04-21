@@ -3,7 +3,7 @@ import { apiFetch } from "../axios";
 export interface BasketItem {
   id?: string;
   productId: string;
-  productVariantId: string;
+  variantId: string;
   productName: string;
   slug: string;
   price: number;
@@ -57,7 +57,7 @@ export const basketService = {
         items: basketPayload.items.map((item) => ({
           id: item.id,
           productId: item.productId,
-          productVariantId: item.productVariantId,
+          variantId: item.variantId,
           productName: item.productName,
           slug: item.slug,
           price: item.price,

@@ -433,11 +433,16 @@
       "passwordMatch": "يجب أن تتطابق كلمات المرور",
       "firstNameRequired": "الاسم الأول مطلوب",
       "lastNameRequired": "اسم العائلة مطلوب"
+    },
+    "overlay": {
+      "welcomeBack": "!مرحبًا بعودتك",
+      "alreadyHaveAccount": "هل لديك حساب بالفعل؟ سجّل الدخول لمتابعة رحلتك.",
+      "signIn": "تسجيل الدخول",
+      "hello": "!مرحبًا",
+      "enterDetails": "أدخل بياناتك الشخصية وابدأ رحلتك معنا.",
+      "signUp": "إنشاء حساب"
     }
   },
-  "dashboard": {
-    "title": "لوحة التحكم",
-    "orders": "الطلبات",
     "profile": "الملف الشخصي",
     "rewards": "المكافآت",
     "savedCoffees": "القهوة المحفوظة",
