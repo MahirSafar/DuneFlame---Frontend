@@ -10,6 +10,26 @@ import { useAuthStore } from "./auth-store"
 
 export const EMPTY_GUID = "00000000-0000-0000-0000-000000000000"
 
+/**
+ * Normalize an ID so that null, undefined, "", and EMPTY_GUID are all treated as equal.
+ * Used for roastLevelId / grindTypeId comparisons where backends may omit or zero-out the field.
+ */
+function normalizeId(id: string | null | undefined): string {
+  if (id === null || id === undefined || id === "" || id === EMPTY_GUID) {
+    return EMPTY_GUID
+  }
+  return id.toLowerCase().trim()
+}
+
+/**
+ * Convert an optional GUID field to null if it is empty, EMPTY_GUID, or undefined.
+ * Ensures the backend wire payload never receives "" or the zero-GUID for optional fields.
+ */
+function toNullableGuid(id: string | null | undefined): string | null {
+  if (!id || id === EMPTY_GUID) return null
+  return id
+}
+
 export function generateVariantKey(
   productId: string,
   variantId?: string,
@@ -19,8 +39,9 @@ export function generateVariantKey(
   // Strict normalization: force strings, lowercase, and trim
   const normalizedProductId = String(productId ?? "").toLowerCase().trim()
   const normalizedVariantId = String(variantId ?? "").toLowerCase().trim()
-  const normalizedRoastId = String(roastId ?? EMPTY_GUID).toLowerCase().trim()
-  const normalizedGrindId = String(grindId ?? EMPTY_GUID).toLowerCase().trim()
+  // Use normalizeId so that null / "" / EMPTY_GUID all collapse to the same key segment
+  const normalizedRoastId = normalizeId(roastId)
+  const normalizedGrindId = normalizeId(grindId)
   return `${normalizedProductId}-${normalizedVariantId}-${normalizedRoastId}-${normalizedGrindId}`
 }
 
@@ -66,71 +87,69 @@ export const getItemPrice = (item: CartItem, currency: CurrencyType): number => 
 }
 
 const syncWithBackend = async (items: CartItem[]) => {
-  try {
-    const auth = useAuthStore.getState()
-    const isAuthenticated = !!auth.accessToken
-    
-    // Determine basketId - prefer userBasketId from authentication (set after Google login)
-    let basketId: string | undefined = auth.userBasketId || auth.user?.id || undefined
+  const auth = useAuthStore.getState()
+  const isAuthenticated = !!auth.accessToken
 
-    // CRITICAL FIX: If authenticated but missing basketId, fetch it before syncing
-    if (isAuthenticated && !basketId) {
-      try {
-        const fetchedId = await auth.fetchAndStoreBasketId()
-        if (fetchedId) basketId = fetchedId
-      } catch (error) {
-        console.error("[CartStore] Failed to fetch basket ID for sync", error)
+  // Determine basketId - prefer userBasketId from authentication (set after Google login)
+  let basketId: string | undefined = auth.userBasketId || auth.user?.id || undefined
+
+  // CRITICAL FIX: If authenticated but missing basketId, fetch it before syncing
+  if (isAuthenticated && !basketId) {
+    try {
+      const fetchedId = await auth.fetchAndStoreBasketId()
+      if (fetchedId) basketId = fetchedId
+    } catch (error) {
+      console.error("[CartStore] Failed to fetch basket ID for sync", error)
+    }
+  }
+
+  // Fallback for guests
+  if (!isAuthenticated && !basketId) {
+    if (typeof window !== "undefined") {
+      basketId = localStorage.getItem("guestBasketId") || undefined
+      if (!basketId) {
+        basketId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+        localStorage.setItem("guestBasketId", basketId)
       }
     }
+  }
 
-    // Fallback for guests
-    if (!isAuthenticated && !basketId) {
-      if (typeof window !== "undefined") {
-        basketId = localStorage.getItem("guestBasketId") || undefined
-        if (!basketId) {
-          basketId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
-          localStorage.setItem("guestBasketId", basketId)
-        }
-      }
-    }
+  if (!basketId) {
+    console.warn("[CartStore] Aborting sync: No basket ID could be resolved.")
+    return
+  }
 
-    if (!basketId) {
-      console.warn("[CartStore] Aborting sync: No basket ID could be resolved.")
-      return
-    }
+  // Strip any items that somehow still carry an empty/zero GUID before hitting the network
+  const validItems = items.filter(
+    (item) => item.variantId && item.variantId !== "" && item.variantId !== EMPTY_GUID
+  )
 
-    // Strip any items that somehow still carry an empty/zero GUID before hitting the network
-    const validItems = items.filter(
-      (item) => item.variantId && item.variantId !== "" && item.variantId !== EMPTY_GUID
-    )
+  if (validItems.length === 0) {
+    // Clear basket by sending empty items
+    await basketService.clearBasket(basketId)
+  } else {
+    const basketItems: BasketItem[] = validItems.map((item) => ({
+      id: item.cartItemId,
+      productId: item.productId,
+      productVariantId: item.variantId,
+      productName: item.name,
+      slug: item.slug,
+      price: item.price,
+      quantity: item.quantity,
+      imageUrl: item.imageUrl || "",
+      sku: item.sku || "",
+      attributes: item.attributes ?? [],
+      roastLevelId: toNullableGuid(item.roastLevelId),
+      roastLevelName: item.roastLevelName ?? null,
+      grindTypeId: toNullableGuid(item.grindTypeId),
+      grindTypeName: item.grindTypeName ?? null,
+    }))
 
-    if (validItems.length === 0) {
-      // Clear basket by sending empty items
-      await basketService.clearBasket(basketId)
-    } else {
-      const basketItems: BasketItem[] = validItems.map((item) => ({
-        id: item.cartItemId,
-        productId: item.productId,
-        variantId: item.variantId,
-        productName: item.name,
-        slug: item.slug,
-        price: item.price,
-        quantity: item.quantity,
-        imageUrl: item.imageUrl || "",
-        roastLevelId: item.roastLevelId,
-        roastLevelName: item.roastLevelName,
-        grindTypeId: item.grindTypeId,
-        grindTypeName: item.grindTypeName,
-      }))
-      
-      // Send to backend with basketId in URL
-      await basketService.updateBasket({
-        id: basketId,
-        items: basketItems,
-      })
-    }
-  } catch (error) {
-    console.error("Failed to sync cart with backend:", error)
+    // Send to backend with basketId in URL
+    await basketService.updateBasket({
+      id: basketId,
+      items: basketItems,
+    })
   }
 }
 
@@ -153,7 +172,7 @@ export const useCartStore = create<CartStore>()(
 
         const state = get()
         const variantKey = generateVariantKey(item.productId, item.variantId, item.roastLevelId, item.grindTypeId)
-        const itemWithKey = { ...item, variantKey }
+        const itemWithKey = { ...item, variantKey, cartItemId: item.cartItemId || crypto.randomUUID() }
         const existingItemIndex = state.items.findIndex((si) => si.variantKey === variantKey)
         const updatedItems: CartItem[] =
           existingItemIndex > -1
@@ -257,7 +276,8 @@ export const useCartStore = create<CartStore>()(
         .filter((item) => Boolean(item.slug))
         .map(async (item) => {
           const productId = (item.productId || "").toLowerCase().trim()
-          const variantId = (item.variantId || "").trim()
+          // Backend returns `productVariantId` — now properly typed on BasketItem
+          const variantId = (item.productVariantId || "").trim()
           const variantKey = generateVariantKey(productId, variantId)
 
           // Debug log for server-loaded items and generated key
@@ -285,10 +305,10 @@ export const useCartStore = create<CartStore>()(
             variantKey,
             cartItemId: item.id,
             product: productData,
-            roastLevelId: item.roastLevelId,
-            roastLevelName: item.roastLevelName,
-            grindTypeId: item.grindTypeId,
-            grindTypeName: item.grindTypeName,
+            roastLevelId: item.roastLevelId ?? undefined,
+            roastLevelName: item.roastLevelName ?? undefined,
+            grindTypeId: item.grindTypeId ?? undefined,
+            grindTypeName: item.grindTypeName ?? undefined,
           }
         })
 
@@ -329,45 +349,78 @@ export const useCartStore = create<CartStore>()(
       (item) => item.variantId && item.variantId !== "" && item.variantId !== EMPTY_GUID
     )
 
-    // Always clear the guest localStorage key
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("guestBasketId")
-    }
-
-    // Wipe local state (invalid items are useless; valid items will be re-hydrated by loadBasket)
-    set({ items: [] })
-    
     if (validItems.length === 0) {
       // Nothing valid to push — authenticated basket will be loaded as-is by caller
+      // Still clear the guest localStorage key since we're now authenticated
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("guestBasketId")
+      }
+      // Clear Zustand state (no valid guest items to preserve)
+      set({ items: [] })
       return
     }
-    
+
     try {
       // Use stored userBasketId if available (set after Google login), otherwise use user.id
       const basketId = userBasketId || user.id;
-      
-      // Convert valid guest items to BasketItem format
-      const basketItems: BasketItem[] = validItems.map((item) => ({
-        id: item.cartItemId,
-          productId: item.productId,
-          variantId: item.variantId,
-          productName: item.name,
-          slug: item.slug,
-          price: item.price,
-          quantity: item.quantity,
-          imageUrl: item.imageUrl || "",
-          roastLevelId: item.roastLevelId,
-          roastLevelName: item.roastLevelName,
-          grindTypeId: item.grindTypeId,
-          grindTypeName: item.grindTypeName,
-        }))
 
+      // 1. Fetch the authenticated user's basket using "me" — avoids ResolveBasketId override
+      // Guest items are local-only (optimistic): the backend has no guest basket record,
+      // so we must NOT try to read the guest basket from the API here.
+      const existingBasket = await basketService.getBasket("me")
+      // Backend GET responses use `productVariantId` — now the canonical field on BasketItem.
+      // Spread directly; no field normalization needed.
+      const mergedItems: BasketItem[] = [...(existingBasket.items || [])]
+
+      // 2. Merge guest items: increment quantity if already exists, push if new
+      for (const guestItem of validItems) {
+        const existingIdx = mergedItems.findIndex(
+          (fi) =>
+            fi.productId === guestItem.productId &&
+            fi.productVariantId === guestItem.variantId &&
+            normalizeId(fi.roastLevelId) === normalizeId(guestItem.roastLevelId) &&
+            normalizeId(fi.grindTypeId) === normalizeId(guestItem.grindTypeId)
+        )
+        if (existingIdx > -1) {
+          mergedItems[existingIdx] = {
+            ...mergedItems[existingIdx],
+            quantity: mergedItems[existingIdx].quantity + guestItem.quantity,
+          }
+        } else {
+          mergedItems.push({
+            id: guestItem.cartItemId,
+            productId: guestItem.productId,
+            productVariantId: guestItem.variantId,
+            productName: guestItem.name,
+            slug: guestItem.slug,
+            price: guestItem.price,
+            quantity: guestItem.quantity,
+            imageUrl: guestItem.imageUrl || "",
+            sku: guestItem.sku || "",
+            attributes: guestItem.attributes ?? [],
+            roastLevelId: toNullableGuid(guestItem.roastLevelId),
+            roastLevelName: guestItem.roastLevelName ?? null,
+            grindTypeId: toNullableGuid(guestItem.grindTypeId),
+            grindTypeName: guestItem.grindTypeName ?? null,
+          })
+        }
+      }
+
+      // 3. Update backend with the fully merged array — only clear local state on success
       await basketService.updateBasket({
         id: basketId,
-        items: basketItems,
+        items: mergedItems,
       })
-      
+
+      // SUCCESS: now safe to clear guest localStorage key and wipe Zustand state
+      // (caller will immediately call loadBasket to re-hydrate from backend)
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("guestBasketId")
+      }
+      set({ items: [] })
+
     } catch (error) {
+      // Do NOT clear items — guest items remain in Zustand so the user doesn't lose them
       throw error
     }
   },

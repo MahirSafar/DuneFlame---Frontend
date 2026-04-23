@@ -214,7 +214,7 @@
      GLASSMORPHISM
      ======================================== */
   .glass {
-    @apply bg-white/90 backdrop-blur-xl border border-dune-taupe/50 shadow-xl shadow-[#E6D3BF]/40;
+    @apply bg-white/90 backdrop-blur-xl border border-dune-taupe/50 shadow-xl shadow-dune-sand/40;
   }
 
   /* ========================================

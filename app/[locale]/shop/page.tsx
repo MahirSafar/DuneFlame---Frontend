@@ -57,16 +57,22 @@ function ShopPageInner() {
   const [maxAvailablePrice, setMaxAvailablePrice] = useState<number>(500);
   const [searchInput, setSearchInput] = useState(filters.search || "");
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
+  // True while a categorySlug→GUID resolution is in-flight.
+  // Prevents the fetch effect from firing with categoryId=undefined during that window.
+  const [isCategoryResolving, setIsCategoryResolving] = useState(() => !!categorySlug);
 
   const debouncedSearchInput = useDebounce(searchInput, 400);
 
   // Resolve category slug → GUID, then set it in the filter
   useEffect(() => {
     if (!categorySlug) {
+      setIsCategoryResolving(false);
       setActiveCategory(null);
       setCategoryId(undefined);
       return;
     }
+    // Signal that we're waiting — block the fetch effect immediately
+    setIsCategoryResolving(true);
     getCategoryBySlug(categorySlug).then((cat) => {
       if (cat?.id) {
         setActiveCategory(cat);
@@ -75,6 +81,8 @@ function ShopPageInner() {
         setActiveCategory(null);
         setCategoryId(undefined);
       }
+      // Resolution complete — allow the fetch effect to proceed
+      setIsCategoryResolving(false);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categorySlug]);
@@ -93,6 +101,12 @@ function ShopPageInner() {
   }, [filters.search]);
 
   useEffect(() => {
+    // While slug→GUID resolution is in-flight, hold the loading spinner and skip the fetch.
+    // This prevents the brief flash of all 74 products before the category GUID is known.
+    if (isCategoryResolving) {
+      setLoading(true);
+      return;
+    }
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -135,7 +149,7 @@ function ShopPageInner() {
     };
 
     fetchData();
-  }, [filters, currency]);
+  }, [filters, currency, isCategoryResolving]);
 
   const handlePageChange = (newPage: number) => {
     setPageNumber(newPage);

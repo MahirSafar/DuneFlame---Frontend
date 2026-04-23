@@ -48,8 +48,9 @@ export async function getAdminSubscribers(params: {
   if (params.pageNumber) query.set("pageNumber", String(params.pageNumber));
   if (params.pageSize) query.set("pageSize", String(params.pageSize));
   if (params.search) query.set("search", params.search);
+  const qs = query.toString();
   return apiFetch<PagedResult<Subscriber>>(
-    `/admin/newsletter/subscribers?${query.toString()}`
+    `/admin/newsletter/subscribers${qs ? `?${qs}` : ""}`
   );
 }
 

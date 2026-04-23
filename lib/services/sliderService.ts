@@ -1,55 +1,19 @@
-import axios from 'axios';
-import { API_URL as BASE_API_URL } from '../config';
+import instance from '../axios';
 
-const SLIDER_API_URL = `${BASE_API_URL}/admin/sliders`;
-
-const getAuthHeader = () => {
-  const dfTokens = localStorage.getItem("df_tokens");
-  const dfAuth = localStorage.getItem("df_auth");
-  
-  let token = null;
-
-  if (dfTokens) {
-    try {
-      const parsed = JSON.parse(dfTokens);
-      token = parsed.accessToken || parsed.token;
-    } catch (e) { token = dfTokens; }
-  }
-
-  // Əgər df_tokens-də yoxdursa, df_auth-ın içindəki 'state' obyektinə bax
-  if (!token && dfAuth) {
-    try {
-      const parsed = JSON.parse(dfAuth);
-      token = parsed.state?.accessToken || parsed.state?.user?.token;
-    } catch (e) { }
-  }
-
-  if (!token) return {};
-  return { Authorization: `Bearer ${token}` };
-};
+const SLIDER_API_PATH = '/admin/sliders';
 
 export const sliderService = {
-  getAll: () => axios.get(SLIDER_API_URL, { headers: getAuthHeader() }).then(res => res.data),
-  
-  create: (formData: FormData) => {
-    return axios.post(SLIDER_API_URL, formData, {
-      headers: { 
-        ...getAuthHeader(),
-        'Content-Type': 'multipart/form-data' 
-      }
-    });
-  },
-  
-  update: (id: string, formData: FormData) => {
-    return axios.put(`${SLIDER_API_URL}/${id}`, formData, {
-      headers: { 
-        ...getAuthHeader(),
-        'Content-Type': 'multipart/form-data' 
-      }
-    });
-  },
+  getAll: () => instance.get(SLIDER_API_PATH).then(res => res.data),
 
-  delete: (id: string) => axios.delete(`${SLIDER_API_URL}/${id}`, {
-    headers: getAuthHeader()
-  }),
+  create: (formData: FormData) =>
+    instance.post(SLIDER_API_PATH, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  update: (id: string, formData: FormData) =>
+    instance.put(`${SLIDER_API_PATH}/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  delete: (id: string) => instance.delete(`${SLIDER_API_PATH}/${id}`),
 };

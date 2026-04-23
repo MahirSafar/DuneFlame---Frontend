@@ -2,7 +2,7 @@
 
 import toast from "react-hot-toast"
 import { useAuthStore } from "@/lib/auth-store"
-import { useCartStore, generateVariantKey, EMPTY_GUID } from "@/lib/cart-store"
+import { useCartStore, generateVariantKey } from "@/lib/cart-store"
 import { getImageUrl } from "@/lib/utils"
 
 export interface AddToCartProduct {
@@ -49,7 +49,7 @@ export function useAddToCart() {
     const cartItemToAdd = {
       id: product.id,
       productId: product.id,
-      variantId: options.variantId || EMPTY_GUID,
+      variantId: options.variantId || "",
       slug: product.slug ?? "",
       name: product.name,
       price: options.price,
@@ -59,9 +59,9 @@ export function useAddToCart() {
       sku: options.sku,
       attributes: options.attributes,
       variantKey,
-      roastLevelId: options.roastLevelId || EMPTY_GUID,
+      roastLevelId: options.roastLevelId,
       roastLevelName: options.roastLevelName,
-      grindTypeId: options.grindTypeId || EMPTY_GUID,
+      grindTypeId: options.grindTypeId,
       grindTypeName: options.grindTypeName,
       product: product as any, 
     }

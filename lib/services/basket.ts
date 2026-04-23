@@ -3,24 +3,23 @@ import { apiFetch } from "../axios";
 export interface BasketItem {
   id?: string;
   productId: string;
-  variantId: string;
+  productVariantId: string;
   productName: string;
   slug: string;
   price: number;
   quantity: number;
   imageUrl: string;
-  roastLevelId?: string;
-  roastLevelName?: string;
-  grindTypeId?: string;
-  grindTypeName?: string;
+  sku: string;
+  attributes: string[];
+  roastLevelId?: string | null;
+  roastLevelName?: string | null;
+  grindTypeId?: string | null;
+  grindTypeName?: string | null;
 }
 
 export interface CustomerBasketDto {
   id: string;
-  customerId: string;
   items: BasketItem[];
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 // Request payload for updating basket (includes ID for guest baskets)
@@ -45,7 +44,7 @@ export const basketService = {
   updateBasket: (payload: UpdateBasketPayload | BasketItem[]) => {
     const basketPayload = Array.isArray(payload)
       ? {
-          id: "client-update",
+          id: "me",
           items: payload,
         }
       : payload
@@ -57,30 +56,35 @@ export const basketService = {
         items: basketPayload.items.map((item) => ({
           id: item.id,
           productId: item.productId,
-          variantId: item.variantId,
+          productVariantId: item.productVariantId,
           productName: item.productName,
           slug: item.slug,
           price: item.price,
           quantity: item.quantity,
           imageUrl: item.imageUrl,
+          sku: item.sku,
+          attributes: item.attributes ?? [],
           roastLevelId: item.roastLevelId,
           roastLevelName: item.roastLevelName,
           grindTypeId: item.grindTypeId,
           grindTypeName: item.grindTypeName,
         })),
+        currencyCode: basketPayload.currencyCode || undefined,
+        isLocked: false,
       }),
     })
   },
 
   deleteBasketItem: (basketId: string, itemId: string) =>
-    apiFetch<void>(`/basket/${basketId}/${itemId}`, { method: "DELETE" }),
+    apiFetch<void>(`/basket/${basketId}/items/${itemId}`, { method: "DELETE" }),
 
   clearBasket: (basketId: string) =>
     apiFetch<CustomerBasketDto>(`/basket`, {
       method: "POST",
       body: JSON.stringify({ 
         id: basketId,
-        items: [] 
+        items: [],
+        isLocked: false,
       }),
     }),
 };

@@ -60,7 +60,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   const variants = useMemo(() => product.variants || [], [product.variants]);
   const defaultVariant = variants[0];
   const [selectedVariantId, setSelectedVariantId] = useState<string>(
-    product.variants?.[0]?.id || EMPTY_GUID
+    product.variants?.[0]?.id || ""
   );
 
   // Robustly sync selectedVariantId whenever product.variants changes (e.g. after hydration or
@@ -132,12 +132,12 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   )
 
   const selectedRoastId = useMemo(
-    () => (selectedRoastIndex >= 0 ? product.coffeeProfile?.roastLevelIds?.[selectedRoastIndex] : EMPTY_GUID),
+    () => (selectedRoastIndex >= 0 ? product.coffeeProfile?.roastLevelIds?.[selectedRoastIndex] : undefined),
     [product.coffeeProfile, selectedRoastIndex],
   )
 
   const selectedGrindId = useMemo(
-    () => (selectedGrindIndex >= 0 ? product.coffeeProfile?.grindTypeIds?.[selectedGrindIndex] : EMPTY_GUID),
+    () => (selectedGrindIndex >= 0 ? product.coffeeProfile?.grindTypeIds?.[selectedGrindIndex] : undefined),
     [product.coffeeProfile, selectedGrindIndex],
   )
 
@@ -187,14 +187,14 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   
   const handleAddToCart = () => {
     addToCart(product, quantity, {
-      variantId: selectedVariant?.id || EMPTY_GUID,
+      variantId: selectedVariant?.id || "",
       prices: selectedVariant?.prices || [],
       price: currentPrice,
       sku: selectedVariant?.sku || "",
       attributes: selectedVariant?.options?.map(o => `${o.attributeName}: ${o.value}`) || [],
-      roastLevelId: selectedRoastId || EMPTY_GUID,
+      roastLevelId: selectedRoastId,
       roastLevelName: selectedRoast,
-      grindTypeId: selectedGrindId || EMPTY_GUID,
+      grindTypeId: selectedGrindId,
       grindTypeName: selectedGrind,
       imageUrl: mainImage || undefined,
     })

@@ -195,12 +195,14 @@ export function ProductQuickBuy({
             const basketItems = [
               {
                 productId: product.id,
-                variantId: selectedVariantId,
+                productVariantId: selectedVariantId,
                 productName: product.name,
                 slug: product.slug,
                 price: currentPrice,
                 quantity,
                 imageUrl,
+                sku: variant?.sku || "",
+                attributes: variant?.options?.map((o: any) => `${o.attributeName}: ${o.value}`) ?? [],
               },
             ]
 

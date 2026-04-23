@@ -32,7 +32,7 @@ export interface UseShopFiltersReturn {
 
 const DEFAULT_FILTERS: ShopFiltersState = {
   pageNumber: 1,
-  pageSize: 12,
+  pageSize: 8,
   search: "",
   minPrice: undefined,
   maxPrice: undefined,

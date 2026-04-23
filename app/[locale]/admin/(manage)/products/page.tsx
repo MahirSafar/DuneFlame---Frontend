@@ -1,6 +1,7 @@
 "use client"
 
 import { type DragEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
 import { Link } from "@/i18n/routing"
 import { useRouter } from "@/i18n/routing"
 import {
@@ -1468,93 +1469,149 @@ const handleOpenEdit = async (productId: string) => {
                       )}
                     </div>
                   ) : (
-                  /* ── ADD MODE: 3-step cascading dropdowns ── */
-                    <div className="flex flex-col gap-2">
-                      <p className="text-[11px] text-muted-foreground">
-                        Step through the hierarchy to reach a leaf category.
-                      </p>
-                      {/* Step 1 — always visible */}
-                      <Select
-                        value={cascadeL1}
-                        onValueChange={(val) => {
-                          setCascadeL1(val)
-                          setCascadeL2("")
-                          const isLeaf = leafCategoryIds.has(val)
-                          setSiloFormState((prev) => ({ ...prev, categoryId: isLeaf ? val : "" }))
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Step 1 — top-level category..." />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-60 overflow-y-auto">
-                          {cascadeL1Options.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {/* Step 2 — appears only after Step 1 is selected and has children */}
-                      {cascadeL1 !== "" && cascadeL2Options.length > 0 && (
-                        <Select
-                          value={cascadeL2}
-                          onValueChange={(val) => {
-                            setCascadeL2(val)
-                            const isLeaf = leafCategoryIds.has(val)
-                            setSiloFormState((prev) => ({ ...prev, categoryId: isLeaf ? val : "" }))
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Step 2 — sub-category..." />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60 overflow-y-auto">
-                            {cascadeL2Options.map((cat) => (
-                              <SelectItem key={cat.id} value={cat.id}>
-                                {cat.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                      {/* Step 3 — appears only after Step 2 is selected and has children */}
-                      {cascadeL2 !== "" && cascadeL3Options.length > 0 && (
-                        <Select
-                          value={siloFormState.categoryId}
-                          onValueChange={(val) => {
-                            setSiloFormState((prev) => ({ ...prev, categoryId: val }))
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Step 3 — leaf category..." />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60 overflow-y-auto">
-                            {cascadeL3Options.map((cat) => (
-                              <SelectItem key={cat.id} value={cat.id}>
-                                {cat.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                      {/* Confirmation / warnings */}
-                      {siloFormState.categoryId && leafCategoryIds.has(siloFormState.categoryId) && (
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
-                          ✓ {buildCategoryPath(siloFormState.categoryId, categories)}
-                        </p>
-                      )}
-                      {!siloFormState.categoryId && cascadeL1 !== "" && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Continue selecting to reach a leaf category…
-                        </p>
-                      )}
+                  /* ── ADD MODE: 3-step cascading dropdowns with animated step indicators ── */
+                    <div className="space-y-3">
+                      {/* Step 1 */}
+                      <div className="flex items-start gap-3">
+                        <div className={`mt-2.5 shrink-0 flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold transition-colors duration-300 ${cascadeL1 ? "bg-accent text-white" : "bg-border text-muted-foreground"}`}>
+                          {cascadeL1 ? "✓" : "1"}
+                        </div>
+                        <div className="flex-1">
+                          <Select
+                            value={cascadeL1}
+                            onValueChange={(val) => {
+                              setCascadeL1(val)
+                              setCascadeL2("")
+                              const isLeaf = leafCategoryIds.has(val)
+                              setSiloFormState((prev) => ({ ...prev, categoryId: isLeaf ? val : "" }))
+                            }}
+                          >
+                            <SelectTrigger className={`transition-all duration-200 ${cascadeL1 ? "border-accent/50 bg-accent/5" : ""}`}>
+                              <SelectValue placeholder="Top-level category (e.g. Coffee, Equipment)…" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60 overflow-y-auto">
+                              {cascadeL1Options.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Step 2 — slides in when L1 is picked and has children */}
+                      <AnimatePresence>
+                        {cascadeL1 !== "" && cascadeL2Options.length > 0 && (
+                          <motion.div
+                            key="step2"
+                            initial={{ opacity: 0, height: 0, y: -8 }}
+                            animate={{ opacity: 1, height: "auto", y: 0 }}
+                            exit={{ opacity: 0, height: 0, y: -8 }}
+                            transition={{ duration: 0.22, ease: "easeOut" }}
+                            className="flex items-start gap-3 overflow-hidden"
+                          >
+                            <div className={`mt-2.5 shrink-0 flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold transition-colors duration-300 ${cascadeL2 ? "bg-accent text-white" : "bg-border text-muted-foreground"}`}>
+                              {cascadeL2 ? "✓" : "2"}
+                            </div>
+                            <div className="flex-1">
+                              <Select
+                                value={cascadeL2}
+                                onValueChange={(val) => {
+                                  setCascadeL2(val)
+                                  const isLeaf = leafCategoryIds.has(val)
+                                  setSiloFormState((prev) => ({ ...prev, categoryId: isLeaf ? val : "" }))
+                                }}
+                              >
+                                <SelectTrigger className={`transition-all duration-200 ${cascadeL2 ? "border-accent/50 bg-accent/5" : ""}`}>
+                                  <SelectValue placeholder="Sub-category…" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-60 overflow-y-auto">
+                                  {cascadeL2Options.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Step 3 — slides in when L2 is picked and has children */}
+                      <AnimatePresence>
+                        {cascadeL2 !== "" && cascadeL3Options.length > 0 && (
+                          <motion.div
+                            key="step3"
+                            initial={{ opacity: 0, height: 0, y: -8 }}
+                            animate={{ opacity: 1, height: "auto", y: 0 }}
+                            exit={{ opacity: 0, height: 0, y: -8 }}
+                            transition={{ duration: 0.22, ease: "easeOut" }}
+                            className="flex items-start gap-3 overflow-hidden"
+                          >
+                            <div className={`mt-2.5 shrink-0 flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold transition-colors duration-300 ${siloFormState.categoryId && leafCategoryIds.has(siloFormState.categoryId) ? "bg-emerald-500 text-white" : "bg-border text-muted-foreground"}`}>
+                              {siloFormState.categoryId && leafCategoryIds.has(siloFormState.categoryId) ? "✓" : "3"}
+                            </div>
+                            <div className="flex-1">
+                              <Select
+                                value={siloFormState.categoryId}
+                                onValueChange={(val) => {
+                                  setSiloFormState((prev) => ({ ...prev, categoryId: val }))
+                                }}
+                              >
+                                <SelectTrigger className={`transition-all duration-200 ${siloFormState.categoryId ? "border-emerald-500/50 bg-emerald-500/5" : ""}`}>
+                                  <SelectValue placeholder="Leaf category…" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-60 overflow-y-auto">
+                                  {cascadeL3Options.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Confirmation banner */}
+                      <AnimatePresence>
+                        {siloFormState.categoryId && leafCategoryIds.has(siloFormState.categoryId) && (
+                          <motion.div
+                            key="confirm"
+                            initial={{ opacity: 0, scale: 0.97 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.97 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium"
+                          >
+                            <span className="text-base">✓</span>
+                            {buildCategoryPath(siloFormState.categoryId, categories)}
+                          </motion.div>
+                        )}
+                        {!siloFormState.categoryId && cascadeL1 !== "" && (
+                          <motion.p
+                            key="hint"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="text-xs text-muted-foreground pl-9"
+                          >
+                            Continue selecting to reach a leaf category…
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
                     </div>
                   )}
               </div>
             </div>
 
             {/* ── All product fields: HIDDEN until leaf category is confirmed ── */}
+            <AnimatePresence>
             {(selectedProduct || (siloFormState.categoryId && leafCategoryIds.has(siloFormState.categoryId))) && (
-            <>
+            <motion.div
+              key="form-body"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <div className="space-y-5">
               <div className="text-xs font-bold uppercase tracking-wider text-accent/70 pb-2 border-b border-border/20">Product Details</div>
               <div className="grid grid-cols-2 gap-4">
@@ -1981,8 +2038,9 @@ const handleOpenEdit = async (productId: string) => {
                 )}
               </Button>
             </SheetFooter>
-            </>
+            </motion.div>
             )}
+            </AnimatePresence>
           </form>
         </SheetContent>
       </Sheet>

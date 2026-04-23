@@ -13,7 +13,6 @@ import { useCurrency } from "@/hooks/use-currency"
 import { FormattedPrice } from "@/components/currency/formatted-price"
 import type { ProductResponse } from "@/lib/services/products"
 import { cn, getImageUrl } from "@/lib/utils"
-import { EMPTY_GUID } from "@/lib/cart-store"
 import { useTranslations } from "next-intl"
 import { ProductQuickBuy } from "@/components/products/product-quick-buy"
 import { StripeElementsProvider } from "@/components/payment/stripe-elements-provider"
@@ -106,6 +105,19 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
   const isPriceAvailable = currentPrice > 0
 
   const isCoffeeProduct = !!fullProduct.coffeeProfile;
+  const isEquipment = !isCoffeeProduct;
+
+  // True when the product has exactly one variant with no meaningful label
+  // (SKU contains "DEFAULT" or options are empty/default-valued)
+  const isDefaultOnlyVariant = useMemo(() => {
+    const variants = fullProduct.variants
+    if (!variants || variants.length !== 1) return false
+    const v = variants[0]
+    const hasNoOptions = !v.options?.length || v.options.every((o: any) => !o.value || o.value.toLowerCase() === 'default')
+    const hasDefaultSku = typeof v.sku === 'string' && v.sku.toUpperCase().includes('DEFAULT')
+    return hasNoOptions || hasDefaultSku
+  }, [fullProduct.variants])
+
   const hasValidSelection = isCoffeeProduct 
     ? Boolean(selectedVariant && selectedRoast && selectedGrind)
     : Boolean(selectedVariant);
@@ -126,11 +138,11 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
 
     // 2. Find Roast ID by Name using API keys
     const roastIndex = fullProduct.coffeeProfile?.roastLevelNames?.indexOf(selectedRoast) ?? -1
-    const roastLevelId = roastIndex >= 0 ? fullProduct.coffeeProfile?.roastLevelIds?.[roastIndex] : EMPTY_GUID
+    const roastLevelId = roastIndex >= 0 ? fullProduct.coffeeProfile?.roastLevelIds?.[roastIndex] : undefined
 
     // 3. Find Grind ID by Name using API keys
     const grindIndex = fullProduct.coffeeProfile?.grindTypeNames?.indexOf(selectedGrind) ?? -1
-    const grindTypeId = grindIndex >= 0 ? fullProduct.coffeeProfile?.grindTypeIds?.[grindIndex] : EMPTY_GUID
+    const grindTypeId = grindIndex >= 0 ? fullProduct.coffeeProfile?.grindTypeIds?.[grindIndex] : undefined
 
 
     // 4. Send EVERYTHING to addToCart (including real GUIDs)
@@ -141,9 +153,9 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
       sku: selectedVariant?.sku || "",
       attributes: selectedVariant?.options?.map(o => `${o.attributeName}: ${o.value}`) || [],
       roastLevelName: isCoffeeProduct ? selectedRoast : undefined,
-      roastLevelId: isCoffeeProduct ? (roastLevelId || EMPTY_GUID) : undefined,
+      roastLevelId: isCoffeeProduct ? roastLevelId : undefined,
       grindTypeName: isCoffeeProduct ? selectedGrind : undefined,
-      grindTypeId: isCoffeeProduct ? (grindTypeId || EMPTY_GUID) : undefined,
+      grindTypeId: isCoffeeProduct ? grindTypeId : undefined,
       imageUrl: mainImageRaw || "",
     })
 
@@ -201,6 +213,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
               </p>
             </div>
 
+            {!(isEquipment && isDefaultOnlyVariant) && (
             <div className="space-y-3">
               <Label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
                 {isCoffeeProduct
@@ -210,7 +223,8 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
               </Label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {fullProduct.variants?.map((variant: any) => {
-                  const label = variant.options?.map((o: any) => o.value).join(', ') || variant.sku || `Var ${variant.id.substring(0,4)}`;
+                  const optionLabel = variant.options?.map((o: any) => o.value).filter((v: string) => v && v.toLowerCase() !== 'default').join(', ')
+                  const label = optionLabel || variant.weightLabel || `Option ${variant.id.substring(0, 4)}`;
                   return (
                     <button
                       key={variant.id}
@@ -225,6 +239,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
                 })}
               </div>
             </div>
+            )}
 
             {isCoffeeProduct && (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -262,7 +277,7 @@ export function ProductVariantModal({ product, isOpen, onClose }: ProductVariant
             </div>
             )}
 
-            <DialogFooter className="sm:justify-between flex-col sm:flex-row gap-3">
+            <DialogFooter className="flex flex-col sm:flex-col gap-3 w-full">
               <div className="text-sm text-muted-foreground">
                 {isPriceAvailable
                   ? (isCoffeeProduct ? "Crafted to order. Taxes included." : "Taxes included. Ready to ship.")

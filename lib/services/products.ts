@@ -103,7 +103,7 @@ export async function getProducts(params: ProductQuery = {}): Promise<PagedResul
   const query = new URLSearchParams();
 
   const pageNumber = params.pageNumber ?? params.page ?? 1;
-  const pageSize = params.pageSize ?? params.size ?? 12;
+  const pageSize = params.pageSize ?? params.size ?? 8;
 
   // 1. Sadə parametrləri set edirik
   query.set("pageNumber", String(pageNumber));
@@ -156,8 +156,19 @@ export async function getProduct(idOrSlug: string, options?: { admin?: boolean }
 // ============================================================================
 
 export async function getCategories() {
-  // Public master-data endpointi
-  return apiFetch<Category[]>("/master-data/categories");
+  const data = await apiFetch<Category[]>("/master-data/categories");
+
+  // The backend returns a sentinel "root" node and maps L1 parentCategoryId to its GUID
+  // instead of null. Normalize locally so the cascade UI can use simple !parentCategoryId checks.
+  const rootNode = data.find((c) => c.slug === "root" || c.name?.toLowerCase() === "root");
+  const rootId = rootNode?.id ?? "00000000-0000-0000-0000-000000000001";
+
+  return data
+    .filter((c) => c.id !== rootId) // strip the sentinel root from the UI
+    .map((c) => ({
+      ...c,
+      parentCategoryId: c.parentCategoryId === rootId ? null : c.parentCategoryId,
+    }));
 }
 
 export async function getCategoryTree(): Promise<CategoryTreeNode[]> {

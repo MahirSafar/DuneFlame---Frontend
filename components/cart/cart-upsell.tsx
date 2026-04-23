@@ -37,6 +37,20 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
 
   const recommendationDisplayPrice = recommendation?.availablePrices?.[currency.toUpperCase()] ?? recommendation?.availablePrices?.[currency.toLowerCase()] ?? recommendation?.price ?? 0;
 
+  // If the backend returns a slug-style SKU as weightLabel (e.g. "tutti-frutti-250g"),
+  // extract just the weight portion (e.g. "250g"). Fall back to the original value if
+  // no weight token is found.
+  const formatWeightLabel = (label: string | undefined): string | undefined => {
+    if (!label) return undefined;
+    // Slug pattern: contains hyphens with a weight at the end
+    if (label.includes("-")) {
+      const match = label.match(/(\d+\s*(?:g|kg|ml|l|oz|lb)s?)$/i);
+      if (match) return match[1];
+    }
+    return label;
+  };
+  const weightLabel = formatWeightLabel(recommendation?.weightLabel);
+
   // Əgər limit keçilibsə və biz "Təbriklər" mesajını göstərmək istəmiriksə, bunu `return null` edə bilərik.
   // Amma hələlik göstəririk:
   if (isFreeShippingMet) {
@@ -50,6 +64,12 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
 
   const handleAddField = () => {
     if (recommendation) {
+      const resolvedVariantId = recommendation.productVariantId
+      if (!resolvedVariantId || resolvedVariantId === EMPTY_GUID) {
+        console.error("[CartUpsell] No valid variantId on recommendation — item not added:", recommendation)
+        return
+      }
+
       const mappedPrices = recommendation.availablePrices 
         ? Object.entries(recommendation.availablePrices).map(([cur, pr]) => ({
             currencyCode: cur.toUpperCase(),
@@ -60,7 +80,7 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
       addItem(
         {
           id: recommendation.productId,
-          variantId: recommendation.variantId,
+          variantId: resolvedVariantId,
           slug: recommendation.slug,
           name: recommendation.name,
           price: recommendation.price,
@@ -68,11 +88,11 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
           quantity: 1,
           imageUrl: recommendation.imageUrl,
           sku: "",
-          attributes: recommendation.weightLabel ? [recommendation.weightLabel] : [],
-          roastLevelId: EMPTY_GUID,
-          roastLevelName: "Original",
-          grindTypeId: EMPTY_GUID,
-          grindTypeName: "Whole Bean",
+          attributes: weightLabel ? [weightLabel] : [],
+          roastLevelId: undefined,
+          roastLevelName: undefined,
+          grindTypeId: undefined,
+          grindTypeName: undefined,
         } as unknown as CartItem,
         isAuthenticated
       )
@@ -120,7 +140,7 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
                 {recommendation.name}
               </span>
               <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-                <span>{recommendation.weightLabel}</span>
+                <span>{weightLabel}</span>
                 <span className="px-1">•</span>
                 <FormattedPrice amount={recommendationDisplayPrice} className="font-bold text-accent" />
               </div>

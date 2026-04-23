@@ -145,14 +145,14 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
             <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent z-10 group-hover:from-black/50 transition-all duration-500 ease-in-out" />
           </div>
 
-          <div className="p-4 flex flex-col flex-1">
+          <div className="p-4 flex flex-col flex-1 min-w-0 overflow-hidden">
             {/* 1st: Brand Name */}
             <p className="text-xs text-espresso-brown font-semibold uppercase tracking-wider font-heading mb-1">
               {brandName}
             </p>
 
             {/* 2nd: Product Name */}
-            <h3 className="text-lg font-bold text-primary dark:text-secondary text-balance group-hover:text-accent transition-smooth uppercase truncate mb-2" title={product.name}>
+            <h3 className="text-sm font-bold text-primary dark:text-secondary group-hover:text-accent transition-smooth uppercase truncate w-full mb-2" title={product.name}>
               {product.name}
             </h3>
 
