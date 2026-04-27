@@ -392,6 +392,7 @@ export default function CheckoutForm() {
   const [usePoints, setUsePoints] = useState(false)
   const [isLoadingRewards, setIsLoadingRewards] = useState(false)
   const [stripeResetKey, setStripeResetKey] = useState(0)
+  const [buttonResetKey, setButtonResetKey] = useState(0)
 
   const isSubmittingRef = useRef(false)
 
@@ -608,6 +609,20 @@ export default function CheckoutForm() {
     }
   }, [selectedCountryId, countries.length, fetchCities])
 
+  // Keep shippingAddress.country in sync with selectedCountryId + countries.
+  // fetchCountries closes over selectedCountryId="" (stale closure — it's in useCallback([t])),
+  // so we cannot rely on it to set the country code when selectedCountryId is restored from
+  // localStorage. This effect runs after both states are committed and fixes the race.
+  useEffect(() => {
+    if (!selectedCountryId || countries.length === 0) return
+    const selected = countries.find((c) => c.id === selectedCountryId)
+    if (selected) {
+      setShippingAddress((prev) =>
+        prev.country === selected.code ? prev : { ...prev, country: selected.code }
+      )
+    }
+  }, [selectedCountryId, countries])
+
   const handleCountryChange = (countryId: string) => {
     setSelectedCountryId(countryId)
 
@@ -754,6 +769,16 @@ export default function CheckoutForm() {
       
 
       const finalShippingAddress = { ...shippingAddress };
+
+      // Failsafe: shippingAddress.country can be "" if the sync useEffect hasn't committed yet
+      // (e.g. the very first render after fetchCountries runs with a stale selectedCountryId).
+      // Resolve the code directly from the countries array so the backend never sees country="".
+      if (!finalShippingAddress.country && selectedCountryId) {
+        const fallbackCountry = countries.find((c) => c.id === selectedCountryId)
+        if (fallbackCountry) {
+          finalShippingAddress.country = fallbackCountry.code
+        }
+      }
 
       if (!finalShippingAddress.state?.trim()) {
         finalShippingAddress.state = finalShippingAddress.city
@@ -985,7 +1010,10 @@ export default function CheckoutForm() {
       // CRITICAL: Increment the key to forcefully destroy and recreate the Stripe modal component
       // This ensures Stripe instance cleanup without reloading the page
       setStripeResetKey(prev => prev + 1)
-      
+
+      // Reset TruckButton to "idle" phase by forcing a clean remount
+      setButtonResetKey(prev => prev + 1)
+
       setPaymentError("Payment was cancelled. You can update your cart or try again.")
     }
   }
@@ -1284,6 +1312,7 @@ export default function CheckoutForm() {
             </Card>
 
             <TruckButton
+              key={buttonResetKey}
               defaultText={t("proceedToPayment")}
               successText={t("preparingPayment")}
               loadingText={t("preparingPayment")}

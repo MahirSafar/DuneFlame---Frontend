@@ -173,7 +173,15 @@ export const useCartStore = create<CartStore>()(
         const state = get()
         const variantKey = generateVariantKey(item.productId, item.variantId, item.roastLevelId, item.grindTypeId)
         const itemWithKey = { ...item, variantKey, cartItemId: item.cartItemId || crypto.randomUUID() }
-        const existingItemIndex = state.items.findIndex((si) => si.variantKey === variantKey)
+        const existingItemIndex = state.items.findIndex(
+          (si) =>
+            si.variantKey === variantKey ||
+            // Fallback for upsell-added items that have no roast/grind IDs: match by
+            // variantId + roast/grind names so they stack with product-detail-added items.
+            (si.variantId === item.variantId &&
+              (si.roastLevelName ?? "") === (item.roastLevelName ?? "") &&
+              (si.grindTypeName ?? "") === (item.grindTypeName ?? ""))
+        )
         const updatedItems: CartItem[] =
           existingItemIndex > -1
             ? state.items.map((si, idx) => (idx === existingItemIndex ? { ...si, quantity: si.quantity + item.quantity } : si))
@@ -188,6 +196,30 @@ export const useCartStore = create<CartStore>()(
         } else {
           // Guest: optimistic — no backend call, update local state immediately
           set({ items: updatedItems })
+        }
+
+        // Background attribute resolution: if the new item has empty or SKU-like attributes
+        // (e.g. added from the Upsell before the product was fetched), resolve proper
+        // human-readable option labels from the product catalog and patch the store entry.
+        const needsAttrResolution =
+          existingItemIndex === -1 && // only for newly added items, not quantity bumps
+          itemWithKey.slug &&
+          (itemWithKey.attributes.length === 0 ||
+            itemWithKey.attributes.some((a) => /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+){2,}/.test(a)))
+
+        if (needsAttrResolution) {
+          getProduct(itemWithKey.slug!).then((productData) => {
+            const resolvedAttrs = productData?.variants
+              ?.find((v: any) => v.id === itemWithKey.variantId)
+              ?.options?.map((o: any) => `${o.attributeName}: ${o.value}`)
+            if (resolvedAttrs && resolvedAttrs.length > 0) {
+              set((s) => ({
+                items: s.items.map((i) =>
+                  i.variantKey === variantKey ? { ...i, attributes: resolvedAttrs } : i
+                ),
+              }))
+            }
+          }).catch(() => { /* silently degrade */ })
         }
       },
 

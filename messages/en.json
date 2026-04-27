@@ -12,7 +12,7 @@
       "register": "Register",
       "logout": "Logout",
       "profile": "Profile",
-      "ourCoffee": "OUR COFFEE",
+      "ourCoffee": "COFFEE",
       "wholesale": "WHOLESALE",
       "aboutUs": "ABOUT US",
       "searchPlaceholder": "Search for coffee, coffee..."
@@ -283,6 +283,7 @@
     "guestCheckoutLabel": "Guest Checkout",
     "freeShippingMessage": "✨ You've unlocked Free Shipping! Orders over $55 or 200 AED in UAE ship free.",
     "rewardDiscount": "Reward Discount",
+    "welcomeDiscount": "Welcome Discount",
     "usePoints": "Use {points} points",
     "pointsAvailable": "You have {points} points available",
     "unableToLoadCities": "Unable to load cities. Please try again.",

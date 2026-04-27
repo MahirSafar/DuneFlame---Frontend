@@ -17,6 +17,12 @@ export interface RecommendationResponse {
     currencyCode: string;
     weightLabel: string;
     availablePrices?: Record<string, number>;
+    hasVariants: boolean;
+    isCoffee: boolean;
+    originName?: string;
+    roastLevelNames?: string[];
+    grindTypeNames?: string[];
+    options?: { attributeName: string; value: string }[];
   };
 }
 

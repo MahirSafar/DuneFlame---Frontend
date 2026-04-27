@@ -25,9 +25,12 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("")
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [openMobileEquipSub, setOpenMobileEquipSub] = useState<string | null>(null)
+  const [openMobileCoffee, setOpenMobileCoffee] = useState(false)
+  const [openMobileEquipment, setOpenMobileEquipment] = useState(false)
   const [coffeeNode, setCoffeeNode] = useState<CategoryTreeNode | null>(null)
   const [equipmentNode, setEquipmentNode] = useState<CategoryTreeNode | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { isLoggedIn, logout } = useAuth()
   const { loadBasket, items } = useCartStore()
   const t = useTranslations('common.nav')
@@ -169,24 +172,25 @@ export default function Navbar() {
           {/* Desktop Navigation - True Center */}
           <div ref={dropdownRef} className="hidden lg:flex items-center gap-6 lg:gap-8 absolute left-1/2 transform -translate-x-1/2">
             {/* Coffee dropdown */}
-            <div className="relative">
-              <button
+            <div
+              className="relative"
+              onMouseEnter={() => {
+                if (hoverTimeout.current) clearTimeout(hoverTimeout.current)
+                setOpenDropdown("coffee")
+              }}
+              onMouseLeave={() => {
+                hoverTimeout.current = setTimeout(() => setOpenDropdown(null), 150)
+              }}
+            >
+              <Link
+                href={{ pathname: "/shop", query: { category: "coffee" } }}
                 className="flex items-center gap-1 text-sm font-heading uppercase tracking-wide text-foreground hover:text-accent transition-smooth"
-                onClick={() => setOpenDropdown(openDropdown === "coffee" ? null : "coffee")}
-                aria-expanded={openDropdown === "coffee"}
               >
                 {t('ourCoffee')}
                 <ChevronDown size={14} className={`transition-transform duration-200 ${openDropdown === "coffee" ? "rotate-180" : ""}`} />
-              </button>
+              </Link>
               {openDropdown === "coffee" && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 min-w-45 glass rounded-xl border border-border/60 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <Link
-                    href={{ pathname: "/shop", query: { category: "coffee" } }}
-                    className="block px-4 py-2 text-sm font-semibold text-foreground hover:text-accent hover:bg-accent/5 transition-smooth"
-                    onClick={() => setOpenDropdown(null)}
-                  >
-                    All Coffee
-                  </Link>
                   {coffeeNode && getLeafLinks(coffeeNode).map((leaf) => (
                     <Link
                       key={leaf.id}
@@ -202,25 +206,25 @@ export default function Navbar() {
             </div>
 
             {/* Equipment dropdown */}
-            <div className="relative">
-              <button
+            <div
+              className="relative"
+              onMouseEnter={() => {
+                if (hoverTimeout.current) clearTimeout(hoverTimeout.current)
+                setOpenDropdown("equipment")
+              }}
+              onMouseLeave={() => {
+                hoverTimeout.current = setTimeout(() => setOpenDropdown(null), 150)
+              }}
+            >
+              <Link
+                href={{ pathname: "/shop", query: { category: "equipment" } }}
                 className="flex items-center gap-1 text-sm font-heading uppercase tracking-wide text-foreground hover:text-accent transition-smooth"
-                onClick={() => setOpenDropdown(openDropdown === "equipment" ? null : "equipment")}
-                aria-expanded={openDropdown === "equipment"}
               >
                 Equipment
                 <ChevronDown size={14} className={`transition-transform duration-200 ${openDropdown === "equipment" ? "rotate-180" : ""}`} />
-              </button>
+              </Link>
               {openDropdown === "equipment" && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 min-w-52 glass rounded-xl border border-border/60 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <Link
-                    href={{ pathname: "/shop", query: { category: "equipment" } }}
-                    className="block px-4 py-2 text-sm font-semibold text-foreground hover:text-accent hover:bg-accent/5 transition-smooth"
-                    onClick={() => setOpenDropdown(null)}
-                  >
-                    All Equipment
-                  </Link>
-                  <div className="my-1 border-t border-border/40" />
                   {equipmentNode?.children?.map((sub) =>
                     sub.children && sub.children.length > 0 ? (
                       /* L2 item with L3 children → hover flyout to the right */
@@ -235,13 +239,6 @@ export default function Navbar() {
                         </Link>
                         {/* L3 flyout — slides out to the right (rtl: to the left) */}
                         <div className="absolute left-full top-0 -mt-1 hidden group-hover/sub:flex flex-col min-w-44 glass rounded-xl border border-border/60 shadow-xl py-2 z-60 rtl:right-full rtl:left-auto">
-                          <Link
-                            href={{ pathname: "/shop", query: { category: sub.slug ?? sub.name.toLowerCase().replace(/\s+/g, "-") } }}
-                            className="block px-4 py-1.5 text-xs font-semibold text-muted-foreground hover:text-accent hover:bg-accent/5 transition-smooth capitalize border-b border-border/40 mb-1"
-                            onClick={() => setOpenDropdown(null)}
-                          >
-                            All {sub.name}
-                          </Link>
                           {sub.children.map((leaf) => (
                             <Link
                               key={leaf.id}
@@ -353,36 +350,66 @@ export default function Navbar() {
           <div className="lg:hidden pb-4 border-t border-border animate-in slide-in-from-top duration-300">
             {/* Coffee group */}
             <div className="py-1 px-4">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground py-2">{t('ourCoffee')}</div>
-              <Link href={{ pathname: "/shop", query: { category: "coffee" } }} className="block py-1.5 pl-2 text-sm text-foreground hover:text-accent transition-smooth" onClick={() => setIsOpen(false)}>All Coffee</Link>
-              {coffeeNode && getLeafLinks(coffeeNode).map((leaf) => (
+              <div className="flex items-center justify-between py-2">
+                <Link
+                  href={{ pathname: "/shop", query: { category: "coffee" } }}
+                  className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-accent transition-smooth"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {t('ourCoffee')}
+                </Link>
+                <button
+                  onClick={() => setOpenMobileCoffee(!openMobileCoffee)}
+                  className="p-1 hover:text-accent transition-smooth"
+                  aria-label="Toggle coffee menu"
+                >
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${openMobileCoffee ? "rotate-180" : ""}`} />
+                </button>
+              </div>
+              {openMobileCoffee && coffeeNode && getLeafLinks(coffeeNode).map((leaf) => (
                 <Link key={leaf.id} href={{ pathname: "/shop", query: { category: leaf.slug ?? leaf.name.toLowerCase().replace(/\s+/g, "-") } }} className="block py-1.5 pl-2 text-sm text-foreground hover:text-accent transition-smooth capitalize" onClick={() => setIsOpen(false)}>{leaf.name}</Link>
               ))}
             </div>
             {/* Equipment group */}
             <div className="py-1 px-4">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground py-2">Equipment</div>
-              <Link href={{ pathname: "/shop", query: { category: "equipment" } }} className="block py-1.5 pl-2 text-sm text-foreground hover:text-accent transition-smooth" onClick={() => setIsOpen(false)}>All Equipment</Link>
-              {equipmentNode?.children?.map((sub) =>
+              <div className="flex items-center justify-between py-2">
+                <Link
+                  href={{ pathname: "/shop", query: { category: "equipment" } }}
+                  className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-accent transition-smooth"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Equipment
+                </Link>
+                <button
+                  onClick={() => setOpenMobileEquipment(!openMobileEquipment)}
+                  className="p-1 hover:text-accent transition-smooth"
+                  aria-label="Toggle equipment menu"
+                >
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${openMobileEquipment ? "rotate-180" : ""}`} />
+                </button>
+              </div>
+              {openMobileEquipment && equipmentNode?.children?.map((sub) =>
                 sub.children && sub.children.length > 0 ? (
                   /* L2 with children → collapsible accordion */
                   <div key={sub.id}>
-                    <button
-                      className="flex items-center justify-between w-full py-1.5 pl-2 text-sm text-foreground hover:text-accent transition-smooth capitalize"
-                      onClick={() => setOpenMobileEquipSub(openMobileEquipSub === sub.id ? null : sub.id)}
-                    >
-                      {sub.name}
-                      <ChevronDown size={14} className={`transition-transform duration-200 mr-1 shrink-0 ${openMobileEquipSub === sub.id ? "rotate-180" : ""}`} />
-                    </button>
+                    <div className="flex items-center justify-between py-1.5 pl-2">
+                      <Link
+                        href={{ pathname: "/shop", query: { category: sub.slug ?? sub.name.toLowerCase().replace(/\s+/g, "-") } }}
+                        className="text-sm text-foreground hover:text-accent transition-smooth capitalize"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {sub.name}
+                      </Link>
+                      <button
+                        className="p-1 hover:text-accent transition-smooth"
+                        onClick={() => setOpenMobileEquipSub(openMobileEquipSub === sub.id ? null : sub.id)}
+                        aria-label={`Toggle ${sub.name} submenu`}
+                      >
+                        <ChevronDown size={14} className={`transition-transform duration-200 mr-1 shrink-0 ${openMobileEquipSub === sub.id ? "rotate-180" : ""}`} />
+                      </button>
+                    </div>
                     {openMobileEquipSub === sub.id && (
                       <div className="pl-3 border-l-2 border-accent/30 ml-2 my-1 flex flex-col gap-0.5">
-                        <Link
-                          href={{ pathname: "/shop", query: { category: sub.slug ?? sub.name.toLowerCase().replace(/\s+/g, "-") } }}
-                          className="block py-1.5 pl-2 text-xs font-semibold text-muted-foreground hover:text-accent transition-smooth capitalize"
-                          onClick={() => setIsOpen(false)}
-                        >
-                          All {sub.name}
-                        </Link>
                         {sub.children.map((leaf) => (
                           <Link
                             key={leaf.id}

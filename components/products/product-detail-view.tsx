@@ -535,35 +535,47 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
         </div>
 
         {/* Mobile: bottom spacer so sticky bar doesn't overlap content */}
-        <div className="h-24 lg:hidden" aria-hidden="true" />
+        <div className="h-40 lg:hidden" aria-hidden="true" />
       </motion.div>
 
       {/* Mobile sticky Add to Cart bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/95 backdrop-blur-sm border-t shadow-lg lg:hidden">
-        <button
-          onClick={handleAddToCart}
-          disabled={(selectedVariant?.stockQuantity ?? 0) <= 0 || !selectedVariant}
-          style={{
-            backgroundColor: 'rgb(56, 109, 118)',
-            color: '#fff',
-            borderRadius: '0.75rem',
-            width: '100%',
-            padding: '0.875rem 1.5rem',
-            fontSize: '1rem',
-            fontWeight: 600,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-          }}
-          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
-        >
-          <ShoppingCart size={18} />
-          {t('addToBasket')}
-          {currentPrice > 0 && (
-            <span className="ml-2 opacity-80">· <FormattedPrice amount={currentPrice * quantity} /></span>
-          )}
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={handleAddToCart}
+            disabled={(selectedVariant?.stockQuantity ?? 0) <= 0 || !selectedVariant}
+            style={{
+              backgroundColor: 'rgb(56, 109, 118)',
+              color: '#fff',
+              borderRadius: '0.75rem',
+              width: '100%',
+              padding: '0.875rem 1.5rem',
+              fontSize: '1rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-60"
+          >
+            <ShoppingCart size={18} />
+            {t('addToBasket')}
+          </button>
+
+          <StripeElementsProvider>
+            <ProductQuickBuy
+              product={product}
+              selectedVariantId={selectedVariantId}
+              selectedRoast={selectedRoast}
+              selectedGrind={selectedGrind}
+              quantity={quantity}
+              currentPrice={currentPrice}
+              isPriceAvailable={isPriceAvailable}
+              hasValidSelection={hasValidSelection}
+            />
+          </StripeElementsProvider>
+        </div>
       </div>
     </motion.section>
   )

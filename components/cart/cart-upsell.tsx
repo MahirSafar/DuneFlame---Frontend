@@ -8,7 +8,7 @@ import { FormattedPrice } from "@/components/currency/formatted-price"
 import { useCurrency } from "@/lib/currency-context"
 import { Plus, CheckCircle2 } from "lucide-react"
 import { getImageUrl } from "@/lib/utils"
-import { useEffect } from "react"
+
 
 export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
   const { data, isLoading, fetchRecommendation } = useCartRecommendation(countryCode)
@@ -37,19 +37,29 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
 
   const recommendationDisplayPrice = recommendation?.availablePrices?.[currency.toUpperCase()] ?? recommendation?.availablePrices?.[currency.toLowerCase()] ?? recommendation?.price ?? 0;
 
-  // If the backend returns a slug-style SKU as weightLabel (e.g. "tutti-frutti-250g"),
-  // extract just the weight portion (e.g. "250g"). Fall back to the original value if
-  // no weight token is found.
-  const formatWeightLabel = (label: string | undefined): string | undefined => {
-    if (!label) return undefined;
-    // Slug pattern: contains hyphens with a weight at the end
-    if (label.includes("-")) {
-      const match = label.match(/(\d+\s*(?:g|kg|ml|l|oz|lb)s?)$/i);
-      if (match) return match[1];
+  // Pure variant-driven subtitle string.
+  // Rules (per decision table):
+  //   - no variants  → null (hide subtitle + bullet entirely)
+  //   - has variants → join option values; if coffee, append origin + first roast + first grind
+  const variantLabel: string | null = (() => {
+    if (!recommendation) return null;
+    if (!recommendation.hasVariants) return null;
+
+    const parts: (string | undefined)[] = [
+      ...(recommendation.options?.map((o) => o.value) ?? []),
+    ];
+
+    if (recommendation.isCoffee) {
+      parts.push(
+        recommendation.originName,
+        recommendation.roastLevelNames?.[0],
+        recommendation.grindTypeNames?.[0],
+      );
     }
-    return label;
-  };
-  const weightLabel = formatWeightLabel(recommendation?.weightLabel);
+
+    const joined = parts.filter(Boolean).join(" • ");
+    return joined || null;
+  })();
 
   // Əgər limit keçilibsə və biz "Təbriklər" mesajını göstərmək istəmiriksə, bunu `return null` edə bilərik.
   // Amma hələlik göstəririk:
@@ -80,6 +90,7 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
       addItem(
         {
           id: recommendation.productId,
+          productId: recommendation.productId,
           variantId: resolvedVariantId,
           slug: recommendation.slug,
           name: recommendation.name,
@@ -88,11 +99,12 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
           quantity: 1,
           imageUrl: recommendation.imageUrl,
           sku: "",
-          attributes: weightLabel ? [weightLabel] : [],
+          // Build attributes the same way product-detail does: "AttributeName: value" per option
+          attributes: recommendation.options?.map((o) => `${o.attributeName}: ${o.value}`) ?? [],
           roastLevelId: undefined,
-          roastLevelName: undefined,
+          roastLevelName: recommendation.isCoffee ? (recommendation.roastLevelNames?.[0] ?? undefined) : undefined,
           grindTypeId: undefined,
-          grindTypeName: undefined,
+          grindTypeName: recommendation.isCoffee ? (recommendation.grindTypeNames?.[0] ?? undefined) : undefined,
         } as unknown as CartItem,
         isAuthenticated
       )
@@ -140,8 +152,12 @@ export function CartUpsell({ countryCode }: { countryCode?: string } = {}) {
                 {recommendation.name}
               </span>
               <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-                <span>{weightLabel}</span>
-                <span className="px-1">•</span>
+                {variantLabel && (
+                  <>
+                    <span>{variantLabel}</span>
+                    <span className="px-1">•</span>
+                  </>
+                )}
                 <FormattedPrice amount={recommendationDisplayPrice} className="font-bold text-accent" />
               </div>
             </div>

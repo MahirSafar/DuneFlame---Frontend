@@ -95,6 +95,16 @@ export const useAuthStore = create<AuthState>()(
             // v17: Also persist user object to localStorage for offline restoration
             localStorage.setItem("df_user_object", JSON.stringify(user));
           }
+
+          // Re-fetch basket after registration so the merged basket ID is stored locally.
+          // Without this, checkout sends the stale anonymous basket ID and gets a 400.
+          await get().fetchAndStoreBasketId();
+          try {
+            const { loadBasket } = useCartStore.getState();
+            await loadBasket();
+          } catch (cartError) {
+            console.error("[Auth] Failed to load basket after register:", cartError);
+          }
         } catch (e: any) {
           const msg = getErrorMessage(e) || "Registration failed";
           set({ error: msg, loggingIn: false });

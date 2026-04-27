@@ -17,6 +17,7 @@ import {
   Bell,
   Search,
   Loader2,
+  GalleryHorizontal,
 } from "lucide-react"
 import { Suspense } from "react"
 import { useTranslations } from "next-intl"
@@ -25,6 +26,7 @@ const adminNav = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Coffee", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+  { href: "/admin/sliders", label: "Sliders", icon: GalleryHorizontal },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/contacts", label: "Contacts", icon: Mail },
   { href: "/admin/subscribers", label: "Subscribers", icon: Users2 },
